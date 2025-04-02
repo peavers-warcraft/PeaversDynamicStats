@@ -1,13 +1,11 @@
 local addonName, PDS = ...
 
--- Create UI namespace
+-- Initialize UI namespace
 PDS.UI = {}
-
--- Initialize UI class
 local UI = PDS.UI
 local UIMetatable = {}
 
--- Safe global access function
+-- Safely access global variables by name
 local function GetGlobal(name)
 	if name and type(name) == "string" then
 		return _G[name]
@@ -15,7 +13,7 @@ local function GetGlobal(name)
 	return nil
 end
 
--- Create a section header
+-- Creates a section header with gold text
 function UI:CreateSectionHeader(parent, text, x, y)
 	local header = parent:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	header:SetPoint("TOPLEFT", x, y)
@@ -25,7 +23,7 @@ function UI:CreateSectionHeader(parent, text, x, y)
 	return header, y - 25 -- Return new y position
 end
 
--- Create a label
+-- Creates a text label with optional font
 function UI:CreateLabel(parent, text, x, y, fontObject)
 	local label = parent:CreateFontString(nil, "ARTWORK", fontObject or "GameFontNormal")
 	label:SetPoint("TOPLEFT", x, y)
@@ -34,12 +32,11 @@ function UI:CreateLabel(parent, text, x, y, fontObject)
 	return label, y - 20 -- Return new y position
 end
 
--- Create a checkbox
+-- Creates a checkbox with optional initial value and click handler
 function UI:CreateCheckbox(parent, name, text, x, y, initialValue, textColor, onClick)
 	local checkbox = CreateFrame("CheckButton", name, parent, "InterfaceOptionsCheckButtonTemplate")
 	checkbox:SetPoint("TOPLEFT", x, y)
 
-	-- Get and set the text
 	local textObj = checkbox.Text
 	if not textObj and checkbox:GetName() then
 		textObj = GetGlobal(checkbox:GetName() .. "Text")
@@ -53,12 +50,10 @@ function UI:CreateCheckbox(parent, name, text, x, y, initialValue, textColor, on
 		end
 	end
 
-	-- Set initial state
 	if initialValue ~= nil then
 		checkbox:SetChecked(initialValue)
 	end
 
-	-- Set onClick handler
 	if onClick then
 		checkbox:SetScript("OnClick", onClick)
 	end
@@ -66,7 +61,7 @@ function UI:CreateCheckbox(parent, name, text, x, y, initialValue, textColor, on
 	return checkbox, y - 25 -- Return new y position
 end
 
--- Create a slider
+-- Creates a slider with min/max values and step size
 function UI:CreateSlider(parent, name, minVal, maxVal, step, x, y, initialValue, width)
 	local slider = CreateFrame("Slider", name, parent, "OptionsSliderTemplate")
 	slider:SetPoint("TOPLEFT", x, y)
@@ -75,7 +70,6 @@ function UI:CreateSlider(parent, name, minVal, maxVal, step, x, y, initialValue,
 	slider:SetValueStep(step)
 	slider:SetValue(initialValue)
 
-	-- Clear default text elements
 	local sliderName = slider:GetName()
 	if sliderName then
 		local lowText = GetGlobal(sliderName .. "Low")
@@ -96,7 +90,7 @@ function UI:CreateSlider(parent, name, minVal, maxVal, step, x, y, initialValue,
 	return slider, y - 40 -- Return new y position
 end
 
--- Create a dropdown
+-- Creates a dropdown menu with optional initial text
 function UI:CreateDropdown(parent, name, x, y, width, initialText)
 	local dropdown = CreateFrame("Frame", name, parent, "UIDropDownMenuTemplate")
 	dropdown:SetPoint("TOPLEFT", x, y)
@@ -109,7 +103,7 @@ function UI:CreateDropdown(parent, name, x, y, width, initialText)
 	return dropdown, y - 40 -- Return new y position
 end
 
--- Create scrollable frame
+-- Creates a scrollable frame with content child
 function UI:CreateScrollFrame(parent)
 	local scrollFrame = CreateFrame("ScrollFrame", nil, parent, "UIPanelScrollFrameTemplate")
 	scrollFrame:SetPoint("TOPLEFT", 16, -16)
@@ -123,7 +117,7 @@ function UI:CreateScrollFrame(parent)
 	return scrollFrame, content
 end
 
--- Create a basic frame
+-- Creates a basic frame with optional size and backdrop
 function UI:CreateFrame(name, parent, width, height, backdrop)
 	local frame = CreateFrame("Frame", name, parent, backdrop and "BackdropTemplate" or nil)
 
@@ -138,7 +132,7 @@ function UI:CreateFrame(name, parent, width, height, backdrop)
 	return frame
 end
 
--- Create a button
+-- Creates a button with optional size and click handler
 function UI:CreateButton(parent, name, text, x, y, width, height, onClick)
 	local button = CreateFrame("Button", name, parent, "UIPanelButtonTemplate")
 	button:SetPoint("TOPLEFT", x, y)
@@ -152,7 +146,7 @@ function UI:CreateButton(parent, name, text, x, y, width, height, onClick)
 	return button, y - (height or 22) - 5
 end
 
--- Create a color picker
+-- Creates a color picker button with optional label and change handler
 function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 	local colorFrame = CreateFrame("Button", name, parent, "BackdropTemplate")
 	colorFrame:SetPoint("TOPLEFT", x, y)
@@ -164,14 +158,12 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 		insets = { left = 2, right = 2, top = 2, bottom = 2 }
 	})
 
-	-- Set initial color
 	if initialColor then
 		colorFrame:SetBackdropColor(initialColor.r, initialColor.g, initialColor.b)
 	else
 		colorFrame:SetBackdropColor(1, 1, 1)
 	end
 
-	-- Create label
 	local colorLabel
 	if label then
 		colorLabel = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
@@ -179,31 +171,24 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 		colorLabel:SetText(label)
 	end
 
-	-- Set onclick handler for color picker
 	colorFrame:SetScript("OnClick", function()
 		local function ColorCallback(restore)
 			local newR, newG, newB
 			if restore then
-				-- User canceled, use previous values
 				newR, newG, newB = unpack(restore)
 			else
-				-- Get the new values
 				newR, newG, newB = ColorPickerFrame:GetColorRGB()
 			end
 
-			-- Update button color
 			colorFrame:SetBackdropColor(newR, newG, newB)
 
-			-- Call onChange handler if provided
 			if onChange then
 				onChange(newR, newG, newB)
 			end
 		end
 
-		-- Get current color
 		local r, g, b = colorFrame:GetBackdropColor()
 
-		-- Open color picker
 		ColorPickerFrame.func = ColorCallback
 		ColorPickerFrame.cancelFunc = ColorCallback
 		ColorPickerFrame.opacityFunc = nil
@@ -217,8 +202,7 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 	return colorFrame, colorLabel, y - 25
 end
 
--- Set metatable to create OOP-like behavior
+-- Set up OOP-like behavior
 setmetatable(UI, UIMetatable)
 
--- Return the UI namespace
 return UI

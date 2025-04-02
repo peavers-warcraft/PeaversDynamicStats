@@ -16,9 +16,13 @@ src\Main.lua
 # UI first (since Config depends on it)
 src\UI\UI.lua
 
+# Stats
+src\Stats.lua
+
 # Utils
 src\Utils\Utils.lua
 src\Utils\Config.lua
+src\Utils\ConfigUI.lua
 
 # Core
 src\Core\Core.lua
