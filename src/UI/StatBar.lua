@@ -18,6 +18,9 @@ function StatBar:New(parent, name, statType)
 	obj.yOffset = 0
 	obj.frame = obj:CreateFrame(parent)
 
+	-- Set the initial color after frame is created
+	obj:UpdateColor()
+
 	obj:InitAnimationSystem()
 
 	return obj
@@ -65,8 +68,6 @@ function StatBar:CreateFrame(parent)
 	bar:SetValue(0)
 	bar:SetStatusBarTexture(PDS.Config.barTexture)
 
-	local r, g, b = self:GetColorForStat(self.statType)
-	bar:SetStatusBarColor(r, g, b, 1)
 	frame.bar = bar
 
 	local valueText = bar:CreateFontString(nil, "OVERLAY")
@@ -126,7 +127,20 @@ end
 
 -- Returns the color for a specific stat type
 function StatBar:GetColorForStat(statType)
+	-- Check if there's a custom color for this stat
+	if PDS.Config.customColors[statType] then
+		local color = PDS.Config.customColors[statType]
+		return color.r, color.g, color.b
+	end
+
+	-- Otherwise use the default color
 	return PDS.Stats:GetColor(statType)
+end
+
+-- Updates the color of the bar
+function StatBar:UpdateColor()
+	local r, g, b = self:GetColorForStat(self.statType)
+	self.frame.bar:SetStatusBarColor(r, g, b, 1)
 end
 
 -- Sets the position of the bar relative to its parent
