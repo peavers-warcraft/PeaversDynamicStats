@@ -19,6 +19,7 @@ PDS.Config = {
 	-- Visual settings
 	fontFace = "Fonts\\FRIZQT__.TTF",
 	fontSize = 9,
+	fontOutline = "OUTLINE",
 
 	-- Other settings
 	barTexture = "Interface\\TargetingFrame\\UI-StatusBar",
@@ -46,6 +47,8 @@ function Config:Save()
 	end
 
 	PeaversDynamicStatsDB.fontFace = self.fontFace
+	PeaversDynamicStatsDB.fontSize = self.fontSize
+	PeaversDynamicStatsDB.fontOutline = self.fontOutline
 	PeaversDynamicStatsDB.framePoint = self.framePoint
 	PeaversDynamicStatsDB.frameX = self.frameX
 	PeaversDynamicStatsDB.frameY = self.frameY
@@ -71,6 +74,12 @@ function Config:Load()
 
 	if PeaversDynamicStatsDB.fontFace then
 		self.fontFace = PeaversDynamicStatsDB.fontFace
+	end
+	if PeaversDynamicStatsDB.fontSize then
+		self.fontSize = PeaversDynamicStatsDB.fontSize
+	end
+	if PeaversDynamicStatsDB.fontOutline then
+		self.fontOutline = PeaversDynamicStatsDB.fontOutline
 	end
 	if PeaversDynamicStatsDB.framePoint then
 		self.framePoint = PeaversDynamicStatsDB.framePoint

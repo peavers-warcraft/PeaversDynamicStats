@@ -86,7 +86,7 @@ function StatBar:CreateFrame(parent)
 
 	local valueText = bar:CreateFontString(nil, "OVERLAY")
 	valueText:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
-	valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, "OUTLINE")
+	valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	valueText:SetJustifyH("RIGHT")
 	valueText:SetText("0")
 	valueText:SetTextColor(1, 1, 1)
@@ -94,7 +94,7 @@ function StatBar:CreateFrame(parent)
 
 	local nameText = bar:CreateFontString(nil, "OVERLAY")
 	nameText:SetPoint("LEFT", bar, "LEFT", 4, 0)
-	nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, "OUTLINE")
+	nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	nameText:SetJustifyH("LEFT")
 	nameText:SetText(self.name)
 	nameText:SetTextColor(1, 1, 1)
@@ -199,8 +199,8 @@ end
 
 -- Updates the font used for text elements
 function StatBar:UpdateFont()
-	self.frame.valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, "OUTLINE")
-	self.frame.nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, "OUTLINE")
+	self.frame.valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+	self.frame.nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 end
 
 -- Updates the texture used for the status bar
