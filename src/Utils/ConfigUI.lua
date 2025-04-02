@@ -106,7 +106,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     for i, statType in ipairs(PDS.Stats.STAT_ORDER) do
         -- Create subsection header with stat name
         local statHeader, newY = UI:CreateSectionHeader(content, PDS.Stats:GetName(statType), baseSpacing + 10, yPos)
-        statHeader:SetFont(statHeader:GetFont(), 16) -- Slightly smaller than main headers
+        statHeader:SetFont(statHeader:GetFont(), 14) -- Smaller sub-headings
         yPos = newY
 
         -- Show/hide checkbox
