@@ -48,6 +48,7 @@ function Core:RegisterEvents()
 	frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+	frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 
 	-- Set up event and update handlers
 	frame:SetScript("OnEvent", function(self, event, ...)

@@ -46,6 +46,32 @@ Stats.STAT_TYPES = {
     AVOIDANCE = "AVOIDANCE"
 }
 
+-- Table of class/spec-specific stat bonuses
+-- This table stores bonuses from talents or other class/spec-specific effects
+-- that aren't automatically included in the WoW API stat functions.
+--
+-- Format: [className][specIndex][statType] = bonusValue
+--
+-- Example:
+--   Stats.CLASS_SPEC_BONUSES["ROGUE"][2][Stats.STAT_TYPES.VERSATILITY] = 3
+--   This adds a 3% versatility bonus for Outlaw Rogues (spec index 2)
+--
+-- Instead of directly modifying this table, use the provided API functions:
+--   Stats:AddClassSpecBonus(className, specIndex, statType, bonusValue)
+--   Stats:RemoveClassSpecBonus(className, specIndex, statType)
+--   Stats:GetClassSpecBonus(className, specIndex, statType)
+--   Stats:GetCurrentClassSpecBonuses()
+Stats.CLASS_SPEC_BONUSES = {
+    -- Rogue
+    ["ROGUE"] = {
+        -- Outlaw (spec index 2)
+        [2] = {
+            [Stats.STAT_TYPES.VERSATILITY] = 3 -- 3% versatility bonus from talent
+        }
+    }
+    -- Add more classes and specs as needed using the AddClassSpecBonus function
+}
+
 -- Stat display names
 Stats.STAT_NAMES = {
     [Stats.STAT_TYPES.HASTE] = "Haste",
@@ -99,6 +125,18 @@ function Stats:GetValue(statType)
         value = GetAvoidance()
     end
 
+    -- Apply class/spec-specific bonuses
+    local _, playerClass = UnitClass("player")
+    local specIndex = GetSpecialization()
+
+    -- Check if there are any bonuses for this class/spec/stat combination
+    if Stats.CLASS_SPEC_BONUSES[playerClass] and
+       Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] and
+       Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType] then
+        -- Add the bonus to the value
+        value = value + Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType]
+    end
+
     return value
 end
 
@@ -146,6 +184,89 @@ end
 -- Returns the display name for a specific stat type
 function Stats:GetName(statType)
     return Stats.STAT_NAMES[statType] or statType
+end
+
+-- Adds a class/spec-specific stat bonus to the table
+-- Parameters:
+--   className: The class name (e.g., "ROGUE", "MAGE", etc.)
+--   specIndex: The specialization index (e.g., 1 for first spec, 2 for second spec, etc.)
+--   statType: The stat type (e.g., Stats.STAT_TYPES.VERSATILITY)
+--   bonusValue: The bonus value to add (e.g., 3 for 3%)
+function Stats:AddClassSpecBonus(className, specIndex, statType, bonusValue)
+    -- Initialize the class table if it doesn't exist
+    if not Stats.CLASS_SPEC_BONUSES[className] then
+        Stats.CLASS_SPEC_BONUSES[className] = {}
+    end
+
+    -- Initialize the spec table if it doesn't exist
+    if not Stats.CLASS_SPEC_BONUSES[className][specIndex] then
+        Stats.CLASS_SPEC_BONUSES[className][specIndex] = {}
+    end
+
+    -- Add the bonus
+    Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] = bonusValue
+end
+
+-- Removes a class/spec-specific stat bonus from the table
+-- Parameters:
+--   className: The class name (e.g., "ROGUE", "MAGE", etc.)
+--   specIndex: The specialization index (e.g., 1 for first spec, 2 for second spec, etc.)
+--   statType: The stat type (e.g., Stats.STAT_TYPES.VERSATILITY)
+function Stats:RemoveClassSpecBonus(className, specIndex, statType)
+    -- Check if the tables exist
+    if Stats.CLASS_SPEC_BONUSES[className] and
+       Stats.CLASS_SPEC_BONUSES[className][specIndex] then
+        -- Remove the bonus
+        Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] = nil
+
+        -- Clean up empty tables
+        if next(Stats.CLASS_SPEC_BONUSES[className][specIndex]) == nil then
+            Stats.CLASS_SPEC_BONUSES[className][specIndex] = nil
+        end
+
+        if next(Stats.CLASS_SPEC_BONUSES[className]) == nil then
+            Stats.CLASS_SPEC_BONUSES[className] = nil
+        end
+    end
+end
+
+-- Gets the class/spec-specific stat bonus for a given combination
+-- Parameters:
+--   className: The class name (e.g., "ROGUE", "MAGE", etc.)
+--   specIndex: The specialization index (e.g., 1 for first spec, 2 for second spec, etc.)
+--   statType: The stat type (e.g., Stats.STAT_TYPES.VERSATILITY)
+-- Returns:
+--   The bonus value, or 0 if no bonus exists
+function Stats:GetClassSpecBonus(className, specIndex, statType)
+    -- Check if the tables exist and return the bonus if it exists
+    if Stats.CLASS_SPEC_BONUSES[className] and
+       Stats.CLASS_SPEC_BONUSES[className][specIndex] and
+       Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] then
+        return Stats.CLASS_SPEC_BONUSES[className][specIndex][statType]
+    end
+
+    -- Return 0 if no bonus exists
+    return 0
+end
+
+-- Gets all stat bonuses for the current player's class and spec
+-- Returns:
+--   A table of stat bonuses, where the keys are stat types and the values are bonus values
+function Stats:GetCurrentClassSpecBonuses()
+    local bonuses = {}
+    local _, playerClass = UnitClass("player")
+    local specIndex = GetSpecialization()
+
+    -- Check if there are any bonuses for this class/spec combination
+    if Stats.CLASS_SPEC_BONUSES[playerClass] and
+       Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] then
+        -- Copy the bonuses to the result table
+        for statType, bonusValue in pairs(Stats.CLASS_SPEC_BONUSES[playerClass][specIndex]) do
+            bonuses[statType] = bonusValue
+        end
+    end
+
+    return bonuses
 end
 
 return Stats
