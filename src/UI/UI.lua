@@ -219,6 +219,16 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 	return colorFrame, colorLabel, y - 25
 end
 
+-- Creates a horizontal separator line
+function UI:CreateSeparator(parent, x, y, width)
+	local separator = parent:CreateTexture(nil, "ARTWORK")
+	separator:SetPoint("TOPLEFT", x, y)
+	separator:SetSize(width or 450, 1)
+	separator:SetColorTexture(0.5, 0.5, 0.5, 0.5) -- Semi-transparent gray line
+
+	return separator, y - 15 -- Return new y position with spacing
+end
+
 -- Set up OOP-like behavior
 setmetatable(UI, UIMetatable)
 
