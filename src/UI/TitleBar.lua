@@ -20,7 +20,7 @@ function TitleBar:Create(parentFrame)
 	local title = titleBar:CreateFontString(nil, "OVERLAY")
 	title:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, "OUTLINE")
 	title:SetPoint("LEFT", titleBar, "LEFT", 5, 0)
-	title:SetText("Secondary Stats")
+	title:SetText("Peavers Dynamic Stats")
 	title:SetTextColor(1, 1, 1)
 
 	local verticalLine = titleBar:CreateTexture(nil, "ARTWORK")

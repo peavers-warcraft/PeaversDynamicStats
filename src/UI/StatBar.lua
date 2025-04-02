@@ -61,12 +61,21 @@ function StatBar:CreateFrame(parent)
 	bg:SetBackdropBorderColor(0, 0, 0, 1)
 	frame.bg = bg
 
-	local bar = CreateFrame("StatusBar", nil, bg)
+	-- Create the status bar with explicit name to help with debugging
+	local bar = CreateFrame("StatusBar", "PDS_StatBar_"..self.statType, bg)
 	bar:SetPoint("TOPLEFT", bg, "TOPLEFT", 1, -1)
 	bar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -1, 1)
 	bar:SetMinMaxValues(0, 100)
 	bar:SetValue(0)
-	bar:SetStatusBarTexture(PDS.Config.barTexture)
+
+	-- IMPORTANT: Set the status bar texture with a specific texture that's guaranteed to work
+	local texture = bar:CreateTexture(nil, "ARTWORK")
+	texture:SetAllPoints()
+	texture:SetColorTexture(1, 1, 1, 1) -- White texture that will take color
+	bar:SetStatusBarTexture(texture)
+
+	-- Set initial color
+	bar:SetStatusBarColor(0.8, 0.8, 0.8, 1)
 
 	frame.bar = bar
 
@@ -102,6 +111,7 @@ function StatBar:Update(value, maxValue)
 			self.frame.valueText:SetText(displayValue)
 		end
 
+		-- Use animation if enabled, otherwise set value directly
 		if self.smoothing then
 			self:AnimateToValue(percentValue)
 		else
@@ -128,19 +138,35 @@ end
 -- Returns the color for a specific stat type
 function StatBar:GetColorForStat(statType)
 	-- Check if there's a custom color for this stat
-	if PDS.Config.customColors[statType] then
+	if PDS.Config.customColors and PDS.Config.customColors[statType] then
 		local color = PDS.Config.customColors[statType]
-		return color.r, color.g, color.b
+		if color and color.r and color.g and color.b then
+			return color.r, color.g, color.b
+		end
 	end
 
-	-- Otherwise use the default color
-	return PDS.Stats:GetColor(statType)
+	-- Fall back to default colors from STAT_COLORS
+	if PDS.Stats.STAT_COLORS and PDS.Stats.STAT_COLORS[statType] then
+		return unpack(PDS.Stats.STAT_COLORS[statType])
+	end
+
+	-- Ultimate fallback to ensure visibility
+	return 0.8, 0.8, 0.8
 end
 
 -- Updates the color of the bar
 function StatBar:UpdateColor()
 	local r, g, b = self:GetColorForStat(self.statType)
-	self.frame.bar:SetStatusBarColor(r, g, b, 1)
+
+	-- Ensure we have valid color values
+	r = r or 0.8
+	g = g or 0.8
+	b = b or 0.8
+
+	-- Apply the color to the status bar - set color directly without recreating texture
+	if self.frame and self.frame.bar then
+		self.frame.bar:SetStatusBarColor(r, g, b, 1)
+	end
 end
 
 -- Sets the position of the bar relative to its parent
@@ -174,7 +200,14 @@ end
 
 -- Updates the texture used for the status bar
 function StatBar:UpdateTexture()
-	self.frame.bar:SetStatusBarTexture(PDS.Config.barTexture)
+	-- Create a fresh texture and apply it
+	local texture = self.frame.bar:CreateTexture(nil, "ARTWORK")
+	texture:SetAllPoints()
+	texture:SetColorTexture(1, 1, 1, 1)
+	self.frame.bar:SetStatusBarTexture(texture)
+
+	-- Reapply color after updating texture
+	self:UpdateColor()
 end
 
 -- Updates the height of the bar
