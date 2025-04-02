@@ -36,8 +36,8 @@ Stats.STAT_COLORS = {
 
 -- Default stat order
 Stats.STAT_ORDER = {
-    Stats.STAT_TYPES.HASTE,
     Stats.STAT_TYPES.CRIT,
+    Stats.STAT_TYPES.HASTE,
     Stats.STAT_TYPES.MASTERY,
     Stats.STAT_TYPES.VERSATILITY,
     Stats.STAT_TYPES.SPEED,
