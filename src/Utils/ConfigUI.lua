@@ -598,6 +598,65 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
 
     yPos = yPos - 65
 
+    -- Font outline checkbox
+    local outlineCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversFontOutlineCheckbox",
+        "Outlined Font",
+        subControlIndent,
+        yPos,
+        Config.fontOutline == "OUTLINE",
+        { 1, 1, 1 },
+        function(self)
+            Config.fontOutline = self:GetChecked() and "OUTLINE" or ""
+            Config:Save()
+            if PDS.Core and PDS.Core.CreateBars then
+                PDS.Core:CreateBars()
+            end
+        end
+    )
+    yPos = newY - 10
+
+    -- Font size slider
+    local fontSizeContainer = CreateFrame("Frame", nil, content)
+    fontSizeContainer:SetSize(400, 50)
+    fontSizeContainer:SetPoint("TOPLEFT", subControlIndent, yPos)
+
+    local fontSizeLabel = fontSizeContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    fontSizeLabel:SetPoint("TOPLEFT", 0, 0)
+    fontSizeLabel:SetText("Font Size: " .. Config.fontSize)
+
+    local fontSizeSlider = CreateFrame("Slider", "PeaversFontSizeSlider", fontSizeContainer, "OptionsSliderTemplate")
+    fontSizeSlider:SetPoint("TOPLEFT", 0, -20)
+    fontSizeSlider:SetWidth(400)
+    fontSizeSlider:SetMinMaxValues(6, 18)
+    fontSizeSlider:SetValueStep(1)
+    fontSizeSlider:SetValue(Config.fontSize)
+
+    -- Hide default slider text
+    local sliderName = fontSizeSlider:GetName()
+    if sliderName then
+        local lowText = PDS.Utils:GetGlobal(sliderName .. "Low")
+        local highText = PDS.Utils:GetGlobal(sliderName .. "High")
+        local valueText = PDS.Utils:GetGlobal(sliderName .. "Text")
+
+        if lowText then lowText:SetText("") end
+        if highText then highText:SetText("") end
+        if valueText then valueText:SetText("") end
+    end
+
+    fontSizeSlider:SetScript("OnValueChanged", function(self, value)
+        local roundedValue = math.floor(value + 0.5)
+        fontSizeLabel:SetText("Font Size: " .. roundedValue)
+        Config.fontSize = roundedValue
+        Config:Save()
+        if PDS.Core and PDS.Core.CreateBars then
+            PDS.Core:CreateBars()
+        end
+    end)
+
+    yPos = yPos - 65
+
     -- Add a thin separator
     local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
     yPos = newY - 10
