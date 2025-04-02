@@ -23,6 +23,7 @@ function StatBar:New(parent, name, statType)
 
 	obj:InitAnimationSystem()
 	obj:InitChangeTextFadeAnimation()
+	obj:InitTooltip()
 
 	return obj
 end
@@ -337,4 +338,31 @@ end
 function StatBar:UpdateBackgroundOpacity()
 	self.frame.bg:SetBackdropColor(0, 0, 0, PDS.Config.barBgAlpha)
 	self.frame.bg:SetBackdropBorderColor(0, 0, 0, PDS.Config.barBgAlpha)
+end
+
+-- Sets up the tooltip for the stat bar
+function StatBar:InitTooltip()
+	-- Create the tooltip
+	self.tooltip = CreateFrame("GameTooltip", "PDS_StatTooltip_" .. self.statType, UIParent, "GameTooltipTemplate")
+
+	-- Set up OnEnter script to show the tooltip
+	self.frame:SetScript("OnEnter", function()
+		-- Only show tooltip if enabled in config
+		if PDS.Config.showTooltips then
+			-- Get current stat value and rating
+			local value = PDS.Stats:GetValue(self.statType)
+			local rating = PDS.Stats:GetRating(self.statType)
+
+			-- Position the tooltip
+			self.tooltip:SetOwner(self.frame, "ANCHOR_RIGHT")
+
+			-- Show the tooltip with stat information
+			PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
+		end
+	end)
+
+	-- Set up OnLeave script to hide the tooltip
+	self.frame:SetScript("OnLeave", function()
+		self.tooltip:Hide()
+	end)
 end

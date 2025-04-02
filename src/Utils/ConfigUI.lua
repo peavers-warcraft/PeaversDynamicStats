@@ -763,6 +763,22 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
     )
     yPos = newY - 10
 
+    -- Show tooltips checkbox
+    local showTooltipsCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversShowTooltipsCheckbox",
+        "Show Enhanced Tooltips",
+        subControlIndent,
+        yPos,
+        Config.showTooltips,
+        { 1, 1, 1 },
+        function(self)
+            Config.showTooltips = self:GetChecked()
+            Config:Save()
+        end
+    )
+    yPos = newY - 10
+
     return yPos
 end
 
