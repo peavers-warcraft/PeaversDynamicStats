@@ -706,6 +706,25 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
 
     yPos = yPos - 65
 
+    -- Show stat changes checkbox
+    local showStatChangesCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversShowStatChangesCheckbox",
+        "Show Stat Value Changes",
+        subControlIndent,
+        yPos,
+        Config.showStatChanges,
+        { 1, 1, 1 },
+        function(self)
+            Config.showStatChanges = self:GetChecked()
+            Config:Save()
+            if PDS.Core and PDS.Core.CreateBars then
+                PDS.Core:CreateBars()
+            end
+        end
+    )
+    yPos = newY - 10
+
     return yPos
 end
 

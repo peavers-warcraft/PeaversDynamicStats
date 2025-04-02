@@ -17,6 +17,17 @@ function Utils:FormatPercent(value)
     return string.format("%.2f%%", value or 0)
 end
 
+-- Format a change value with a + or - sign and 2 decimal places
+function Utils:FormatChange(value)
+    if value > 0 then
+        return string.format("+%.2f%%", value)
+    elseif value < 0 then
+        return string.format("%.2f%%", value)
+    else
+        return ""
+    end
+end
+
 -- Round a number to the nearest decimal place
 function Utils:Round(value, decimals)
     decimals = decimals or 0
