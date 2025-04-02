@@ -23,6 +23,7 @@ src\Stats.lua
 src\Utils\Utils.lua
 src\Utils\Config.lua
 src\Utils\ConfigUI.lua
+src\Utils\StatTooltips.lua
 
 # Core
 src\Core\Core.lua
