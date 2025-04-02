@@ -20,6 +20,7 @@ function UI:CreateSectionHeader(parent, text, x, y)
 	header:SetText(text)
 	header:SetTextColor(1, 0.82, 0) -- Gold color only for headers
 	header:SetWidth(400)
+	header:SetJustifyH("LEFT") -- Explicitly set left alignment
 	return header, y - 25 -- Return new y position
 end
 
@@ -177,7 +178,15 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 			if restore then
 				newR, newG, newB = unpack(restore)
 			else
-				newR, newG, newB = ColorPickerFrame:GetColorRGB()
+				-- Handle different API versions for getting color
+				if ColorPickerFrame.GetColorRGB then
+					newR, newG, newB = ColorPickerFrame:GetColorRGB()
+				elseif ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.GetColorRGB then
+					newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
+				else
+					-- Fallback to stored values if API methods aren't available
+					newR, newG, newB = colorFrame:GetBackdropColor()
+				end
 			end
 
 			colorFrame:SetBackdropColor(newR, newG, newB)
@@ -189,17 +198,36 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 
 		local r, g, b = colorFrame:GetBackdropColor()
 
+		-- Set both func and swatchFunc for compatibility with different API versions
 		ColorPickerFrame.func = ColorCallback
+		ColorPickerFrame.swatchFunc = ColorCallback
 		ColorPickerFrame.cancelFunc = ColorCallback
 		ColorPickerFrame.opacityFunc = nil
 		ColorPickerFrame.hasOpacity = false
 		ColorPickerFrame.previousValues = { r, g, b }
-		ColorPickerFrame:SetColorRGB(r, g, b)
+
+		-- Handle different API versions for setting color
+		if ColorPickerFrame.SetColorRGB then
+			ColorPickerFrame:SetColorRGB(r, g, b)
+		elseif ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
+			ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
+		end
+
 		ColorPickerFrame:Hide() -- Hide first to trigger OnShow handler
 		ColorPickerFrame:Show()
 	end)
 
 	return colorFrame, colorLabel, y - 25
+end
+
+-- Creates a horizontal separator line
+function UI:CreateSeparator(parent, x, y, width)
+	local separator = parent:CreateTexture(nil, "ARTWORK")
+	separator:SetPoint("TOPLEFT", x, y)
+	separator:SetSize(width or 450, 1)
+	separator:SetColorTexture(0.5, 0.5, 0.5, 0.5) -- Semi-transparent gray line
+
+	return separator, y - 15 -- Return new y position with spacing
 end
 
 -- Set up OOP-like behavior
