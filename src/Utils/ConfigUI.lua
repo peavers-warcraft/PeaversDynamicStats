@@ -50,8 +50,9 @@ function ConfigUI:InitializeOptions()
     return panel
 end
 
--- Creates stat checkboxes
+-- Creates individual stat sections with configuration options
 function ConfigUI:CreateStatOptions(content, yPos)
+    -- Function to create a show/hide checkbox for a stat
     local function CreateStatCheckbox(statType, y)
         local onClick = function(self)
             Config.showStats[statType] = self:GetChecked()
@@ -64,8 +65,8 @@ function ConfigUI:CreateStatOptions(content, yPos)
         return UI:CreateCheckbox(
             content,
             "PeaversStat" .. statType .. "Checkbox",
-            PDS.Stats:GetName(statType),
-            25,
+            "Show " .. PDS.Stats:GetName(statType),
+            40,
             y,
             Config.showStats[statType],
             { 1, 1, 1 },
@@ -73,17 +74,57 @@ function ConfigUI:CreateStatOptions(content, yPos)
         )
     end
 
-    -- General section
-    local _, newY = UI:CreateSectionHeader(content, "General", 25, yPos)
-    yPos = newY
-
-    -- Stat checkboxes
+    -- Create a section for each stat
     for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+        -- Create section header with stat name
+        local _, newY = UI:CreateSectionHeader(content, PDS.Stats:GetName(statType), 25, yPos)
+        yPos = newY
+
+        -- Show/hide checkbox
         local _, newY = CreateStatCheckbox(statType, yPos)
         yPos = newY
+
+        -- Color picker
+        local r, g, b
+        -- Use custom color if available, otherwise use default
+        if Config.customColors[statType] then
+            local color = Config.customColors[statType]
+            r, g, b = color.r, color.g, color.b
+        else
+            r, g, b = PDS.Stats:GetColor(statType)
+        end
+        local colorLabel, newY = UI:CreateLabel(content, "Bar Color:", 40, yPos)
+        yPos = newY
+
+        local colorPicker, _, newY = UI:CreateColorPicker(
+            content,
+            "PeaversStat" .. statType .. "ColorPicker",
+            "Change color",
+            60,
+            yPos,
+            {r = r, g = g, b = b},
+            function(newR, newG, newB)
+                -- Save the custom color
+                Config.customColors[statType] = {r = newR, g = newG, b = newB}
+                Config:Save()
+
+                -- Update all bars if they exist
+                if PDS.Core and PDS.Core.bars then
+                    for _, bar in ipairs(PDS.Core.bars) do
+                        if bar.statType == statType then
+                            bar:UpdateColor()
+                        end
+                    end
+                end
+            end
+        )
+        yPos = newY
+
+        -- Add some extra spacing between stat sections
+        yPos = yPos - 15
     end
 
-    return yPos - 25 -- Extra spacing between sections
+    return yPos - 10 -- Extra spacing after all stat sections
 end
 
 -- Creates bar settings

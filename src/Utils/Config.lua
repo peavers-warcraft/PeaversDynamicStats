@@ -28,7 +28,8 @@ PDS.Config = {
 	combatUpdateInterval = 0.2,
 	showOnLogin = true,
 	showTitleBar = true,
-	showStats = {}
+	showStats = {},
+	customColors = {}
 }
 
 -- Initialize showStats with values from Stats.STAT_TYPES
@@ -59,6 +60,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.barSpacing = self.barSpacing
 	PeaversDynamicStatsDB.showTitleBar = self.showTitleBar
 	PeaversDynamicStatsDB.lockPosition = self.lockPosition
+	PeaversDynamicStatsDB.customColors = self.customColors
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -111,6 +113,9 @@ function Config:Load()
 	end
 	if PeaversDynamicStatsDB.lockPosition ~= nil then
 		self.lockPosition = PeaversDynamicStatsDB.lockPosition
+	end
+	if PeaversDynamicStatsDB.customColors then
+		self.customColors = PeaversDynamicStatsDB.customColors
 	end
 end
 
