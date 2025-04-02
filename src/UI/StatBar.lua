@@ -68,11 +68,16 @@ function StatBar:CreateFrame(parent)
 	bar:SetMinMaxValues(0, 100)
 	bar:SetValue(0)
 
-	-- IMPORTANT: Set the status bar texture with a specific texture that's guaranteed to work
-	local texture = bar:CreateTexture(nil, "ARTWORK")
-	texture:SetAllPoints()
-	texture:SetColorTexture(1, 1, 1, 1) -- White texture that will take color
-	bar:SetStatusBarTexture(texture)
+	-- Set the status bar texture using the configured texture if available
+	if PDS.Config.barTexture then
+		bar:SetStatusBarTexture(PDS.Config.barTexture)
+	else
+		-- Fallback to a plain white texture if no texture path is configured
+		local texture = bar:CreateTexture(nil, "ARTWORK")
+		texture:SetAllPoints()
+		texture:SetColorTexture(1, 1, 1, 1) -- White texture that will take color
+		bar:SetStatusBarTexture(texture)
+	end
 
 	-- Set initial color
 	bar:SetStatusBarColor(0.8, 0.8, 0.8, 1)
@@ -200,11 +205,16 @@ end
 
 -- Updates the texture used for the status bar
 function StatBar:UpdateTexture()
-	-- Create a fresh texture and apply it
-	local texture = self.frame.bar:CreateTexture(nil, "ARTWORK")
-	texture:SetAllPoints()
-	texture:SetColorTexture(1, 1, 1, 1)
-	self.frame.bar:SetStatusBarTexture(texture)
+	-- Use the configured texture path if available
+	if PDS.Config.barTexture then
+		self.frame.bar:SetStatusBarTexture(PDS.Config.barTexture)
+	else
+		-- Fallback to a plain white texture if no texture path is configured
+		local texture = self.frame.bar:CreateTexture(nil, "ARTWORK")
+		texture:SetAllPoints()
+		texture:SetColorTexture(1, 1, 1, 1)
+		self.frame.bar:SetStatusBarTexture(texture)
+	end
 
 	-- Reapply color after updating texture
 	self:UpdateColor()
