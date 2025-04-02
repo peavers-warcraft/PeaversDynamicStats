@@ -147,6 +147,32 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
         colorText:SetPoint("LEFT", colorPicker, "RIGHT", 10, 0)
         colorText:SetText("Change color")
 
+        -- Create reset button
+        local resetButton = CreateFrame("Button", "PeaversStat" .. statType .. "ResetButton", colorContainer, "UIPanelButtonTemplate")
+        resetButton:SetSize(80, 20)
+        resetButton:SetPoint("LEFT", colorText, "RIGHT", 15, 0)
+        resetButton:SetText("Reset")
+        resetButton:SetScript("OnClick", function()
+            -- Remove custom color
+            Config.customColors[statType] = nil
+            Config:Save()
+
+            -- Get default color
+            local defaultR, defaultG, defaultB = PDS.Stats:GetColor(statType)
+
+            -- Update color picker appearance
+            colorPicker:SetBackdropColor(defaultR, defaultG, defaultB)
+
+            -- Update all bars if they exist
+            if PDS.Core and PDS.Core.bars then
+                for _, bar in ipairs(PDS.Core.bars) do
+                    if bar.statType == statType then
+                        bar:UpdateColor()
+                    end
+                end
+            end
+        end)
+
         colorPicker:SetScript("OnClick", function()
             local function ColorCallback(restore)
                 local newR, newG, newB
