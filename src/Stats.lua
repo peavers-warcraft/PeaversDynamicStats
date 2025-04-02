@@ -1,6 +1,40 @@
 local _, PDS = ...
 local Stats = PDS.Stats
 
+-- Combat Rating constants
+Stats.COMBAT_RATINGS = {
+    CR_WEAPON_SKILL = 1,
+    CR_DEFENSE_SKILL = 2,
+    CR_DODGE = 3,
+    CR_PARRY = 4,
+    CR_BLOCK = 5,
+    CR_HIT_MELEE = 6,
+    CR_HIT_RANGED = 7,
+    CR_HIT_SPELL = 8,
+    CR_CRIT_MELEE = 9,
+    CR_CRIT_RANGED = 10,
+    CR_CRIT_SPELL = 11,
+    CR_HIT_TAKEN_MELEE = 12,
+    CR_HIT_TAKEN_RANGED = 13,
+    CR_HIT_TAKEN_SPELL = 14,
+    CR_RESILIENCE_CRIT_TAKEN = 15,
+    CR_RESILIENCE_PLAYER_DAMAGE_TAKEN = 16,
+    CR_CRIT_TAKEN_SPELL = 17,
+    CR_HASTE_MELEE = 18,
+    CR_HASTE_RANGED = 19,
+    CR_HASTE_SPELL = 20,
+    CR_WEAPON_SKILL_MAINHAND = 21,
+    CR_WEAPON_SKILL_OFFHAND = 22,
+    CR_WEAPON_SKILL_RANGED = 23,
+    CR_EXPERTISE = 24,
+    CR_ARMOR_PENETRATION = 25,
+    CR_MASTERY = 26,
+    CR_VERSATILITY_DAMAGE_DONE = 29,
+    CR_VERSATILITY_DAMAGE_TAKEN = 30,
+    CR_SPEED = 31,
+    CR_LIFESTEAL = 32
+}
+
 -- Stat types
 Stats.STAT_TYPES = {
     HASTE = "HASTE",
@@ -56,9 +90,9 @@ function Stats:GetValue(statType)
     elseif statType == Stats.STAT_TYPES.MASTERY then
         value = GetMasteryEffect()
     elseif statType == Stats.STAT_TYPES.VERSATILITY then
-        value = GetCombatRatingBonus(CR_VERSATILITY_DAMAGE_DONE)
+        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
     elseif statType == Stats.STAT_TYPES.SPEED then
-        value = GetCombatRatingBonus(CR_SPEED)
+        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_SPEED)
     elseif statType == Stats.STAT_TYPES.LEECH then
         value = GetLifesteal()
     elseif statType == Stats.STAT_TYPES.AVOIDANCE then
@@ -66,6 +100,38 @@ function Stats:GetValue(statType)
     end
 
     return value
+end
+
+-- Returns the raw combat rating value for the specified stat type
+function Stats:GetRating(statType)
+    local rating = 0
+
+    if statType == Stats.STAT_TYPES.HASTE then
+        -- Haste can be from melee, ranged, or spell, use the highest
+        local hasteRatingMelee = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+        local hasteRatingRanged = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_RANGED)
+        local hasteRatingSpell = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_SPELL)
+        rating = math.max(hasteRatingMelee, hasteRatingRanged, hasteRatingSpell)
+    elseif statType == Stats.STAT_TYPES.CRIT then
+        -- Crit can be from melee, ranged, or spell, use the highest
+        local critRatingMelee = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+        local critRatingRanged = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_RANGED)
+        local critRatingSpell = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_SPELL)
+        rating = math.max(critRatingMelee, critRatingRanged, critRatingSpell)
+    elseif statType == Stats.STAT_TYPES.MASTERY then
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
+    elseif statType == Stats.STAT_TYPES.VERSATILITY then
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+    elseif statType == Stats.STAT_TYPES.SPEED then
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
+    elseif statType == Stats.STAT_TYPES.LEECH then
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
+    elseif statType == Stats.STAT_TYPES.AVOIDANCE then
+        -- Avoidance rating is not directly accessible, return 0 to avoid errors
+        rating = 0
+    end
+
+    return rating
 end
 
 -- Returns the color for a specific stat type
