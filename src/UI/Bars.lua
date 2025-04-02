@@ -24,7 +24,12 @@ function Core:CreateBars()
 
 			table.insert(self.bars, bar)
 
-			yOffset = yOffset - (PDS.Config.barHeight + PDS.Config.barSpacing)
+			-- When barSpacing is 0, position bars exactly barHeight pixels apart
+			if PDS.Config.barSpacing == 0 then
+				yOffset = yOffset - PDS.Config.barHeight
+			else
+				yOffset = yOffset - (PDS.Config.barHeight + PDS.Config.barSpacing)
+			end
 		end
 	end
 

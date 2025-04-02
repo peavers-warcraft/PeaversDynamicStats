@@ -18,7 +18,7 @@ function Core:Initialize()
 		tile = true, tileSize = 16, edgeSize = 1,
 	})
 	self.frame:SetBackdropColor(PDS.Config.bgColor.r, PDS.Config.bgColor.g, PDS.Config.bgColor.b, PDS.Config.bgAlpha)
-	self.frame:SetBackdropBorderColor(0, 0, 0, 1)
+	self.frame:SetBackdropBorderColor(0, 0, 0, PDS.Config.bgAlpha)
 
 	local titleBar = PDS.TitleBar:Create(self.frame)
 	self.titleBar = titleBar
@@ -61,7 +61,13 @@ end
 -- Recalculates frame height based on number of bars and title bar visibility
 function Core:AdjustFrameHeight()
 	local barCount = #self.bars
-	local contentHeight = barCount * (PDS.Config.barHeight + PDS.Config.barSpacing) - PDS.Config.barSpacing
+	local contentHeight
+	-- When barSpacing is 0, calculate height without spacing
+	if PDS.Config.barSpacing == 0 then
+		contentHeight = barCount * PDS.Config.barHeight
+	else
+		contentHeight = barCount * (PDS.Config.barHeight + PDS.Config.barSpacing) - PDS.Config.barSpacing
+	end
 
 	if contentHeight == 0 then
 		if PDS.Config.showTitleBar then
