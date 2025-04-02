@@ -59,9 +59,16 @@ function Core:UpdateAllBars()
 		end
 
 		if value ~= self.previousValues[statKey] then
-			bar:Update(value)
+			-- Calculate the change in value
+			local change = value - self.previousValues[statKey]
+
+			-- Update the bar with the new value and change
+			bar:Update(value, nil, change)
+
 			-- Ensure the color is properly applied when updating
 			bar:UpdateColor()
+
+			-- Store the new value for next comparison
 			self.previousValues[statKey] = value
 		end
 	end

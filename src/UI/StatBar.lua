@@ -22,6 +22,7 @@ function StatBar:New(parent, name, statType)
 	obj:UpdateColor()
 
 	obj:InitAnimationSystem()
+	obj:InitChangeTextFadeAnimation()
 
 	return obj
 end
@@ -41,6 +42,28 @@ function StatBar:InitAnimationSystem()
 		local currentValue = startValue + (changeValue * progress)
 
 		self.frame.bar:SetValue(currentValue)
+	end)
+end
+
+-- Sets up the fade animation for the change indicator text
+function StatBar:InitChangeTextFadeAnimation()
+	-- Create animation group for the change text
+	self.changeTextAnimGroup = self.frame.changeText:CreateAnimationGroup()
+
+	-- Create alpha animation to fade out the text
+	-- This animation will gradually reduce the opacity of the text from 100% to 0%
+	self.changeTextFadeAnim = self.changeTextAnimGroup:CreateAnimation("Alpha")
+	self.changeTextFadeAnim:SetFromAlpha(1.0)  -- Start fully visible
+	self.changeTextFadeAnim:SetToAlpha(0.0)    -- End completely transparent
+	self.changeTextFadeAnim:SetDuration(3.0)   -- Fade out over 3 seconds
+	self.changeTextFadeAnim:SetStartDelay(1.0) -- Start fading after 1 second display
+	self.changeTextFadeAnim:SetSmoothing("OUT") -- Ease out for smoother appearance
+
+	-- Hide the text when the animation completes to ensure it's not taking up space
+	-- and reset the alpha for the next time it needs to be displayed
+	self.changeTextAnimGroup:SetScript("OnFinished", function()
+		self.frame.changeText:SetText("")      -- Clear the text
+		self.frame.changeText:SetAlpha(1.0)    -- Reset alpha for next display
 	end)
 end
 
@@ -100,11 +123,20 @@ function StatBar:CreateFrame(parent)
 	nameText:SetTextColor(1, 1, 1)
 	frame.nameText = nameText
 
+	-- Create change indicator text
+	local changeText = bar:CreateFontString(nil, "OVERLAY")
+	changeText:SetPoint("CENTER", bar, "CENTER", 0, 0)
+	changeText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+	changeText:SetJustifyH("CENTER")
+	changeText:SetText("")
+	changeText:SetTextColor(1, 1, 1)
+	frame.changeText = changeText
+
 	return frame
 end
 
 -- Updates the bar with a new value, using animation for smooth transitions
-function StatBar:Update(value, maxValue)
+function StatBar:Update(value, maxValue, change)
 	if value ~= self.value then
 		self.value = value or 0
 
@@ -114,6 +146,40 @@ function StatBar:Update(value, maxValue)
 		local currentText = self.frame.valueText:GetText()
 		if currentText ~= displayValue then
 			self.frame.valueText:SetText(displayValue)
+		end
+
+  -- Update change indicator if showStatChanges is enabled
+		if PDS.Config.showStatChanges and change and change ~= 0 then
+			-- If there's an existing animation playing, we need to stop it
+			-- before starting a new one to prevent visual glitches
+			if self.changeTextAnimGroup then
+				self.changeTextAnimGroup:Stop()
+			end
+
+			-- Reset alpha to full visibility for the new change display
+			self.frame.changeText:SetAlpha(1.0)
+
+			-- Format and display the change value with appropriate sign
+			local changeDisplay = PDS.Utils:FormatChange(change)
+			self.frame.changeText:SetText(changeDisplay)
+
+			-- Set color based on change direction for better visual feedback
+			if change > 0 then
+				self.frame.changeText:SetTextColor(0, 1, 0) -- Green for positive changes
+			elseif change < 0 then
+				self.frame.changeText:SetTextColor(1, 0, 0) -- Red for negative changes
+			else
+				self.frame.changeText:SetTextColor(1, 1, 1) -- White for no change (shouldn't happen)
+			end
+
+			-- Start the fade-out animation to gradually hide the change indicator
+			-- This will make the text fade out over a few seconds instead of staying static
+			if self.changeTextAnimGroup then
+				self.changeTextAnimGroup:Play()
+			end
+		else
+			-- If there's no change or changes are disabled, just clear the text
+			self.frame.changeText:SetText("")
 		end
 
 		-- Use animation if enabled, otherwise set value directly
@@ -201,6 +267,7 @@ end
 function StatBar:UpdateFont()
 	self.frame.valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	self.frame.nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+	self.frame.changeText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 end
 
 -- Updates the texture used for the status bar
