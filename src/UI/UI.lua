@@ -20,6 +20,7 @@ function UI:CreateSectionHeader(parent, text, x, y)
 	header:SetText(text)
 	header:SetTextColor(1, 0.82, 0) -- Gold color only for headers
 	header:SetWidth(400)
+	header:SetJustifyH("LEFT") -- Explicitly set left alignment
 	return header, y - 25 -- Return new y position
 end
 
