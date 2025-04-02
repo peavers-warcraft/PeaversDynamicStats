@@ -140,8 +140,16 @@ function StatBar:Update(value, maxValue, change)
 	if value ~= self.value then
 		self.value = value or 0
 
-		local displayValue = PDS.Utils:FormatPercent(self.value)
 		local percentValue = math.min(self.value, 100)
+		local displayValue = PDS.Utils:FormatPercent(self.value)
+
+		-- If showRatings is enabled, get the rating and add it to the display value
+		if PDS.Config.showRatings then
+			local rating = PDS.Stats:GetRating(self.statType)
+			if rating > 0 then
+				displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
+			end
+		end
 
 		local currentText = self.frame.valueText:GetText()
 		if currentText ~= displayValue then
