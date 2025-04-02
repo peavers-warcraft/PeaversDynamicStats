@@ -34,6 +34,7 @@ PDS.Config = {
 	customColors = {},
 	showStatChanges = true, -- Show stat value changes
 	showRatings = true, -- Show rating values
+	showTooltips = true, -- Show enhanced tooltips on hover
 }
 
 -- Initialize showStats with values from Stats.STAT_TYPES
@@ -70,6 +71,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.customColors = self.customColors
 	PeaversDynamicStatsDB.showStatChanges = self.showStatChanges
 	PeaversDynamicStatsDB.showRatings = self.showRatings
+	PeaversDynamicStatsDB.showTooltips = self.showTooltips
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -140,6 +142,9 @@ function Config:Load()
 	end
 	if PeaversDynamicStatsDB.showRatings ~= nil then
 		self.showRatings = PeaversDynamicStatsDB.showRatings
+	end
+	if PeaversDynamicStatsDB.showTooltips ~= nil then
+		self.showTooltips = PeaversDynamicStatsDB.showTooltips
 	end
 end
 
@@ -241,5 +246,10 @@ function Config:Initialize()
     -- Ensure showRatings is enabled by default
     if self.showRatings == nil then
         self.showRatings = true
+    end
+
+    -- Ensure showTooltips is enabled by default
+    if self.showTooltips == nil then
+        self.showTooltips = true
     end
 end
