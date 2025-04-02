@@ -15,7 +15,7 @@ function TitleBar:Create(parentFrame)
 	})
 
 	titleBar:SetBackdropColor(PDS.Config.bgColor.r, PDS.Config.bgColor.g, PDS.Config.bgColor.b, PDS.Config.bgAlpha)
-	titleBar:SetBackdropBorderColor(0, 0, 0, 1)
+	titleBar:SetBackdropBorderColor(0, 0, 0, PDS.Config.bgAlpha)
 
 	local title = titleBar:CreateFontString(nil, "OVERLAY")
 	title:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
