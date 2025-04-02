@@ -19,6 +19,9 @@ function Core:CreateBars()
 			local value = PDS.Stats:GetValue(statType)
 			bar:Update(value)
 
+			-- Ensure the color is properly applied
+			bar:UpdateColor()
+
 			table.insert(self.bars, bar)
 
 			yOffset = yOffset - (PDS.Config.barHeight + PDS.Config.barSpacing)
@@ -52,6 +55,8 @@ function Core:UpdateAllBars()
 
 		if value ~= self.previousValues[statKey] then
 			bar:Update(value)
+			-- Ensure the color is properly applied when updating
+			bar:UpdateColor()
 			self.previousValues[statKey] = value
 		end
 	end
