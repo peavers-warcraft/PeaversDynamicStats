@@ -58,7 +58,7 @@ function StatBar:CreateFrame(parent)
 		tile = true, edgeSize = 1,
 	})
 	bg:SetBackdropColor(0, 0, 0, PDS.Config.barBgAlpha)
-	bg:SetBackdropBorderColor(0, 0, 0, 1)
+	bg:SetBackdropBorderColor(0, 0, 0, PDS.Config.barBgAlpha)
 	frame.bg = bg
 
 	-- Create the status bar with explicit name to help with debugging
@@ -235,4 +235,5 @@ end
 -- Updates the background opacity of the bar
 function StatBar:UpdateBackgroundOpacity()
 	self.frame.bg:SetBackdropColor(0, 0, 0, PDS.Config.barBgAlpha)
+	self.frame.bg:SetBackdropBorderColor(0, 0, 0, PDS.Config.barBgAlpha)
 end

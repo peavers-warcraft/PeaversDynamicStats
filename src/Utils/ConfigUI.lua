@@ -540,6 +540,7 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
                 Config.bgColor.b,
                 Config.bgAlpha
             )
+            PDS.Core.frame:SetBackdropBorderColor(0, 0, 0, Config.bgAlpha)
             if PDS.Core.titleBar then
                 PDS.Core.titleBar:SetBackdropColor(
                     Config.bgColor.r,
@@ -547,6 +548,7 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
                     Config.bgColor.b,
                     Config.bgAlpha
                 )
+                PDS.Core.titleBar:SetBackdropBorderColor(0, 0, 0, Config.bgAlpha)
             end
         end
     end)
