@@ -1,7 +1,6 @@
--- At the beginning of Config.lua, add this check:
 local addonName, PDS = ...
 
--- Create Config namespace with default values
+-- Initialize Config namespace with default values
 PDS.Config = {
 	-- Frame settings
 	frameWidth = 250,
@@ -29,349 +28,17 @@ PDS.Config = {
 	combatUpdateInterval = 0.2,
 	showOnLogin = true,
 	showTitleBar = true,
-	showStats = {
-		HASTE = true,
-		CRIT = true,
-		MASTERY = true,
-		VERSATILITY = true
-	}
+	showStats = {}
 }
 
--- Local variables
-local Config = PDS.Config
-local UI
-
--- Initialize options panel
-function Config:InitializeOptions()
-	-- Ensure UI is loaded
-	UI = PDS.UI
-	if not UI then
-		print("ERROR: UI module not loaded. Cannot initialize options.")
-		return
-	end
-
-	local panel = CreateFrame("Frame")
-	panel.name = "PeaversDynamicStats"
-
-	-- Create scrolling content frame
-	local scrollFrame, content = UI:CreateScrollFrame(panel)
-
-	-- Start position
-	local yPos = 0
-
-	-- Title
-	local title = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	title:SetPoint("TOPLEFT", 25, yPos)
-	title:SetText("Peavers Dynamic Stats")
-	yPos = yPos - 30
-
-	-- Subtitle
-	local subtitle = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-	subtitle:SetPoint("TOPLEFT", 25, yPos)
-	subtitle:SetText("Configuration options for the dynamic stats display")
-	yPos = yPos - 40
-
-	local function CreateStatCheckbox(statKey, statName, y)
-		local onClick = function(self)
-			Config.showStats[statKey] = self:GetChecked()
-			Config:Save()
-			if PDS.Core and PDS.Core.CreateBars then
-				PDS.Core:CreateBars()
-			end
-		end
-
-		return UI:CreateCheckbox(
-			content,
-			"PeaversStat" .. statKey .. "Checkbox",
-			statName,
-			25,
-			y,
-			Config.showStats[statKey],
-			{ 1, 1, 1 },
-			onClick
-		)
-	end
-
-	-- General section
-	local _, newY = UI:CreateSectionHeader(content, "General", 25, yPos)
-	yPos = newY
-
-	-- Stat checkboxes
-	local _, newY = CreateStatCheckbox("HASTE", "Haste", yPos)
-	yPos = newY
-	local _, newY = CreateStatCheckbox("CRIT", "Critical Strike", yPos)
-	yPos = newY
-	local _, newY = CreateStatCheckbox("MASTERY", "Mastery", yPos)
-	yPos = newY
-	local _, newY = CreateStatCheckbox("VERSATILITY", "Versatility", yPos)
-	yPos = newY - 25 -- Extra spacing between sections
-
-	-- Bar Settings section
-	local _, newY = UI:CreateSectionHeader(content, "Bar Settings", 25, yPos)
-	yPos = newY
-
-	-- Bar spacing slider
-	local spacingLabel, newY = UI:CreateLabel(content, "Bar Spacing: " .. Config.barSpacing, 25, yPos)
-	yPos = newY
-
-	local spacingSlider, newY = UI:CreateSlider(
-		content, "PeaversSpacingSlider", -5, 10, 1, 25, yPos, Config.barSpacing
-	)
-	yPos = newY
-
-	spacingSlider:SetScript("OnValueChanged", function(self, value)
-		local roundedValue = math.floor(value + 0.5)
-		spacingLabel:SetText("Bar Spacing: " .. roundedValue)
-		Config.barSpacing = roundedValue
-		Config:Save()
-		if PDS.Core and PDS.Core.CreateBars then
-			PDS.Core:CreateBars()
-		end
-	end)
-
-	-- Bar height slider
-	local heightLabel, newY = UI:CreateLabel(content, "Bar Height: " .. Config.barHeight, 25, yPos)
-	yPos = newY
-
-	local heightSlider, newY = UI:CreateSlider(
-		content, "PeaversHeightSlider", 10, 40, 1, 25, yPos, Config.barHeight
-	)
-	yPos = newY
-
-	heightSlider:SetScript("OnValueChanged", function(self, value)
-		local roundedValue = math.floor(value + 0.5)
-		heightLabel:SetText("Bar Height: " .. roundedValue)
-		Config.barHeight = roundedValue
-		Config:Save()
-		if PDS.Core and PDS.Core.CreateBars then
-			PDS.Core:CreateBars()
-		end
-	end)
-
-	-- Frame width slider
-	local widthLabel, newY = UI:CreateLabel(content, "Frame Width: " .. Config.frameWidth, 25, yPos)
-	yPos = newY
-
-	local widthSlider, newY = UI:CreateSlider(
-		content, "PeaversWidthSlider", 150, 400, 10, 25, yPos, Config.frameWidth
-	)
-	yPos = newY
-
-	widthSlider:SetScript("OnValueChanged", function(self, value)
-		local roundedValue = math.floor(value / 10 + 0.5) * 10
-		widthLabel:SetText("Frame Width: " .. roundedValue)
-		Config.frameWidth = roundedValue
-		Config.barWidth = roundedValue - 20
-		Config:Save()
-		if PDS.Core and PDS.Core.frame then
-			PDS.Core.frame:SetWidth(roundedValue)
-			if PDS.Core.bars then
-				for _, bar in ipairs(PDS.Core.bars) do
-					bar:UpdateWidth()
-				end
-			end
-		end
-	end)
-
-	yPos = yPos - 10 -- Extra spacing between sections
-
-	-- Bar background opacity slider
-	local barBgOpacityLabel, newY = UI:CreateLabel(
-			content,
-			"Bar Background Opacity: " .. math.floor(Config.barBgAlpha * 100) .. "%",
-			25,
-			yPos
-	)
-	yPos = newY
-
-	local barBgOpacitySlider, newY = UI:CreateSlider(
-			content, "PeaversBarBgOpacitySlider", 0, 1, 0.05, 25, yPos, Config.barBgAlpha
-	)
-	yPos = newY
-
-	barBgOpacitySlider:SetScript("OnValueChanged", function(self, value)
-		local roundedValue = math.floor(value * 20 + 0.5) / 20
-		barBgOpacityLabel:SetText("Bar Background Opacity: " .. math.floor(roundedValue * 100) .. "%")
-		Config.barBgAlpha = roundedValue
-		Config:Save()
-		if PDS.Core and PDS.Core.bars then
-			for _, bar in ipairs(PDS.Core.bars) do
-				bar:UpdateBackgroundOpacity()
-			end
-		end
-	end)
-	
-
-	-- Visual Settings section
-	local _, newY = UI:CreateSectionHeader(content, "Visual Settings", 25, yPos)
-	yPos = newY
-
-	-- Group 1: Layout controls
-	local _, newY = UI:CreateLabel(content, "Layout Options:", 30, yPos, "GameFontNormalSmall")
-	yPos = newY
-
-	-- Show title bar checkbox
-	local titleBarCheckbox, newY = UI:CreateCheckbox(
-		content,
-		"PeaversTitleBarCheckbox",
-		"Show Title Bar",
-		40,
-		yPos,
-		Config.showTitleBar,
-		{ 1, 1, 1 },
-		function(self)
-			Config.showTitleBar = self:GetChecked()
-			Config:Save()
-			if PDS.Core then
-				PDS.Core:UpdateTitleBarVisibility()
-			end
-		end
-	)
-	yPos = newY
-
-	-- Lock position checkbox
-	local lockPositionCheckbox, newY = UI:CreateCheckbox(
-		content,
-		"PeaversLockPositionCheckbox",
-		"Lock Frame Position",
-		40,
-		yPos,
-		Config.lockPosition,
-		{ 1, 1, 1 },
-		function(self)
-			Config.lockPosition = self:GetChecked()
-			Config:Save()
-			if PDS.Core then
-				PDS.Core:UpdateFrameLock()
-			end
-		end
-	)
-	yPos = newY - 10 -- Extra spacing between control groups
-
-	-- Group 2: Background settings
-	local _, newY = UI:CreateLabel(content, "Background:", 30, yPos, "GameFontNormalSmall")
-	yPos = newY
-
-	-- Background opacity slider
-	local opacityLabel, newY = UI:CreateLabel(
-		content,
-		"Opacity: " .. math.floor(Config.bgAlpha * 100) .. "%",
-		40,
-		yPos
-	)
-	yPos = newY
-
-	local opacitySlider, newY = UI:CreateSlider(
-		content, "PeaversOpacitySlider", 0, 1, 0.05, 40, yPos, Config.bgAlpha
-	)
-	yPos = newY
-
-	opacitySlider:SetScript("OnValueChanged", function(self, value)
-		local roundedValue = math.floor(value * 20 + 0.5) / 20
-		opacityLabel:SetText("Opacity: " .. math.floor(roundedValue * 100) .. "%")
-		Config.bgAlpha = roundedValue
-		Config:Save()
-		if PDS.Core and PDS.Core.frame then
-			PDS.Core.frame:SetBackdropColor(
-				Config.bgColor.r,
-				Config.bgColor.g,
-				Config.bgColor.b,
-				Config.bgAlpha
-			)
-			if PDS.Core.titleBar then
-				PDS.Core.titleBar:SetBackdropColor(
-					Config.bgColor.r,
-					Config.bgColor.g,
-					Config.bgColor.b,
-					Config.bgAlpha
-				)
-			end
-		end
-	end)
-	yPos = newY - 10 -- Extra spacing between control groups
-
-	-- Group 3: Font selection
-	local _, newY = UI:CreateLabel(content, "Text Style:", 30, yPos, "GameFontNormalSmall")
-	yPos = newY
-
-	local fontLabel, newY = UI:CreateLabel(content, "Font", 40, yPos)
-	yPos = newY
-
-	local fonts = self:GetFonts()
-	local currentFont = fonts[self.fontFace] or "Default"
-
-	local fontDropdown, newY = UI:CreateDropdown(
-		content, "PeaversFontDropdown", 40, yPos, 345, currentFont
-	)
-	yPos = newY
-
-	UIDropDownMenu_Initialize(fontDropdown, function(self, level)
-		local info = UIDropDownMenu_CreateInfo()
-		for path, name in pairs(fonts) do
-			info.text = name
-			info.checked = (path == Config.fontFace)
-			info.func = function()
-				Config.fontFace = path
-				UIDropDownMenu_SetText(fontDropdown, name)
-				Config:Save()
-				if PDS.Core and PDS.Core.CreateBars then
-					PDS.Core:CreateBars()
-				end
-			end
-			UIDropDownMenu_AddButton(info)
-		end
-	end)
-	yPos = newY - 10 -- Extra spacing between control groups
-
-	-- Group 4: Bar texture
-	local _, newY = UI:CreateLabel(content, "Bar Appearance:", 30, yPos, "GameFontNormalSmall")
-	yPos = newY
-
-	local textureLabel, newY = UI:CreateLabel(content, "Bar Texture", 40, yPos)
-	yPos = newY
-
-	local textures = self:GetBarTextures()
-	local currentTexture = textures[self.barTexture] or "Default"
-
-	local textureDropdown, newY = UI:CreateDropdown(
-		content, "PeaversTextureDropdown", 40, yPos, 345, currentTexture
-	)
-	yPos = newY
-
-	UIDropDownMenu_Initialize(textureDropdown, function(self, level)
-		local info = UIDropDownMenu_CreateInfo()
-		for path, name in pairs(textures) do
-			info.text = name
-			info.checked = (path == Config.barTexture)
-			info.func = function()
-				Config.barTexture = path
-				UIDropDownMenu_SetText(textureDropdown, name)
-				Config:Save()
-				if PDS.Core and PDS.Core.bars then
-					for _, bar in ipairs(PDS.Core.bars) do
-						bar:UpdateTexture()
-					end
-				end
-			end
-			UIDropDownMenu_AddButton(info)
-		end
-	end)
-
-	-- Update content height based on the last element position
-	content:SetHeight(math.abs(yPos) + 50)
-
-	-- Register with the Interface Options
-	if Settings and Settings.RegisterCanvasLayoutCategory then
-		PDS.Config.categoryID = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
-		Settings.RegisterAddOnCategory(PDS.Config.categoryID)
-	else
-		InterfaceOptions_AddCategory(panel)
-	end
-
-	return panel
+-- Initialize showStats with values from Stats.STAT_TYPES
+for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+	PDS.Config.showStats[statType] = true
 end
 
--- Save configuration
+local Config = PDS.Config
+
+-- Saves all configuration values to the SavedVariables database
 function Config:Save()
 	if not PeaversDynamicStatsDB then
 		PeaversDynamicStatsDB = {}
@@ -394,7 +61,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.lockPosition = self.lockPosition
 end
 
--- Load configuration
+-- Loads configuration values from the SavedVariables database
 function Config:Load()
 	if not PeaversDynamicStatsDB then
 		return
@@ -447,7 +114,7 @@ function Config:Load()
 	end
 end
 
--- Function to get available fonts in alphabetical order
+-- Returns a sorted table of available fonts, including those from LibSharedMedia
 function Config:GetFonts()
 	local fonts = {
 		["Fonts\\ARIALN.TTF"] = "Arial Narrow",
@@ -456,7 +123,6 @@ function Config:GetFonts()
 		["Fonts\\SKURRI.TTF"] = "Skurri"
 	}
 
-	-- Check for SharedMedia
 	if LibStub and LibStub:GetLibrary("LibSharedMedia-3.0", true) then
 		local LSM = LibStub:GetLibrary("LibSharedMedia-3.0")
 		if LSM then
@@ -466,7 +132,6 @@ function Config:GetFonts()
 		end
 	end
 
-	-- Sort the fonts table by display name
 	local sortedFonts = {}
 	for path, name in pairs(fonts) do
 		table.insert(sortedFonts, { path = path, name = name })
@@ -476,7 +141,6 @@ function Config:GetFonts()
 		return a.name < b.name
 	end)
 
-	-- Rebuild the fonts table
 	local result = {}
 	for _, font in ipairs(sortedFonts) do
 		result[font.path] = font.name
@@ -485,7 +149,7 @@ function Config:GetFonts()
 	return result
 end
 
--- Function to get available bar textures in alphabetical order
+-- Returns a sorted table of available statusbar textures from various sources
 function Config:GetBarTextures()
 	local textures = {
 		["Interface\\TargetingFrame\\UI-StatusBar"] = "Default",
@@ -494,18 +158,15 @@ function Config:GetBarTextures()
 		["Interface\\RaidFrame\\Raid-Bar-Hp-Fill"] = "Raid"
 	}
 
-	-- Check for SharedMedia which is the standard library for shared textures
 	if LibStub and LibStub:GetLibrary("LibSharedMedia-3.0", true) then
 		local LSM = LibStub:GetLibrary("LibSharedMedia-3.0")
 		if LSM then
-			-- Properly iterate through all statusbar textures
 			for name, path in pairs(LSM:HashTable("statusbar")) do
 				textures[path] = name
 			end
 		end
 	end
 
-	-- Check if Details! is loaded and add its textures
 	if _G.Details and _G.Details.statusbar_info then
 		for i, textureTable in ipairs(_G.Details.statusbar_info) do
 			if textureTable.file and textureTable.name then
@@ -514,7 +175,6 @@ function Config:GetBarTextures()
 		end
 	end
 
-	-- Sort the textures table by display name
 	local sortedTextures = {}
 	for path, name in pairs(textures) do
 		table.insert(sortedTextures, { path = path, name = name })
@@ -524,7 +184,6 @@ function Config:GetBarTextures()
 		return a.name < b.name
 	end)
 
-	-- Rebuild the textures table
 	local result = {}
 	for _, texture in ipairs(sortedTextures) do
 		result[texture.path] = texture.name
@@ -533,14 +192,15 @@ function Config:GetBarTextures()
 	return result
 end
 
--- Function to open settings
-function Config:OpenOptions()
-	if not self.optionsPanel then
-		self.optionsPanel = self:InitializeOptions()
-	end
-end
+-- Initialize the configuration when the addon loads
+function Config:Initialize()
+    -- Load saved configuration
+    self:Load()
 
--- Slash command handler
-PDS.Config.OpenOptionsCommand = function()
-	Config:OpenOptions()
+    -- Ensure all required stats are in the showStats table
+    for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+        if self.showStats[statType] == nil then
+            self.showStats[statType] = true
+        end
+    end
 end
