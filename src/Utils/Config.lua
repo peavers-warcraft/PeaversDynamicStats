@@ -30,7 +30,8 @@ PDS.Config = {
 	showOnLogin = true,
 	showTitleBar = true,
 	showStats = {},
-	customColors = {}
+	customColors = {},
+	showStatChanges = true, -- Show stat value changes
 }
 
 -- Initialize showStats with values from Stats.STAT_TYPES
@@ -64,6 +65,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.showTitleBar = self.showTitleBar
 	PeaversDynamicStatsDB.lockPosition = self.lockPosition
 	PeaversDynamicStatsDB.customColors = self.customColors
+	PeaversDynamicStatsDB.showStatChanges = self.showStatChanges
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -125,6 +127,9 @@ function Config:Load()
 	end
 	if PeaversDynamicStatsDB.customColors then
 		self.customColors = PeaversDynamicStatsDB.customColors
+	end
+	if PeaversDynamicStatsDB.showStatChanges ~= nil then
+		self.showStatChanges = PeaversDynamicStatsDB.showStatChanges
 	end
 end
 
@@ -216,5 +221,10 @@ function Config:Initialize()
         if self.showStats[statType] == nil then
             self.showStats[statType] = true
         end
+    end
+
+    -- Ensure showStatChanges is enabled by default
+    if self.showStatChanges == nil then
+        self.showStatChanges = true
     end
 end
