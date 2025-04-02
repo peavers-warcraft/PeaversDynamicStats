@@ -725,6 +725,25 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
     )
     yPos = newY - 10
 
+    -- Show ratings checkbox
+    local showRatingsCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversShowRatingsCheckbox",
+        "Show Rating Values",
+        subControlIndent,
+        yPos,
+        Config.showRatings,
+        { 1, 1, 1 },
+        function(self)
+            Config.showRatings = self:GetChecked()
+            Config:Save()
+            if PDS.Core and PDS.Core.CreateBars then
+                PDS.Core:CreateBars()
+            end
+        end
+    )
+    yPos = newY - 10
+
     return yPos
 end
 

@@ -32,6 +32,7 @@ PDS.Config = {
 	showStats = {},
 	customColors = {},
 	showStatChanges = true, -- Show stat value changes
+	showRatings = true, -- Show rating values
 }
 
 -- Initialize showStats with values from Stats.STAT_TYPES
@@ -66,6 +67,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.lockPosition = self.lockPosition
 	PeaversDynamicStatsDB.customColors = self.customColors
 	PeaversDynamicStatsDB.showStatChanges = self.showStatChanges
+	PeaversDynamicStatsDB.showRatings = self.showRatings
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -130,6 +132,9 @@ function Config:Load()
 	end
 	if PeaversDynamicStatsDB.showStatChanges ~= nil then
 		self.showStatChanges = PeaversDynamicStatsDB.showStatChanges
+	end
+	if PeaversDynamicStatsDB.showRatings ~= nil then
+		self.showRatings = PeaversDynamicStatsDB.showRatings
 	end
 end
 
@@ -226,5 +231,10 @@ function Config:Initialize()
     -- Ensure showStatChanges is enabled by default
     if self.showStatChanges == nil then
         self.showStatChanges = true
+    end
+
+    -- Ensure showRatings is enabled by default
+    if self.showRatings == nil then
+        self.showRatings = true
     end
 end
