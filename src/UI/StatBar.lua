@@ -113,6 +113,11 @@ function StatBar:CreateFrame(parent)
 	valueText:SetJustifyH("RIGHT")
 	valueText:SetText("0")
 	valueText:SetTextColor(1, 1, 1)
+	if PDS.Config.fontShadow then
+		valueText:SetShadowOffset(1, -1)
+	else
+		valueText:SetShadowOffset(0, 0)
+	end
 	frame.valueText = valueText
 
 	local nameText = bar:CreateFontString(nil, "OVERLAY")
@@ -121,6 +126,11 @@ function StatBar:CreateFrame(parent)
 	nameText:SetJustifyH("LEFT")
 	nameText:SetText(self.name)
 	nameText:SetTextColor(1, 1, 1)
+	if PDS.Config.fontShadow then
+		nameText:SetShadowOffset(1, -1)
+	else
+		nameText:SetShadowOffset(0, 0)
+	end
 	frame.nameText = nameText
 
 	-- Create change indicator text
@@ -130,6 +140,11 @@ function StatBar:CreateFrame(parent)
 	changeText:SetJustifyH("CENTER")
 	changeText:SetText("")
 	changeText:SetTextColor(1, 1, 1)
+	if PDS.Config.fontShadow then
+		changeText:SetShadowOffset(1, -1)
+	else
+		changeText:SetShadowOffset(0, 0)
+	end
 	frame.changeText = changeText
 
 	return frame
@@ -276,6 +291,17 @@ function StatBar:UpdateFont()
 	self.frame.valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	self.frame.nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	self.frame.changeText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+
+	-- Apply shadow if enabled
+	if PDS.Config.fontShadow then
+		self.frame.valueText:SetShadowOffset(1, -1)
+		self.frame.nameText:SetShadowOffset(1, -1)
+		self.frame.changeText:SetShadowOffset(1, -1)
+	else
+		self.frame.valueText:SetShadowOffset(0, 0)
+		self.frame.nameText:SetShadowOffset(0, 0)
+		self.frame.changeText:SetShadowOffset(0, 0)
+	end
 end
 
 -- Updates the texture used for the status bar

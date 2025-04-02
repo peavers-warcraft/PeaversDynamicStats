@@ -619,6 +619,25 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
     )
     yPos = newY - 10
 
+    -- Font shadow checkbox
+    local shadowCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversFontShadowCheckbox",
+        "Font Shadow",
+        subControlIndent,
+        yPos,
+        Config.fontShadow,
+        { 1, 1, 1 },
+        function(self)
+            Config.fontShadow = self:GetChecked()
+            Config:Save()
+            if PDS.Core and PDS.Core.CreateBars then
+                PDS.Core:CreateBars()
+            end
+        end
+    )
+    yPos = newY - 10
+
     -- Font size slider
     local fontSizeContainer = CreateFrame("Frame", nil, content)
     fontSizeContainer:SetSize(400, 50)

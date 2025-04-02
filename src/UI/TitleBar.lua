@@ -22,6 +22,11 @@ function TitleBar:Create(parentFrame)
 	title:SetPoint("LEFT", titleBar, "LEFT", 5, 0)
 	title:SetText("Peavers Dynamic Stats")
 	title:SetTextColor(1, 1, 1)
+	if PDS.Config.fontShadow then
+		title:SetShadowOffset(1, -1)
+	else
+		title:SetShadowOffset(0, 0)
+	end
 
 	local verticalLine = titleBar:CreateTexture(nil, "ARTWORK")
 	verticalLine:SetSize(1, 16)
@@ -33,6 +38,11 @@ function TitleBar:Create(parentFrame)
 	subtitle:SetPoint("LEFT", verticalLine, "RIGHT", 5, 0)
 	subtitle:SetText("v" .. (PDS.version or "1.0.5"))
 	subtitle:SetTextColor(0.8, 0.8, 0.8)
+	if PDS.Config.fontShadow then
+		subtitle:SetShadowOffset(1, -1)
+	else
+		subtitle:SetShadowOffset(0, 0)
+	end
 
 	return titleBar
 end
