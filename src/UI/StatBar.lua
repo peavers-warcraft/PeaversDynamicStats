@@ -86,7 +86,7 @@ function StatBar:CreateFrame(parent)
 	frame.bg = bg
 
 	-- Create the status bar with explicit name to help with debugging
-	local bar = CreateFrame("StatusBar", "PDS_StatBar_"..self.statType, bg)
+	local bar = CreateFrame("StatusBar", "PDS_StatBar_" .. self.statType, bg)
 	bar:SetPoint("TOPLEFT", bg, "TOPLEFT", 1, -1)
 	bar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -1, 1)
 	bar:SetMinMaxValues(0, 100)
@@ -109,7 +109,7 @@ function StatBar:CreateFrame(parent)
 	frame.bar = bar
 
 	-- Create the overflow bar that will show when value exceeds 100%
-	local overflowBar = CreateFrame("StatusBar", "PDS_StatBar_Overflow_"..self.statType, bg)
+	local overflowBar = CreateFrame("StatusBar", "PDS_StatBar_Overflow_" .. self.statType, bg)
 	overflowBar:SetPoint("TOPLEFT", bg, "TOPLEFT", 1, -1)
 	overflowBar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -1, 1)
 	overflowBar:SetMinMaxValues(0, 100)
@@ -184,7 +184,9 @@ end
 
 -- Handle overflow bar visibility and tooltip initialization
 function StatBar:HandleOverflow(overflowValue)
-	if not self.frame.overflowBar then return false end
+	if not self.frame.overflowBar then
+		return false
+	end
 
 	-- Track overflow bar visibility changes to reinit tooltip if needed
 	local overflowBarWasVisible = self.frame.overflowBar:IsVisible()
@@ -215,6 +217,8 @@ function StatBar:Update(value, maxValue, change)
 		-- Handle overflow bar visibility and reinitialize tooltip if needed
 		local visibilityChanged = self:HandleOverflow(overflowValue)
 		if visibilityChanged then
+			-- Force tooltip reinitialization when overflow bar visibility changes
+			self.tooltipInitialized = false
 			self:InitTooltip()
 		end
 
@@ -226,7 +230,7 @@ function StatBar:Update(value, maxValue, change)
 			self.frame.valueText:SetText(displayValue)
 		end
 
-  -- Update change indicator if showStatChanges is enabled
+		-- Update change indicator if showStatChanges is enabled
 		if PDS.Config.showStatChanges and change and change ~= 0 then
 			-- If there's an existing animation playing, we need to stop it
 			-- before starting a new one to prevent visual glitches
@@ -279,7 +283,7 @@ function StatBar:AnimateToValue(newValue, overflowValue)
 		self.frame.bar:SetValue(newValue)
 	end
 
- -- Handle the overflow bar animation if it exists
+	-- Handle the overflow bar animation if it exists
 	if self.frame.overflowBar then
 		overflowValue = overflowValue or 0
 
@@ -451,6 +455,10 @@ function StatBar:UpdateTexture()
 
 	-- Reapply color after updating texture
 	self:UpdateColor()
+
+	-- Force tooltip reinitialization
+	self.tooltipInitialized = false
+	self:InitTooltip()
 end
 
 -- Updates the height of the bar
@@ -474,10 +482,12 @@ end
 -- Shows the tooltip with stat information
 function StatBar:ShowTooltip(frame)
 	-- Only show tooltip if enabled in config
-	if not PDS.Config.showTooltips then return end
+	if not PDS.Config.showTooltips then
+		return
+	end
 
-	-- Ensure tooltip exists
-	if not self.tooltip then
+	-- Always ensure tooltip is initialized properly
+	if not self.tooltipInitialized then
 		self:InitTooltip()
 	end
 
@@ -485,10 +495,21 @@ function StatBar:ShowTooltip(frame)
 	local value = PDS.Stats:GetValue(self.statType)
 	local rating = PDS.Stats:GetRating(self.statType)
 
-	-- Position the tooltip
-	self.tooltip:SetOwner(frame, "ANCHOR_RIGHT")
+	-- Safety check before using the tooltip
+	if not self.tooltip then
+		self:InitTooltip()
+	end
 
-	-- Show the tooltip with stat information
+	-- Reset the tooltip
+	self.tooltip:ClearLines()
+
+	-- Determine if this is an overflow bar (kept for future reference, not used for tooltip display)
+	local isOverflow = (frame == self.frame.overflowBar)
+
+	-- Use the standard ANCHOR_RIGHT for both main and overflow tooltips
+	self.tooltip:SetOwner(self.frame, "ANCHOR_RIGHT")
+
+	-- Add tooltip content
 	if PDS.StatTooltips then
 		PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
 	else
@@ -508,41 +529,59 @@ end
 
 -- Sets up the tooltip for the stat bar
 function StatBar:InitTooltip()
-	-- Check if tooltip already exists, hide and clear it to prevent memory leaks
+	-- Always destroy existing tooltip to prevent memory leaks and stale references
 	if self.tooltip then
 		self.tooltip:Hide()
 		self.tooltip:ClearLines()
-	else
-		-- Create the tooltip if it doesn't exist
-		self.tooltip = CreateFrame("GameTooltip", "PDS_StatTooltip_" .. self.statType, UIParent, "GameTooltipTemplate")
+		self.tooltip = nil
 	end
 
-	-- Store whether mouse is currently over the frame
-	local isMouseOverMain = self.frame:IsMouseOver()
-	local isMouseOverOverflow = self.frame.overflowBar and self.frame.overflowBar:IsMouseOver()
+	-- Create a new tooltip with a unique name
+	local tooltipName = "PDS_StatTooltip_" .. self.statType .. "_" .. tostring(self):gsub("table:", "")
+	self.tooltip = CreateFrame("GameTooltip", tooltipName, UIParent, "GameTooltipTemplate")
 
-	-- Set up OnEnter/OnLeave scripts for main bar
+	-- Set up mouse event handlers for main bar
 	self.frame:SetScript("OnEnter", function()
 		self:ShowTooltip(self.frame)
 	end)
+
 	self.frame:SetScript("OnLeave", function()
 		self:HideTooltip()
 	end)
 
-	-- Set up OnEnter/OnLeave scripts for overflow bar if it exists
+	-- Set up mouse event handlers for overflow bar if it exists
 	if self.frame.overflowBar then
 		self.frame.overflowBar:SetScript("OnEnter", function()
 			self:ShowTooltip(self.frame.overflowBar)
 		end)
+
 		self.frame.overflowBar:SetScript("OnLeave", function()
 			self:HideTooltip()
 		end)
 	end
 
-	-- If mouse is already over the frame, show tooltip immediately
-	if isMouseOverMain then
-		self:ShowTooltip(self.frame)
-	elseif isMouseOverOverflow then
-		self:ShowTooltip(self.frame.overflowBar)
+	-- Mark the tooltip as initialized
+	self.tooltipInitialized = true
+end
+
+function StatBar:Destroy()
+	-- Clean up the tooltip
+	if self.tooltip then
+		self.tooltip:Hide()
+		self.tooltip:ClearLines()
+		self.tooltip = nil
+	end
+
+	-- Hide and clear the frame
+	if self.frame then
+		self.frame:Hide()
+		self.frame:SetScript("OnEnter", nil)
+		self.frame:SetScript("OnLeave", nil)
+	end
+
+	-- Clear overflow bar scripts if it exists
+	if self.frame and self.frame.overflowBar then
+		self.frame.overflowBar:SetScript("OnEnter", nil)
+		self.frame.overflowBar:SetScript("OnLeave", nil)
 	end
 end
