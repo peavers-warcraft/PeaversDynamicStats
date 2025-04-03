@@ -182,6 +182,28 @@ function StatBar:CreateFrame(parent)
 	return frame
 end
 
+-- Handle overflow bar visibility and tooltip initialization
+function StatBar:HandleOverflow(overflowValue)
+	if not self.frame.overflowBar then return false end
+
+	-- Track overflow bar visibility changes to reinit tooltip if needed
+	local overflowBarWasVisible = self.frame.overflowBar:IsVisible()
+	local overflowBarShouldBeVisible = overflowValue > 0 and PDS.Config.showOverflowBars
+
+	-- Show or hide the overflow bar based on the overflow value and global user preference
+	if overflowBarShouldBeVisible then
+		-- Show the overflow bar if user has enabled it
+		self.frame.overflowBar:Show()
+	else
+		-- Hide the overflow bar if value is 100% or less, or if user has disabled overflow bars globally
+		self.frame.overflowBar:Hide()
+		self.frame.overflowBar:SetValue(0)
+	end
+
+	-- Return whether visibility changed (for tooltip reinitialization)
+	return overflowBarWasVisible ~= overflowBarShouldBeVisible
+end
+
 -- Updates the bar with a new value, using animation for smooth transitions
 function StatBar:Update(value, maxValue, change)
 	if value ~= self.value then
@@ -190,17 +212,10 @@ function StatBar:Update(value, maxValue, change)
 		-- Get the bar values from Stats.lua
 		local percentValue, overflowValue = PDS.Stats:CalculateBarValues(self.value)
 
-		-- Show or hide the overflow bar based on the overflow value and global user preference
-		if overflowValue > 0 and PDS.Config.showOverflowBars then
-			-- Show the overflow bar if user has enabled it
-			if self.frame.overflowBar then
-				self.frame.overflowBar:Show()
-			end
-		else
-			-- Hide the overflow bar if value is 100% or less, or if user has disabled overflow bars globally
-			if self.frame.overflowBar then
-				self.frame.overflowBar:Hide()
-			end
+		-- Handle overflow bar visibility and reinitialize tooltip if needed
+		local visibilityChanged = self:HandleOverflow(overflowValue)
+		if visibilityChanged then
+			self:InitTooltip()
 		end
 
 		-- Get the formatted display value from Stats.lua
@@ -268,10 +283,14 @@ function StatBar:AnimateToValue(newValue, overflowValue)
 	if self.frame.overflowBar then
 		overflowValue = overflowValue or 0
 
-		-- If we have an overflow value and user has enabled overflow bars globally, make it visible
-		if overflowValue > 0 and PDS.Config.showOverflowBars then
-			self.frame.overflowBar:Show()
+		-- Handle overflow bar visibility and reinitialize tooltip if needed
+		local visibilityChanged = self:HandleOverflow(overflowValue)
+		if visibilityChanged then
+			self:InitTooltip()
+		end
 
+		-- If overflow bar is visible, animate it
+		if self.frame.overflowBar:IsVisible() then
 			-- Create animation group for overflow bar if it doesn't exist
 			if not self.overflowAnimationGroup then
 				self.overflowAnimationGroup = self.frame.overflowBar:CreateAnimationGroup()
@@ -301,10 +320,6 @@ function StatBar:AnimateToValue(newValue, overflowValue)
 			else
 				self.frame.overflowBar:SetValue(overflowValue)
 			end
-		else
-			-- Hide the overflow bar if there's no overflow or user has disabled overflow bars globally
-			self.frame.overflowBar:Hide()
-			self.frame.overflowBar:SetValue(0)
 		end
 	end
 end
@@ -456,29 +471,78 @@ function StatBar:UpdateBackgroundOpacity()
 	self.frame.bg:SetBackdropBorderColor(0, 0, 0, PDS.Config.barBgAlpha)
 end
 
+-- Shows the tooltip with stat information
+function StatBar:ShowTooltip(frame)
+	-- Only show tooltip if enabled in config
+	if not PDS.Config.showTooltips then return end
+
+	-- Ensure tooltip exists
+	if not self.tooltip then
+		self:InitTooltip()
+	end
+
+	-- Get current stat value and rating
+	local value = PDS.Stats:GetValue(self.statType)
+	local rating = PDS.Stats:GetRating(self.statType)
+
+	-- Position the tooltip
+	self.tooltip:SetOwner(frame, "ANCHOR_RIGHT")
+
+	-- Show the tooltip with stat information
+	if PDS.StatTooltips then
+		PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
+	else
+		-- Fallback if StatTooltips module is not available
+		self.tooltip:SetText(PDS.Stats:GetName(self.statType))
+		self.tooltip:AddLine(PDS.Utils:FormatPercent(value))
+		self.tooltip:Show()
+	end
+end
+
+-- Hides the tooltip
+function StatBar:HideTooltip()
+	if self.tooltip then
+		self.tooltip:Hide()
+	end
+end
+
 -- Sets up the tooltip for the stat bar
 function StatBar:InitTooltip()
-	-- Create the tooltip
-	self.tooltip = CreateFrame("GameTooltip", "PDS_StatTooltip_" .. self.statType, UIParent, "GameTooltipTemplate")
-
-	-- Set up OnEnter script to show the tooltip
-	self.frame:SetScript("OnEnter", function()
-		-- Only show tooltip if enabled in config
-		if PDS.Config.showTooltips then
-			-- Get current stat value and rating
-			local value = PDS.Stats:GetValue(self.statType)
-			local rating = PDS.Stats:GetRating(self.statType)
-
-			-- Position the tooltip
-			self.tooltip:SetOwner(self.frame, "ANCHOR_RIGHT")
-
-			-- Show the tooltip with stat information
-			PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
-		end
-	end)
-
-	-- Set up OnLeave script to hide the tooltip
-	self.frame:SetScript("OnLeave", function()
+	-- Check if tooltip already exists, hide and clear it to prevent memory leaks
+	if self.tooltip then
 		self.tooltip:Hide()
+		self.tooltip:ClearLines()
+	else
+		-- Create the tooltip if it doesn't exist
+		self.tooltip = CreateFrame("GameTooltip", "PDS_StatTooltip_" .. self.statType, UIParent, "GameTooltipTemplate")
+	end
+
+	-- Store whether mouse is currently over the frame
+	local isMouseOverMain = self.frame:IsMouseOver()
+	local isMouseOverOverflow = self.frame.overflowBar and self.frame.overflowBar:IsMouseOver()
+
+	-- Set up OnEnter/OnLeave scripts for main bar
+	self.frame:SetScript("OnEnter", function()
+		self:ShowTooltip(self.frame)
 	end)
+	self.frame:SetScript("OnLeave", function()
+		self:HideTooltip()
+	end)
+
+	-- Set up OnEnter/OnLeave scripts for overflow bar if it exists
+	if self.frame.overflowBar then
+		self.frame.overflowBar:SetScript("OnEnter", function()
+			self:ShowTooltip(self.frame.overflowBar)
+		end)
+		self.frame.overflowBar:SetScript("OnLeave", function()
+			self:HideTooltip()
+		end)
+	end
+
+	-- If mouse is already over the frame, show tooltip immediately
+	if isMouseOverMain then
+		self:ShowTooltip(self.frame)
+	elseif isMouseOverOverflow then
+		self:ShowTooltip(self.frame.overflowBar)
+	end
 end
