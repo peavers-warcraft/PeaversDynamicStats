@@ -503,8 +503,11 @@ function StatBar:ShowTooltip(frame)
 	-- Reset the tooltip
 	self.tooltip:ClearLines()
 
-	-- Position the tooltip
-	self.tooltip:SetOwner(frame, "ANCHOR_RIGHT")
+	-- Determine if this is an overflow bar (kept for future reference, not used for tooltip display)
+	local isOverflow = (frame == self.frame.overflowBar)
+
+	-- Use the standard ANCHOR_RIGHT for both main and overflow tooltips
+	self.tooltip:SetOwner(self.frame, "ANCHOR_RIGHT")
 
 	-- Add tooltip content
 	if PDS.StatTooltips then
@@ -516,7 +519,6 @@ function StatBar:ShowTooltip(frame)
 		self.tooltip:Show()
 	end
 end
-
 
 -- Hides the tooltip
 function StatBar:HideTooltip()
