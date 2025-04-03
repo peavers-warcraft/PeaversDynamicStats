@@ -234,6 +234,7 @@ function Config:Initialize()
     -- Ensure all required stats are in the showStats table
     for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
         if self.showStats[statType] == nil then
+            -- Enable all stats by default, including primary stats
             self.showStats[statType] = true
         end
     end
