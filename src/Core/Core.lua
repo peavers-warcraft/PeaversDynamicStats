@@ -2,13 +2,8 @@ local addonName, PDS = ...
 local Core = {}
 PDS.Core = Core
 
--- Initialize collection for stat bars
-Core.bars = {}
-
 -- Sets up the addon's main frame and components
 function Core:Initialize()
-	self.previousValues = {}
-
 	-- Initialize base values for primary stats
 	PDS.Stats:InitializeBaseValues()
 
@@ -36,7 +31,10 @@ function Core:Initialize()
 	self.contentFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, 0)
 
 	self:UpdateTitleBarVisibility()
-	self:CreateBars()
+
+	-- Create bars using the BarManager
+	PDS.BarManager:CreateBars(self.contentFrame)
+
 	self:UpdateFrameLock()
 
 	if PDS.Config.showOnLogin then
@@ -69,28 +67,8 @@ end
 
 -- Recalculates frame height based on number of bars and title bar visibility
 function Core:AdjustFrameHeight()
-	local barCount = #self.bars
-	local contentHeight
-	-- When barSpacing is 0, calculate height without spacing
-	if PDS.Config.barSpacing == 0 then
-		contentHeight = barCount * PDS.Config.barHeight
-	else
-		contentHeight = barCount * (PDS.Config.barHeight + PDS.Config.barSpacing) - PDS.Config.barSpacing
-	end
-
-	if contentHeight == 0 then
-		if PDS.Config.showTitleBar then
-			self.frame:SetHeight(20) -- Just title bar
-		else
-			self.frame:SetHeight(10) -- Minimal height
-		end
-	else
-		if PDS.Config.showTitleBar then
-			self.frame:SetHeight(contentHeight + 20) -- Add title bar height
-		else
-			self.frame:SetHeight(contentHeight) -- Just content
-		end
-	end
+	-- Use the BarManager to adjust frame height
+	PDS.BarManager:AdjustFrameHeight(self.frame, self.contentFrame, PDS.Config.showTitleBar)
 end
 
 -- Enables or disables frame dragging based on lock setting
