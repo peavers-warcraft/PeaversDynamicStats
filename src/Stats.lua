@@ -1,7 +1,7 @@
 local _, PDS = ...
 local Stats = PDS.Stats
 
--- Combat Rating constants
+-- Combat Rating constants - updated for 11.0.0+
 Stats.COMBAT_RATINGS = {
     CR_WEAPON_SKILL = 1,
     CR_DEFENSE_SKILL = 2,
@@ -32,10 +32,11 @@ Stats.COMBAT_RATINGS = {
     CR_VERSATILITY_DAMAGE_DONE = 29,
     CR_VERSATILITY_DAMAGE_TAKEN = 30,
     CR_SPEED = 31,
-    CR_LIFESTEAL = 32
+    CR_LIFESTEAL = 32,
+    CR_AVOIDANCE = 33
 }
 
--- Stat types
+-- Stat types - updated for 11.0.0+
 Stats.STAT_TYPES = {
     -- Primary stats
     STRENGTH = "STRENGTH",
@@ -48,6 +49,8 @@ Stats.STAT_TYPES = {
     CRIT = "CRIT",
     MASTERY = "MASTERY",
     VERSATILITY = "VERSATILITY",
+    VERSATILITY_DAMAGE_DONE = "VERSATILITY_DAMAGE_DONE",
+    VERSATILITY_DAMAGE_REDUCTION = "VERSATILITY_DAMAGE_REDUCTION",
     SPEED = "SPEED",
     LEECH = "LEECH",
     AVOIDANCE = "AVOIDANCE",
@@ -58,31 +61,6 @@ Stats.STAT_TYPES = {
     PARRY = "PARRY",
     BLOCK = "BLOCK",
     ARMOR_PENETRATION = "ARMOR_PENETRATION"
-}
-
--- Table of class/spec-specific stat bonuses
--- This table stores bonuses from talents or other class/spec-specific effects
--- that aren't automatically included in the WoW API stat functions.
---
--- Format: [className][specIndex][statType] = bonusValue
---
--- Example:
---   Stats.CLASS_SPEC_BONUSES["ROGUE"][2][Stats.STAT_TYPES.VERSATILITY] = 3
---   This adds a 3% versatility bonus for Outlaw Rogues (spec index 2)
---
--- Instead of directly modifying this table, use the provided API functions:
---   Stats:AddClassSpecBonus(className, specIndex, statType, bonusValue)
---   Stats:RemoveClassSpecBonus(className, specIndex, statType)
---   Stats:GetClassSpecBonus(className, specIndex, statType)
---   Stats:GetCurrentClassSpecBonuses()
-Stats.CLASS_SPEC_BONUSES = {
-    -- Rogue
-    ["ROGUE"] = {
-        -- Outlaw (spec index 2)
-        [2] = {
-            [Stats.STAT_TYPES.VERSATILITY] = 3 -- 3% versatility bonus from talent
-        }
-    }
 }
 
 -- Stat display names
@@ -98,6 +76,8 @@ Stats.STAT_NAMES = {
     [Stats.STAT_TYPES.CRIT] = "Critical Strike",
     [Stats.STAT_TYPES.MASTERY] = "Mastery",
     [Stats.STAT_TYPES.VERSATILITY] = "Versatility",
+    [Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE] = "Versatility (Damage)",
+    [Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION] = "Versatility (Defense)",
     [Stats.STAT_TYPES.SPEED] = "Speed",
     [Stats.STAT_TYPES.LEECH] = "Leech",
     [Stats.STAT_TYPES.AVOIDANCE] = "Avoidance",
@@ -110,54 +90,31 @@ Stats.STAT_NAMES = {
     [Stats.STAT_TYPES.ARMOR_PENETRATION] = "Armor Penetration"
 }
 
--- Stat colors (r, g, b)
+-- Stat colors for UI purposes
 Stats.STAT_COLORS = {
     -- Primary stats
-    [Stats.STAT_TYPES.STRENGTH] = { 0.77, 0.31, 0.23 }, -- Terracotta
-    [Stats.STAT_TYPES.AGILITY] = { 0.56, 0.66, 0.46 }, -- Sage Green
-    [Stats.STAT_TYPES.INTELLECT] = { 0.52, 0.62, 0.74 }, -- Slate Blue
-    [Stats.STAT_TYPES.STAMINA] = { 0.87, 0.57, 0.34 }, -- Amber
+    [Stats.STAT_TYPES.STRENGTH] = { 0.77, 0.31, 0.23 },
+    [Stats.STAT_TYPES.AGILITY] = { 0.56, 0.66, 0.46 },
+    [Stats.STAT_TYPES.INTELLECT] = { 0.52, 0.62, 0.74 },
+    [Stats.STAT_TYPES.STAMINA] = { 0.87, 0.57, 0.34 },
 
     -- Secondary stats
-    [Stats.STAT_TYPES.HASTE] = { 0.42, 0.59, 0.59 }, -- Muted Teal
-    [Stats.STAT_TYPES.CRIT] = { 0.85, 0.76, 0.47 }, -- Wheat
-    [Stats.STAT_TYPES.MASTERY] = { 0.76, 0.52, 0.38 }, -- Sienna
-    [Stats.STAT_TYPES.VERSATILITY] = { 0.63, 0.69, 0.58 }, -- Olive Green
-    [Stats.STAT_TYPES.SPEED] = { 0.67, 0.55, 0.67 }, -- Muted Lavender
-    [Stats.STAT_TYPES.LEECH] = { 0.69, 0.47, 0.43 }, -- Clay
-    [Stats.STAT_TYPES.AVOIDANCE] = { 0.59, 0.67, 0.76 }, -- Dusty Blue
+    [Stats.STAT_TYPES.HASTE] = { 0.42, 0.59, 0.59 },
+    [Stats.STAT_TYPES.CRIT] = { 0.85, 0.76, 0.47 },
+    [Stats.STAT_TYPES.MASTERY] = { 0.76, 0.52, 0.38 },
+    [Stats.STAT_TYPES.VERSATILITY] = { 0.63, 0.69, 0.58 },
+    [Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE] = { 0.63, 0.69, 0.58 },
+    [Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION] = { 0.53, 0.75, 0.58 },
+    [Stats.STAT_TYPES.SPEED] = { 0.67, 0.55, 0.67 },
+    [Stats.STAT_TYPES.LEECH] = { 0.69, 0.47, 0.43 },
+    [Stats.STAT_TYPES.AVOIDANCE] = { 0.59, 0.67, 0.76 },
 
     -- Combat ratings
-    [Stats.STAT_TYPES.DEFENSE] = { 0.50, 0.50, 0.80 }, -- Steel Blue
-    [Stats.STAT_TYPES.DODGE] = { 0.40, 0.70, 0.40 }, -- Forest Green
-    [Stats.STAT_TYPES.PARRY] = { 0.70, 0.40, 0.40 }, -- Rust Red
-    [Stats.STAT_TYPES.BLOCK] = { 0.60, 0.60, 0.30 }, -- Olive
-    [Stats.STAT_TYPES.ARMOR_PENETRATION] = { 0.75, 0.60, 0.30 } -- Bronze
-}
-
--- Default stat order
-Stats.STAT_ORDER = {
-    -- Primary stats first
-    Stats.STAT_TYPES.STRENGTH,
-    Stats.STAT_TYPES.AGILITY,
-    Stats.STAT_TYPES.INTELLECT,
-    Stats.STAT_TYPES.STAMINA,
-
-    -- Then secondary stats
-    Stats.STAT_TYPES.CRIT,
-    Stats.STAT_TYPES.HASTE,
-    Stats.STAT_TYPES.MASTERY,
-    Stats.STAT_TYPES.VERSATILITY,
-    Stats.STAT_TYPES.SPEED,
-    Stats.STAT_TYPES.LEECH,
-    Stats.STAT_TYPES.AVOIDANCE,
-
-    -- Then combat ratings
-    Stats.STAT_TYPES.DEFENSE,
-    Stats.STAT_TYPES.DODGE,
-    Stats.STAT_TYPES.PARRY,
-    Stats.STAT_TYPES.BLOCK,
-    Stats.STAT_TYPES.ARMOR_PENETRATION
+    [Stats.STAT_TYPES.DEFENSE] = { 0.50, 0.50, 0.80 },
+    [Stats.STAT_TYPES.DODGE] = { 0.40, 0.70, 0.40 },
+    [Stats.STAT_TYPES.PARRY] = { 0.70, 0.40, 0.40 },
+    [Stats.STAT_TYPES.BLOCK] = { 0.60, 0.60, 0.30 },
+    [Stats.STAT_TYPES.ARMOR_PENETRATION] = { 0.75, 0.60, 0.30 }
 }
 
 -- Store base values for primary stats
@@ -168,167 +125,63 @@ Stats.BASE_VALUES = {
     [Stats.STAT_TYPES.STAMINA] = 0
 }
 
+-- Default stat order
+Stats.STAT_ORDER = {
+    Stats.STAT_TYPES.STRENGTH,
+    Stats.STAT_TYPES.AGILITY,
+    Stats.STAT_TYPES.INTELLECT,
+    Stats.STAT_TYPES.STAMINA,
+    Stats.STAT_TYPES.CRIT,
+    Stats.STAT_TYPES.HASTE,
+    Stats.STAT_TYPES.MASTERY,
+    Stats.STAT_TYPES.VERSATILITY,
+    Stats.STAT_TYPES.SPEED,
+    Stats.STAT_TYPES.LEECH,
+    Stats.STAT_TYPES.AVOIDANCE,
+    Stats.STAT_TYPES.DODGE,
+    Stats.STAT_TYPES.PARRY,
+    Stats.STAT_TYPES.BLOCK
+}
+
+-- Class spec bonuses - Using Blizzard API directly when possible
+Stats.CLASS_SPEC_BONUSES = {
+    -- Rogue
+    ["ROGUE"] = {
+        -- Outlaw (spec index 2)
+        [2] = {
+            [Stats.STAT_TYPES.VERSATILITY] = 3 -- 3% versatility bonus from talent
+        }
+    }
+}
+
 -- Initialize base values for primary stats
 function Stats:InitializeBaseValues()
-    local _, class = UnitClass("player")
-
-    -- Get base values for primary stats (excluding buffs)
-    -- UnitStat returns: base, stat, posBuff, negBuff
     local baseStr, _, _, _ = UnitStat("player", 1)
     local baseAgi, _, _, _ = UnitStat("player", 2)
     local baseInt, _, _, _ = UnitStat("player", 4)
     local baseSta, _, _, _ = UnitStat("player", 3)
 
-    -- Store the base values
     Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] = baseStr
     Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] = baseAgi
     Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT] = baseInt
     Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] = baseSta
 end
 
--- Returns the current value of the specified stat
-function Stats:GetValue(statType)
-    local value = 0
-
-    -- Primary stats
-    if statType == Stats.STAT_TYPES.STRENGTH then
-        -- Get current strength values (base, total, posBuff, negBuff)
-        local base, total, posBuff, negBuff = UnitStat("player", 1)
-        -- Calculate percentage increase from base
-        if Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] > 0 then
-            -- Calculate percentage based on base (excluding buffs)
-            -- Start with 100% (base value)
-            value = 100
-            -- Add percentage from base stat growth (if any)
-            if base > Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] then
-                value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH]) / Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH]) * 100
-            end
-            -- Add buff percentage (if any)
-            local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.STRENGTH)
-            value = value + buffPercentage
-        else
-            -- Initialize base values if not set
-            self:InitializeBaseValues()
-            value = 100
-        end
-    elseif statType == Stats.STAT_TYPES.AGILITY then
-        -- Get current agility values (base, total, posBuff, negBuff)
-        local base, total, posBuff, negBuff = UnitStat("player", 2)
-        -- Calculate percentage increase from base
-        if Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] > 0 then
-            -- Calculate percentage based on base (excluding buffs)
-            -- Start with 100% (base value)
-            value = 100
-            -- Add percentage from base stat growth (if any)
-            if base > Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] then
-                value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY]) / Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY]) * 100
-            end
-            -- Add buff percentage (if any)
-            local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.AGILITY)
-            value = value + buffPercentage
-        else
-            -- Initialize base values if not set
-            self:InitializeBaseValues()
-            value = 100
-        end
-    elseif statType == Stats.STAT_TYPES.INTELLECT then
-        -- Get current intellect values (base, total, posBuff, negBuff)
-        local base, total, posBuff, negBuff = UnitStat("player", 4)
-        -- Calculate percentage increase from base
-        if Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT] > 0 then
-            -- Calculate percentage based on base (excluding buffs)
-            -- Start with 100% (base value)
-            value = 100
-            -- Add percentage from base stat growth (if any)
-            if base > Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT] then
-                value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT]) / Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT]) * 100
-            end
-            -- Add buff percentage (if any)
-            local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.INTELLECT)
-            value = value + buffPercentage
-        else
-            -- Initialize base values if not set
-            self:InitializeBaseValues()
-            value = 100
-        end
-    elseif statType == Stats.STAT_TYPES.STAMINA then
-        -- Get current stamina values (base, total, posBuff, negBuff)
-        local base, total, posBuff, negBuff = UnitStat("player", 3)
-        -- Calculate percentage increase from base
-        if Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] > 0 then
-            -- Calculate percentage based on base (excluding buffs)
-            -- Start with 100% (base value)
-            value = 100
-            -- Add percentage from base stat growth (if any)
-            if base > Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] then
-                value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA]) / Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA]) * 100
-            end
-            -- Add buff percentage (if any)
-            local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.STAMINA)
-            value = value + buffPercentage
-        else
-            -- Initialize base values if not set
-            self:InitializeBaseValues()
-            value = 100
-        end
-    -- Secondary stats
-    elseif statType == Stats.STAT_TYPES.HASTE then
-        value = GetHaste()
-    elseif statType == Stats.STAT_TYPES.CRIT then
-        value = GetCritChance()
-    elseif statType == Stats.STAT_TYPES.MASTERY then
-        value = GetMasteryEffect()
-    elseif statType == Stats.STAT_TYPES.VERSATILITY then
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-    elseif statType == Stats.STAT_TYPES.SPEED then
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_SPEED)
-    elseif statType == Stats.STAT_TYPES.LEECH then
-        value = GetLifesteal()
-    elseif statType == Stats.STAT_TYPES.AVOIDANCE then
-        value = GetAvoidance()
-    elseif statType == Stats.STAT_TYPES.DEFENSE then
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_DEFENSE_SKILL)
-    elseif statType == Stats.STAT_TYPES.DODGE then
-        value = GetDodgeChance()
-    elseif statType == Stats.STAT_TYPES.PARRY then
-        value = GetParryChance()
-    elseif statType == Stats.STAT_TYPES.BLOCK then
-        value = GetBlockChance()
-    elseif statType == Stats.STAT_TYPES.ARMOR_PENETRATION then
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_ARMOR_PENETRATION)
-    end
-
-    -- Apply class/spec-specific bonuses
-    local _, playerClass = UnitClass("player")
-    local specIndex = GetSpecialization()
-
-    -- Check if there are any bonuses for this class/spec/stat combination
-    if Stats.CLASS_SPEC_BONUSES[playerClass] and
-       Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] and
-       Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType] then
-        -- Add the bonus to the value
-        value = value + Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType]
-    end
-
-    return value
-end
-
 -- Returns the buff value (positive and negative combined) for the specified stat
 function Stats:GetBuffValue(statType)
     local buffValue = 0
 
-    -- Primary stats
     if statType == Stats.STAT_TYPES.STRENGTH then
-        local _, total, posBuff, negBuff = UnitStat("player", 1)
-        buffValue = posBuff + negBuff -- negBuff is usually negative, so this is correct
+        local _, _, posBuff, negBuff = UnitStat("player", 1)
+        buffValue = posBuff + negBuff
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        local _, total, posBuff, negBuff = UnitStat("player", 2)
+        local _, _, posBuff, negBuff = UnitStat("player", 2)
         buffValue = posBuff + negBuff
     elseif statType == Stats.STAT_TYPES.STAMINA then
-        local _, total, posBuff, negBuff = UnitStat("player", 3)
+        local _, _, posBuff, negBuff = UnitStat("player", 3)
         buffValue = posBuff + negBuff
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        local _, total, posBuff, negBuff = UnitStat("player", 4)
+        local _, _, posBuff, negBuff = UnitStat("player", 4)
         buffValue = posBuff + negBuff
     end
 
@@ -339,7 +192,6 @@ end
 function Stats:GetBuffPercentage(statType)
     local buffPercentage = 0
 
-    -- Primary stats
     if statType == Stats.STAT_TYPES.STRENGTH then
         local base, _, posBuff, negBuff = UnitStat("player", 1)
         if base > 0 then
@@ -365,57 +217,176 @@ function Stats:GetBuffPercentage(statType)
     return buffPercentage
 end
 
--- Returns the raw combat rating value for the specified stat type
+-- Returns the current value of the specified stat using the latest APIs
+function Stats:GetValue(statType)
+    local value = 0
+
+    -- Primary stats
+    if statType == Stats.STAT_TYPES.STRENGTH then
+        if C_Attributes and C_Attributes.GetAttribute then
+            value = C_Attributes.GetAttribute("player", "Strength") or 0
+        else
+            local base, total, posBuff, negBuff = UnitStat("player", 1)
+            if Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] > 0 then
+                value = 100
+                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] then
+                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH]) / Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH]) * 100
+                end
+                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.STRENGTH)
+                value = value + buffPercentage
+            else
+                self:InitializeBaseValues()
+                value = 100
+            end
+        end
+    elseif statType == Stats.STAT_TYPES.AGILITY then
+        if C_Attributes and C_Attributes.GetAttribute then
+            value = C_Attributes.GetAttribute("player", "Agility") or 0
+        else
+            local base, total, posBuff, negBuff = UnitStat("player", 2)
+            if Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] > 0 then
+                value = 100
+                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] then
+                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY]) / Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY]) * 100
+                end
+                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.AGILITY)
+                value = value + buffPercentage
+            else
+                self:InitializeBaseValues()
+                value = 100
+            end
+        end
+    elseif statType == Stats.STAT_TYPES.INTELLECT then
+        if C_Attributes and C_Attributes.GetAttribute then
+            value = C_Attributes.GetAttribute("player", "Intellect") or 0
+        else
+            local base, total, posBuff, negBuff = UnitStat("player", 4)
+            if Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT] > 0 then
+                value = 100
+                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT] then
+                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT]) / Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT]) * 100
+                end
+                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.INTELLECT)
+                value = value + buffPercentage
+            else
+                self:InitializeBaseValues()
+                value = 100
+            end
+        end
+    elseif statType == Stats.STAT_TYPES.STAMINA then
+        if C_Attributes and C_Attributes.GetAttribute then
+            value = C_Attributes.GetAttribute("player", "Stamina") or 0
+        else
+            local base, total, posBuff, negBuff = UnitStat("player", 3)
+            if Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] > 0 then
+                value = 100
+                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] then
+                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA]) / Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA]) * 100
+                end
+                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.STAMINA)
+                value = value + buffPercentage
+            else
+                self:InitializeBaseValues()
+                value = 100
+            end
+        end
+        -- Secondary stats - Using direct API calls
+    elseif statType == Stats.STAT_TYPES.HASTE then
+        value = GetHaste()
+    elseif statType == Stats.STAT_TYPES.CRIT then
+        value = GetCritChance()
+    elseif statType == Stats.STAT_TYPES.MASTERY then
+        value = GetMasteryEffect()
+    elseif statType == Stats.STAT_TYPES.VERSATILITY then
+        -- Fix for versatility stats
+        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+    elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
+        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+    elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
+        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+    elseif statType == Stats.STAT_TYPES.SPEED then
+        value = GetSpeed()
+    elseif statType == Stats.STAT_TYPES.LEECH then
+        value = GetLifesteal()
+    elseif statType == Stats.STAT_TYPES.AVOIDANCE then
+        value = GetAvoidance()
+    elseif statType == Stats.STAT_TYPES.DODGE then
+        value = GetDodgeChance()
+    elseif statType == Stats.STAT_TYPES.PARRY then
+        value = GetParryChance()
+    elseif statType == Stats.STAT_TYPES.BLOCK then
+        value = GetBlockChance()
+    end
+
+    -- Apply class/spec-specific bonuses
+    local _, playerClass = UnitClass("player")
+    local specIndex = GetSpecialization()
+
+    if Stats.CLASS_SPEC_BONUSES[playerClass] and
+            Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] and
+            Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType] then
+        value = value + Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType]
+    end
+
+    return value
+end
+
+-- Gets the raw rating value for the specified stat type
 function Stats:GetRating(statType)
     local rating = 0
 
-    -- Primary stats - return the base stat value (excluding buffs)
+    -- Primary stats - return the total stat value
     if statType == Stats.STAT_TYPES.STRENGTH then
-        local base, _, _, _ = UnitStat("player", 1)
-        rating = base
+        if C_Stats and C_Stats.GetStatByID then
+            rating = C_Stats.GetStatByID(1) or 0
+        else
+            local _, total = UnitStat("player", 1)
+            rating = total or 0
+        end
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        local base, _, _, _ = UnitStat("player", 2)
-        rating = base
-    elseif statType == Stats.STAT_TYPES.STAMINA then
-        local base, _, _, _ = UnitStat("player", 3)
-        rating = base
+        if C_Stats and C_Stats.GetStatByID then
+            rating = C_Stats.GetStatByID(2) or 0
+        else
+            local _, total = UnitStat("player", 2)
+            rating = total or 0
+        end
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        local base, _, _, _ = UnitStat("player", 4)
-        rating = base
-    -- Secondary stats - return the combat rating
+        if C_Stats and C_Stats.GetStatByID then
+            rating = C_Stats.GetStatByID(4) or 0
+        else
+            local _, total = UnitStat("player", 4)
+            rating = total or 0
+        end
+    elseif statType == Stats.STAT_TYPES.STAMINA then
+        if C_Stats and C_Stats.GetStatByID then
+            rating = C_Stats.GetStatByID(3) or 0
+        else
+            local _, total = UnitStat("player", 3)
+            rating = total or 0
+        end
+        -- Secondary stats - return the combat rating using direct API calls
     elseif statType == Stats.STAT_TYPES.HASTE then
-        -- Haste can be from melee, ranged, or spell, use the highest
-        local hasteRatingMelee = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
-        local hasteRatingRanged = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_RANGED)
-        local hasteRatingSpell = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_SPELL)
-        rating = math.max(hasteRatingMelee, hasteRatingRanged, hasteRatingSpell)
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
     elseif statType == Stats.STAT_TYPES.CRIT then
-        -- Crit can be from melee, ranged, or spell, use the highest
-        local critRatingMelee = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
-        local critRatingRanged = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_RANGED)
-        local critRatingSpell = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_SPELL)
-        rating = math.max(critRatingMelee, critRatingRanged, critRatingSpell)
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
     elseif statType == Stats.STAT_TYPES.MASTERY then
         rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
-    elseif statType == Stats.STAT_TYPES.VERSATILITY then
+    elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
         rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+    elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
     elseif statType == Stats.STAT_TYPES.SPEED then
         rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
     elseif statType == Stats.STAT_TYPES.LEECH then
         rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
     elseif statType == Stats.STAT_TYPES.AVOIDANCE then
-        -- Avoidance rating is not directly accessible, return 0 to avoid errors
-        rating = 0
-    elseif statType == Stats.STAT_TYPES.DEFENSE then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_DEFENSE_SKILL)
+        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_AVOIDANCE)
     elseif statType == Stats.STAT_TYPES.DODGE then
         rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
     elseif statType == Stats.STAT_TYPES.PARRY then
         rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
     elseif statType == Stats.STAT_TYPES.BLOCK then
         rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_BLOCK)
-    elseif statType == Stats.STAT_TYPES.ARMOR_PENETRATION then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_ARMOR_PENETRATION)
     end
 
     return rating
@@ -436,39 +407,23 @@ function Stats:GetName(statType)
 end
 
 -- Adds a class/spec-specific stat bonus to the table
--- Parameters:
---   className: The class name (e.g., "ROGUE", "MAGE", etc.)
---   specIndex: The specialization index (e.g., 1 for first spec, 2 for second spec, etc.)
---   statType: The stat type (e.g., Stats.STAT_TYPES.VERSATILITY)
---   bonusValue: The bonus value to add (e.g., 3 for 3%)
 function Stats:AddClassSpecBonus(className, specIndex, statType, bonusValue)
-    -- Initialize the class table if it doesn't exist
     if not Stats.CLASS_SPEC_BONUSES[className] then
         Stats.CLASS_SPEC_BONUSES[className] = {}
     end
 
-    -- Initialize the spec table if it doesn't exist
     if not Stats.CLASS_SPEC_BONUSES[className][specIndex] then
         Stats.CLASS_SPEC_BONUSES[className][specIndex] = {}
     end
 
-    -- Add the bonus
     Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] = bonusValue
 end
 
 -- Removes a class/spec-specific stat bonus from the table
--- Parameters:
---   className: The class name (e.g., "ROGUE", "MAGE", etc.)
---   specIndex: The specialization index (e.g., 1 for first spec, 2 for second spec, etc.)
---   statType: The stat type (e.g., Stats.STAT_TYPES.VERSATILITY)
 function Stats:RemoveClassSpecBonus(className, specIndex, statType)
-    -- Check if the tables exist
-    if Stats.CLASS_SPEC_BONUSES[className] and
-       Stats.CLASS_SPEC_BONUSES[className][specIndex] then
-        -- Remove the bonus
+    if Stats.CLASS_SPEC_BONUSES[className] and Stats.CLASS_SPEC_BONUSES[className][specIndex] then
         Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] = nil
 
-        -- Clean up empty tables
         if next(Stats.CLASS_SPEC_BONUSES[className][specIndex]) == nil then
             Stats.CLASS_SPEC_BONUSES[className][specIndex] = nil
         end
@@ -480,36 +435,24 @@ function Stats:RemoveClassSpecBonus(className, specIndex, statType)
 end
 
 -- Gets the class/spec-specific stat bonus for a given combination
--- Parameters:
---   className: The class name (e.g., "ROGUE", "MAGE", etc.)
---   specIndex: The specialization index (e.g., 1 for first spec, 2 for second spec, etc.)
---   statType: The stat type (e.g., Stats.STAT_TYPES.VERSATILITY)
--- Returns:
---   The bonus value, or 0 if no bonus exists
 function Stats:GetClassSpecBonus(className, specIndex, statType)
-    -- Check if the tables exist and return the bonus if it exists
     if Stats.CLASS_SPEC_BONUSES[className] and
-       Stats.CLASS_SPEC_BONUSES[className][specIndex] and
-       Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] then
+            Stats.CLASS_SPEC_BONUSES[className][specIndex] and
+            Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] then
         return Stats.CLASS_SPEC_BONUSES[className][specIndex][statType]
     end
 
-    -- Return 0 if no bonus exists
     return 0
 end
 
 -- Gets all stat bonuses for the current player's class and spec
--- Returns:
---   A table of stat bonuses, where the keys are stat types and the values are bonus values
 function Stats:GetCurrentClassSpecBonuses()
     local bonuses = {}
     local _, playerClass = UnitClass("player")
     local specIndex = GetSpecialization()
 
-    -- Check if there are any bonuses for this class/spec combination
     if Stats.CLASS_SPEC_BONUSES[playerClass] and
-       Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] then
-        -- Copy the bonuses to the result table
+            Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] then
         for statType, bonusValue in pairs(Stats.CLASS_SPEC_BONUSES[playerClass][specIndex]) do
             bonuses[statType] = bonusValue
         end
@@ -518,63 +461,79 @@ function Stats:GetCurrentClassSpecBonuses()
     return bonuses
 end
 
+-- Gets the rating needed for 1% of a stat using the API directly
+function Stats:GetRatingPer1Percent(statType)
+    local ratingPer1Percent = 0
+
+    if statType == Stats.STAT_TYPES.HASTE then
+        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+        if rating > 0 then
+            ratingPer1Percent = bonus / rating
+        end
+    elseif statType == Stats.STAT_TYPES.CRIT then
+        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+        if rating > 0 then
+            ratingPer1Percent = bonus / rating
+        end
+    elseif statType == Stats.STAT_TYPES.MASTERY then
+        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_MASTERY)
+        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
+        if rating > 0 then
+            ratingPer1Percent = bonus / rating
+        end
+    elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
+        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        if rating > 0 then
+            ratingPer1Percent = bonus / rating
+        end
+    end
+
+    if ratingPer1Percent > 0 then
+        ratingPer1Percent = 1 / ratingPer1Percent
+    else
+        ratingPer1Percent = 0
+    end
+
+    return ratingPer1Percent
+end
+
 -- Calculates the rating needed for the next percentage point of a stat
--- Parameters:
---   statType: The stat type (e.g., Stats.STAT_TYPES.HASTE)
---   currentRating: The current rating value
---   currentPercent: The current percentage value
--- Returns:
---   The rating needed for the next percentage point
 function Stats:GetRatingForNextPercent(statType, currentRating, currentPercent)
-    -- This is an approximation and would need to be adjusted for each stat type
-    -- and character level in a real implementation
+    local ratingPer1Percent = self:GetRatingPer1Percent(statType)
+
+    if ratingPer1Percent <= 0 then return 0 end
+
     local nextPercent = math.floor(currentPercent) + 1
-    local ratingPerPercent = currentRating / currentPercent
+    local ratingNeeded = nextPercent * ratingPer1Percent - currentRating
 
-    if ratingPerPercent <= 0 then return 0 end
-
-    return math.ceil(nextPercent * ratingPerPercent - currentRating)
+    return math.max(0, math.ceil(ratingNeeded))
 end
 
 -- Calculates the bar values for display
--- Parameters:
---   value: The stat value
--- Returns:
---   percentValue: The value capped at 100 for the main bar
---   overflowValue: The value beyond 100 for the overflow bar (0-100)
 function Stats:CalculateBarValues(value)
     local percentValue = math.min(value, 100)
     local overflowValue = 0
 
-    -- Calculate overflow value if the stat exceeds 100%
     if value > 100 then
-        overflowValue = value - 100
-        -- Cap overflow at 100% for visual clarity
-        overflowValue = math.min(overflowValue, 100)
+        overflowValue = math.min(value - 100, 100)
     end
 
     return percentValue, overflowValue
 end
 
 -- Gets the formatted display value for a stat
--- Parameters:
---   statType: The stat type
---   value: The stat value
---   showRating: Whether to include the rating value (default: uses PDS.Config.showRatings)
--- Returns:
---   The formatted display value string
 function Stats:GetDisplayValue(statType, value, showRating)
     local displayValue = PDS.Utils:FormatPercent(value)
 
-    -- If showRating is not specified, use the config setting
     if showRating == nil then
         showRating = PDS.Config.showRatings
     end
 
-    -- If showRatings is enabled, get the rating and add it to the display value
     if showRating then
         local rating = self:GetRating(statType)
-        -- Always show rating value, even if it's 0
         displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
     end
 
@@ -582,21 +541,14 @@ function Stats:GetDisplayValue(statType, value, showRating)
 end
 
 -- Gets the formatted change display value and color for a stat change
--- Parameters:
---   change: The change value
--- Returns:
---   changeDisplay: The formatted change string
---   r, g, b: The color values for the change text
 function Stats:GetChangeDisplayValue(change)
-    -- Format and display the change value with appropriate sign
     local changeDisplay = PDS.Utils:FormatChange(change)
-    local r, g, b = 1, 1, 1 -- Default to white
+    local r, g, b = 1, 1, 1
 
-    -- Set color based on change direction for better visual feedback
     if change > 0 then
-        r, g, b = 0, 1, 0 -- Green for positive changes
+        r, g, b = 0, 1, 0
     elseif change < 0 then
-        r, g, b = 1, 0, 0 -- Red for negative changes
+        r, g, b = 1, 0, 0
     end
 
     return changeDisplay, r, g, b
