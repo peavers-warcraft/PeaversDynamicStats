@@ -108,6 +108,29 @@ function StatBar:CreateFrame(parent)
 
 	frame.bar = bar
 
+	-- Create the overflow bar that will show when value exceeds 100%
+	local overflowBar = CreateFrame("StatusBar", "PDS_StatBar_Overflow_"..self.statType, bg)
+	overflowBar:SetPoint("TOPLEFT", bg, "TOPLEFT", 1, -1)
+	overflowBar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -1, 1)
+	overflowBar:SetMinMaxValues(0, 100)
+	overflowBar:SetValue(0)
+	overflowBar:SetFrameLevel(bar:GetFrameLevel() - 1) -- Set lower frame level to ensure it's below the text
+
+	-- Set the overflow bar texture
+	if PDS.Config.barTexture then
+		overflowBar:SetStatusBarTexture(PDS.Config.barTexture)
+	else
+		local texture = overflowBar:CreateTexture(nil, "ARTWORK")
+		texture:SetAllPoints()
+		texture:SetColorTexture(1, 1, 1, 1)
+		overflowBar:SetStatusBarTexture(texture)
+	end
+
+	-- Initially hide the overflow bar
+	overflowBar:Hide()
+
+	frame.overflowBar = overflowBar
+
 	local valueText = bar:CreateFontString(nil, "OVERLAY")
 	valueText:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
 	valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
@@ -157,14 +180,32 @@ function StatBar:Update(value, maxValue, change)
 		self.value = value or 0
 
 		local percentValue = math.min(self.value, 100)
+		local overflowValue = 0
+
+		-- Calculate overflow value if the stat exceeds 100%
+		if self.value > 100 then
+			overflowValue = self.value - 100
+			-- Cap overflow at 100% for visual clarity
+			overflowValue = math.min(overflowValue, 100)
+
+			-- Show the overflow bar
+			if self.frame.overflowBar then
+				self.frame.overflowBar:Show()
+			end
+		else
+			-- Hide the overflow bar if value is 100% or less
+			if self.frame.overflowBar then
+				self.frame.overflowBar:Hide()
+			end
+		end
+
 		local displayValue = PDS.Utils:FormatPercent(self.value)
 
 		-- If showRatings is enabled, get the rating and add it to the display value
 		if PDS.Config.showRatings then
 			local rating = PDS.Stats:GetRating(self.statType)
-			if rating > 0 then
-				displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
-			end
+			-- Always show rating value, even if it's 0
+			displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
 		end
 
 		local currentText = self.frame.valueText:GetText()
@@ -208,17 +249,21 @@ function StatBar:Update(value, maxValue, change)
 
 		-- Use animation if enabled, otherwise set value directly
 		if self.smoothing then
-			self:AnimateToValue(percentValue)
+			self:AnimateToValue(percentValue, overflowValue)
 		else
 			self.frame.bar:SetValue(percentValue)
+			if self.frame.overflowBar then
+				self.frame.overflowBar:SetValue(overflowValue)
+			end
 		end
 	end
 end
 
 -- Animates the bar to a new value
-function StatBar:AnimateToValue(newValue)
+function StatBar:AnimateToValue(newValue, overflowValue)
 	self.animationGroup:Stop()
 
+	-- Handle the main bar animation
 	local currentValue = self.frame.bar:GetValue()
 
 	if math.abs(newValue - currentValue) >= 0.5 then
@@ -227,6 +272,50 @@ function StatBar:AnimateToValue(newValue)
 		self.animationGroup:Play()
 	else
 		self.frame.bar:SetValue(newValue)
+	end
+
+	-- Handle the overflow bar animation if it exists
+	if self.frame.overflowBar then
+		overflowValue = overflowValue or 0
+
+		-- If we have an overflow value, make sure the overflow bar is visible
+		if overflowValue > 0 then
+			self.frame.overflowBar:Show()
+
+			-- Create animation group for overflow bar if it doesn't exist
+			if not self.overflowAnimationGroup then
+				self.overflowAnimationGroup = self.frame.overflowBar:CreateAnimationGroup()
+				self.overflowValueAnimation = self.overflowAnimationGroup:CreateAnimation("Progress")
+				self.overflowValueAnimation:SetDuration(0.3)
+				self.overflowValueAnimation:SetSmoothing("OUT")
+
+				self.overflowValueAnimation:SetScript("OnUpdate", function(anim)
+					local progress = anim:GetProgress()
+					local startValue = anim.startValue or 0
+					local changeValue = anim.changeValue or 0
+					local currentValue = startValue + (changeValue * progress)
+
+					self.frame.overflowBar:SetValue(currentValue)
+				end)
+			end
+
+			-- Animate the overflow bar
+			self.overflowAnimationGroup:Stop()
+
+			local currentOverflowValue = self.frame.overflowBar:GetValue()
+
+			if math.abs(overflowValue - currentOverflowValue) >= 0.5 then
+				self.overflowValueAnimation.startValue = currentOverflowValue
+				self.overflowValueAnimation.changeValue = overflowValue - currentOverflowValue
+				self.overflowAnimationGroup:Play()
+			else
+				self.frame.overflowBar:SetValue(overflowValue)
+			end
+		else
+			-- Hide the overflow bar if there's no overflow
+			self.frame.overflowBar:Hide()
+			self.frame.overflowBar:SetValue(0)
+		end
 	end
 end
 
@@ -249,6 +338,24 @@ function StatBar:GetColorForStat(statType)
 	return 0.8, 0.8, 0.8
 end
 
+-- Returns a contrasting color for the overflow portion of the bar
+function StatBar:GetOverflowColor(r, g, b)
+	-- Create a contrasting color by inverting the brightness
+	-- If the original color is bright, make the overflow darker
+	-- If the original color is dark, make the overflow brighter
+
+	-- Calculate perceived brightness (using the formula for luminance)
+	local brightness = 0.299 * r + 0.587 * g + 0.114 * b
+
+	if brightness > 0.5 then
+		-- Original color is bright, make overflow darker
+		return r * 0.6, g * 0.6, b * 0.6
+	else
+		-- Original color is dark, make overflow brighter
+		return math.min(r * 1.4, 1), math.min(g * 1.4, 1), math.min(b * 1.4, 1)
+	end
+end
+
 -- Updates the color of the bar
 function StatBar:UpdateColor()
 	local r, g, b = self:GetColorForStat(self.statType)
@@ -261,6 +368,12 @@ function StatBar:UpdateColor()
 	-- Apply the color to the status bar - set color directly without recreating texture
 	if self.frame and self.frame.bar then
 		self.frame.bar:SetStatusBarColor(r, g, b, 1)
+	end
+
+	-- Apply contrasting color to the overflow bar
+	if self.frame and self.frame.overflowBar then
+		local or_r, or_g, or_b = self:GetOverflowColor(r, g, b)
+		self.frame.overflowBar:SetStatusBarColor(or_r, or_g, or_b, 1)
 	end
 end
 
@@ -310,12 +423,25 @@ function StatBar:UpdateTexture()
 	-- Use the configured texture path if available
 	if PDS.Config.barTexture then
 		self.frame.bar:SetStatusBarTexture(PDS.Config.barTexture)
+
+		-- Also update the overflow bar texture if it exists
+		if self.frame.overflowBar then
+			self.frame.overflowBar:SetStatusBarTexture(PDS.Config.barTexture)
+		end
 	else
 		-- Fallback to a plain white texture if no texture path is configured
 		local texture = self.frame.bar:CreateTexture(nil, "ARTWORK")
 		texture:SetAllPoints()
 		texture:SetColorTexture(1, 1, 1, 1)
 		self.frame.bar:SetStatusBarTexture(texture)
+
+		-- Also update the overflow bar texture if it exists
+		if self.frame.overflowBar then
+			local overflowTexture = self.frame.overflowBar:CreateTexture(nil, "ARTWORK")
+			overflowTexture:SetAllPoints()
+			overflowTexture:SetColorTexture(1, 1, 1, 1)
+			self.frame.overflowBar:SetStatusBarTexture(overflowTexture)
+		end
 	end
 
 	-- Reapply color after updating texture

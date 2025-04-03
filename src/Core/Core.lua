@@ -9,6 +9,9 @@ Core.bars = {}
 function Core:Initialize()
 	self.previousValues = {}
 
+	-- Initialize base values for primary stats
+	PDS.Stats:InitializeBaseValues()
+
 	self.frame = CreateFrame("Frame", "PeaversDynamicStatsFrame", UIParent, "BackdropTemplate")
 	self.frame:SetSize(PDS.Config.frameWidth, PDS.Config.frameHeight)
 	self.frame:SetPoint(PDS.Config.framePoint, PDS.Config.frameX, PDS.Config.frameY)

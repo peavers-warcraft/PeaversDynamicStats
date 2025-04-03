@@ -4,11 +4,12 @@
 
 ## Overview
 
-PeaversDynamicStats is a World of Warcraft addon that provides visual bars representing your secondary stats.
+PeaversDynamicStats is a World of Warcraft addon that provides visual bars representing your primary and secondary stats.
 These bars dynamically update during combat letting you know exactly if you're about to do huge damage.
 
 ## Features
 
+- **Real-time Primary Stat Tracking**: Visualizes your character's strength, agility, intellect, and stamina as percentage increases from base values with customizable bars that update in real-time.
 - **Real-time Secondary Stat Tracking**: Visualizes your character's haste, critical strike, mastery, and versatility percentages with customizable bars that update in real-time.
 - **Combat-Aware Updates**: Increases update frequency during combat for more precise stat monitoring when it matters most.
 - **Highly Customizable Interface**: Adjust bar colors, textures, spacing, height, width, and background opacity to match your UI preferences.
