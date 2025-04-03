@@ -32,6 +32,7 @@ PDS.Config = {
 	showTitleBar = true,
 	showStats = {},
 	customColors = {},
+	showOverflowBars = true, -- Show overflow bars for stats exceeding 100%
 	showStatChanges = true, -- Show stat value changes
 	showRatings = true, -- Show rating values
 	showTooltips = true, -- Show enhanced tooltips on hover
@@ -69,6 +70,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.showTitleBar = self.showTitleBar
 	PeaversDynamicStatsDB.lockPosition = self.lockPosition
 	PeaversDynamicStatsDB.customColors = self.customColors
+	PeaversDynamicStatsDB.showOverflowBars = self.showOverflowBars
 	PeaversDynamicStatsDB.showStatChanges = self.showStatChanges
 	PeaversDynamicStatsDB.showRatings = self.showRatings
 	PeaversDynamicStatsDB.showTooltips = self.showTooltips
@@ -136,6 +138,9 @@ function Config:Load()
 	end
 	if PeaversDynamicStatsDB.customColors then
 		self.customColors = PeaversDynamicStatsDB.customColors
+	end
+	if PeaversDynamicStatsDB.showOverflowBars then
+		self.showOverflowBars = PeaversDynamicStatsDB.showOverflowBars
 	end
 	if PeaversDynamicStatsDB.showStatChanges ~= nil then
 		self.showStatChanges = PeaversDynamicStatsDB.showStatChanges
@@ -237,6 +242,7 @@ function Config:Initialize()
             -- Enable all stats by default, including primary stats
             self.showStats[statType] = true
         end
+
     end
 
     -- Ensure showStatChanges is enabled by default
@@ -247,6 +253,11 @@ function Config:Initialize()
     -- Ensure showRatings is enabled by default
     if self.showRatings == nil then
         self.showRatings = true
+    end
+
+    -- Ensure showOverflowBars is enabled by default
+    if self.showOverflowBars == nil then
+        self.showOverflowBars = true
     end
 
     -- Ensure showTooltips is enabled by default

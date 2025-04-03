@@ -114,7 +114,7 @@ function StatBar:CreateFrame(parent)
 	overflowBar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -1, 1)
 	overflowBar:SetMinMaxValues(0, 100)
 	overflowBar:SetValue(0)
-	overflowBar:SetFrameLevel(bar:GetFrameLevel() - 1) -- Set lower frame level to ensure it's below the text
+	overflowBar:SetFrameLevel(bar:GetFrameLevel() + 1) -- Set higher frame level to ensure it's visible above the main bar
 
 	-- Set the overflow bar texture
 	if PDS.Config.barTexture then
@@ -131,7 +131,12 @@ function StatBar:CreateFrame(parent)
 
 	frame.overflowBar = overflowBar
 
-	local valueText = bar:CreateFontString(nil, "OVERLAY")
+	-- Create a text layer frame that will be above both bars
+	local textLayer = CreateFrame("Frame", nil, bar)
+	textLayer:SetAllPoints()
+	textLayer:SetFrameLevel(overflowBar:GetFrameLevel() + 1) -- Set higher than overflow bar
+
+	local valueText = textLayer:CreateFontString(nil, "OVERLAY")
 	valueText:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
 	valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	valueText:SetJustifyH("RIGHT")
@@ -144,7 +149,7 @@ function StatBar:CreateFrame(parent)
 	end
 	frame.valueText = valueText
 
-	local nameText = bar:CreateFontString(nil, "OVERLAY")
+	local nameText = textLayer:CreateFontString(nil, "OVERLAY")
 	nameText:SetPoint("LEFT", bar, "LEFT", 4, 0)
 	nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	nameText:SetJustifyH("LEFT")
@@ -158,7 +163,7 @@ function StatBar:CreateFrame(parent)
 	frame.nameText = nameText
 
 	-- Create change indicator text
-	local changeText = bar:CreateFontString(nil, "OVERLAY")
+	local changeText = textLayer:CreateFontString(nil, "OVERLAY")
 	changeText:SetPoint("CENTER", bar, "CENTER", 0, 0)
 	changeText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	changeText:SetJustifyH("CENTER")
@@ -171,6 +176,9 @@ function StatBar:CreateFrame(parent)
 	end
 	frame.changeText = changeText
 
+	-- Store the text layer for future reference
+	frame.textLayer = textLayer
+
 	return frame
 end
 
@@ -182,14 +190,14 @@ function StatBar:Update(value, maxValue, change)
 		-- Get the bar values from Stats.lua
 		local percentValue, overflowValue = PDS.Stats:CalculateBarValues(self.value)
 
-		-- Show or hide the overflow bar based on the overflow value
-		if overflowValue > 0 then
-			-- Show the overflow bar
+		-- Show or hide the overflow bar based on the overflow value and global user preference
+		if overflowValue > 0 and PDS.Config.showOverflowBars then
+			-- Show the overflow bar if user has enabled it
 			if self.frame.overflowBar then
 				self.frame.overflowBar:Show()
 			end
 		else
-			-- Hide the overflow bar if value is 100% or less
+			-- Hide the overflow bar if value is 100% or less, or if user has disabled overflow bars globally
 			if self.frame.overflowBar then
 				self.frame.overflowBar:Hide()
 			end
@@ -256,12 +264,12 @@ function StatBar:AnimateToValue(newValue, overflowValue)
 		self.frame.bar:SetValue(newValue)
 	end
 
-	-- Handle the overflow bar animation if it exists
+ -- Handle the overflow bar animation if it exists
 	if self.frame.overflowBar then
 		overflowValue = overflowValue or 0
 
-		-- If we have an overflow value, make sure the overflow bar is visible
-		if overflowValue > 0 then
+		-- If we have an overflow value and user has enabled overflow bars globally, make it visible
+		if overflowValue > 0 and PDS.Config.showOverflowBars then
 			self.frame.overflowBar:Show()
 
 			-- Create animation group for overflow bar if it doesn't exist
@@ -294,7 +302,7 @@ function StatBar:AnimateToValue(newValue, overflowValue)
 				self.frame.overflowBar:SetValue(overflowValue)
 			end
 		else
-			-- Hide the overflow bar if there's no overflow
+			-- Hide the overflow bar if there's no overflow or user has disabled overflow bars globally
 			self.frame.overflowBar:Hide()
 			self.frame.overflowBar:SetValue(0)
 		end
@@ -352,10 +360,10 @@ function StatBar:UpdateColor()
 		self.frame.bar:SetStatusBarColor(r, g, b, 1)
 	end
 
-	-- Apply contrasting color to the overflow bar
+	-- Apply contrasting color to the overflow bar with transparency
 	if self.frame and self.frame.overflowBar then
 		local or_r, or_g, or_b = self:GetOverflowColor(r, g, b)
-		self.frame.overflowBar:SetStatusBarColor(or_r, or_g, or_b, 1)
+		self.frame.overflowBar:SetStatusBarColor(or_r, or_g, or_b, 0.7) -- Use 0.7 alpha for better visibility while still being distinct
 	end
 end
 
