@@ -502,6 +502,11 @@ function StatTooltips:ShowTooltip(tooltip, statType, value, rating)
         self:GetArmorPenetrationTooltip(tooltip, value, rating)
     end
 
+    -- Add history information if the module is available and enabled
+    if PDS.StatHistory and PDS.Config.enableStatHistory then
+        PDS.StatHistory:AddHistoryToTooltip(tooltip, statType)
+    end
+
     -- Show the tooltip
     tooltip:Show()
 end
