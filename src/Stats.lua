@@ -158,16 +158,6 @@ Stats.RATING_MAP = {
     [Stats.COMBAT_RATINGS.CR_AVOIDANCE] = Stats.STAT_TYPES.AVOIDANCE
 }
 
--- Class spec bonuses - Using Blizzard API directly when possible
-Stats.CLASS_SPEC_BONUSES = {
-    -- Rogue
-    ["ROGUE"] = {
-        -- Outlaw (spec index 2)
-        [2] = {
-            [Stats.STAT_TYPES.VERSATILITY] = 3 -- 3% versatility bonus from talent
-        }
-    }
-}
 
 -- Initialize base values for primary stats
 function Stats:InitializeBaseValues()
@@ -346,15 +336,6 @@ function Stats:GetValue(statType)
         value = GetBlockChance()
     end
 
-    -- Apply class/spec-specific bonuses
-    local _, playerClass = UnitClass("player")
-    local specIndex = GetSpecialization()
-
-    if Stats.CLASS_SPEC_BONUSES[playerClass] and
-            Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] and
-            Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType] then
-        value = value + Stats.CLASS_SPEC_BONUSES[playerClass][specIndex][statType]
-    end
 
     return value
 end
@@ -434,60 +415,6 @@ function Stats:GetName(statType)
     return Stats.STAT_NAMES[statType] or statType
 end
 
--- Adds a class/spec-specific stat bonus to the table
-function Stats:AddClassSpecBonus(className, specIndex, statType, bonusValue)
-    if not Stats.CLASS_SPEC_BONUSES[className] then
-        Stats.CLASS_SPEC_BONUSES[className] = {}
-    end
-
-    if not Stats.CLASS_SPEC_BONUSES[className][specIndex] then
-        Stats.CLASS_SPEC_BONUSES[className][specIndex] = {}
-    end
-
-    Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] = bonusValue
-end
-
--- Removes a class/spec-specific stat bonus from the table
-function Stats:RemoveClassSpecBonus(className, specIndex, statType)
-    if Stats.CLASS_SPEC_BONUSES[className] and Stats.CLASS_SPEC_BONUSES[className][specIndex] then
-        Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] = nil
-
-        if next(Stats.CLASS_SPEC_BONUSES[className][specIndex]) == nil then
-            Stats.CLASS_SPEC_BONUSES[className][specIndex] = nil
-        end
-
-        if next(Stats.CLASS_SPEC_BONUSES[className]) == nil then
-            Stats.CLASS_SPEC_BONUSES[className] = nil
-        end
-    end
-end
-
--- Gets the class/spec-specific stat bonus for a given combination
-function Stats:GetClassSpecBonus(className, specIndex, statType)
-    if Stats.CLASS_SPEC_BONUSES[className] and
-            Stats.CLASS_SPEC_BONUSES[className][specIndex] and
-            Stats.CLASS_SPEC_BONUSES[className][specIndex][statType] then
-        return Stats.CLASS_SPEC_BONUSES[className][specIndex][statType]
-    end
-
-    return 0
-end
-
--- Gets all stat bonuses for the current player's class and spec
-function Stats:GetCurrentClassSpecBonuses()
-    local bonuses = {}
-    local _, playerClass = UnitClass("player")
-    local specIndex = GetSpecialization()
-
-    if Stats.CLASS_SPEC_BONUSES[playerClass] and
-            Stats.CLASS_SPEC_BONUSES[playerClass][specIndex] then
-        for statType, bonusValue in pairs(Stats.CLASS_SPEC_BONUSES[playerClass][specIndex]) do
-            bonuses[statType] = bonusValue
-        end
-    end
-
-    return bonuses
-end
 
 -- Gets the rating needed for 1% of a stat using the API directly
 function Stats:GetRatingPer1Percent(statType)
