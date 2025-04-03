@@ -563,11 +563,19 @@ function Stats:GetDisplayValue(statType, value, showRating)
 
     -- If showRatings is enabled, get the rating and add it to the display value
     if showRating then
-        -- Get raw rating value directly using GetCombatRating
+        -- Get raw rating value directly using GetCombatRating or GetRating for primary stats
         local rating = nil
 
-        -- Map stat types to combat ratings
-        if statType == Stats.STAT_TYPES.DODGE then
+        -- Map stat types to combat ratings or get primary stat values
+        if statType == Stats.STAT_TYPES.STRENGTH then
+            rating = self:GetRating(statType)
+        elseif statType == Stats.STAT_TYPES.AGILITY then
+            rating = self:GetRating(statType)
+        elseif statType == Stats.STAT_TYPES.INTELLECT then
+            rating = self:GetRating(statType)
+        elseif statType == Stats.STAT_TYPES.STAMINA then
+            rating = self:GetRating(statType)
+        elseif statType == Stats.STAT_TYPES.DODGE then
             rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
         elseif statType == Stats.STAT_TYPES.PARRY then
             rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
