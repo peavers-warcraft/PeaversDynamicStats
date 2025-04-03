@@ -20,7 +20,7 @@ function TitleBar:Create(parentFrame)
 	local title = titleBar:CreateFontString(nil, "OVERLAY")
 	title:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
 	title:SetPoint("LEFT", titleBar, "LEFT", 5, 0)
-	title:SetText("Peavers Dynamic Stats")
+	title:SetText("PDS")
 	title:SetTextColor(1, 1, 1)
 	if PDS.Config.fontShadow then
 		title:SetShadowOffset(1, -1)
