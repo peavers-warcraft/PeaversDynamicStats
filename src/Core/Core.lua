@@ -92,7 +92,7 @@ end
 function Core:UpdateFrameLock()
 	if PDS.Config.lockPosition then
 		self.frame:SetMovable(false)
-		self.frame:EnableMouse(false)
+		self.frame:EnableMouse(true) -- Keep mouse enabled for tooltips
 		self.frame:RegisterForDrag("")
 		self.frame:SetScript("OnDragStart", nil)
 		self.frame:SetScript("OnDragStop", nil)
