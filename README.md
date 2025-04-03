@@ -11,6 +11,7 @@ These bars dynamically update during combat letting you know exactly if you're a
 
 - **Real-time Primary Stat Tracking**: Visualizes your character's strength, agility, intellect, and stamina as percentage increases from base values with customizable bars that update in real-time.
 - **Real-time Secondary Stat Tracking**: Visualizes your character's haste, critical strike, mastery, and versatility percentages with customizable bars that update in real-time.
+- **Stat History Tracking**: Records how your stats change over time and displays historical data in tooltips, including minimum, maximum, average values, and overall change.
 - **Combat-Aware Updates**: Increases update frequency during combat for more precise stat monitoring when it matters most.
 - **Highly Customizable Interface**: Adjust bar colors, textures, spacing, height, width, and background opacity to match your UI preferences.
 - **Movable and Lockable Frame**: Position the stats display anywhere on your screen and lock it in place to prevent accidental movement.

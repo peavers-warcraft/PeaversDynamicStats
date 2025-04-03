@@ -23,6 +23,12 @@ function Core:OnUpdate(elapsed)
 
 	if updateTimer >= interval then
 		self:UpdateAllBars()
+
+		-- Record stat history if the module is available
+		if PDS.StatHistory then
+			PDS.StatHistory:RecordStats()
+		end
+
 		updateTimer = 0
 	end
 end

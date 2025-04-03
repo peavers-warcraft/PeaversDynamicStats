@@ -12,6 +12,11 @@ function Core:Initialize()
 	-- Initialize base values for primary stats
 	PDS.Stats:InitializeBaseValues()
 
+	-- Initialize stat history tracking
+	if PDS.StatHistory then
+		PDS.StatHistory:Initialize()
+	end
+
 	self.frame = CreateFrame("Frame", "PeaversDynamicStatsFrame", UIParent, "BackdropTemplate")
 	self.frame:SetSize(PDS.Config.frameWidth, PDS.Config.frameHeight)
 	self.frame:SetPoint(PDS.Config.framePoint, PDS.Config.frameX, PDS.Config.frameY)

@@ -798,6 +798,26 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
     )
     yPos = newY - 10
 
+    -- Enable stat history tracking checkbox
+    local enableStatHistoryCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversEnableStatHistoryCheckbox",
+        "Enable Stat History Tracking",
+        subControlIndent,
+        yPos,
+        Config.enableStatHistory,
+        { 1, 1, 1 },
+        function(self)
+            Config.enableStatHistory = self:GetChecked()
+            Config:Save()
+            -- Clear history data if disabled
+            if not self:GetChecked() and PDS.StatHistory then
+                PDS.StatHistory:Clear()
+            end
+        end
+    )
+    yPos = newY - 10
+
     return yPos
 end
 

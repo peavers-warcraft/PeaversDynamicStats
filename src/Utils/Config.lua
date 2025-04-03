@@ -36,6 +36,7 @@ PDS.Config = {
 	showStatChanges = true, -- Show stat value changes
 	showRatings = true, -- Show rating values
 	showTooltips = true, -- Show enhanced tooltips on hover
+	enableStatHistory = true, -- Enable stat history tracking
 }
 
 -- Initialize showStats with values from Stats.STAT_TYPES
@@ -74,6 +75,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.showStatChanges = self.showStatChanges
 	PeaversDynamicStatsDB.showRatings = self.showRatings
 	PeaversDynamicStatsDB.showTooltips = self.showTooltips
+	PeaversDynamicStatsDB.enableStatHistory = self.enableStatHistory
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -150,6 +152,9 @@ function Config:Load()
 	end
 	if PeaversDynamicStatsDB.showTooltips ~= nil then
 		self.showTooltips = PeaversDynamicStatsDB.showTooltips
+	end
+	if PeaversDynamicStatsDB.enableStatHistory ~= nil then
+		self.enableStatHistory = PeaversDynamicStatsDB.enableStatHistory
 	end
 end
 
@@ -263,5 +268,10 @@ function Config:Initialize()
     -- Ensure showTooltips is enabled by default
     if self.showTooltips == nil then
         self.showTooltips = true
+    end
+
+    -- Ensure enableStatHistory is enabled by default
+    if self.enableStatHistory == nil then
+        self.enableStatHistory = true
     end
 end
