@@ -31,17 +31,6 @@ local function AddValue(tooltip, label, value, valueColor)
     tooltip:AddDoubleLine(label, value, 1, 1, 1, r, g, b)
 end
 
--- Helper function to calculate rating needed for next percentage point
-local function GetRatingForNextPercent(statType, currentRating, currentPercent)
-    -- This is an approximation and would need to be adjusted for each stat type
-    -- and character level in a real implementation
-    local nextPercent = math.floor(currentPercent) + 1
-    local ratingPerPercent = currentRating / currentPercent
-
-    if ratingPerPercent <= 0 then return 0 end
-
-    return math.ceil(nextPercent * ratingPerPercent - currentRating)
-end
 
 -- Generate tooltip content for Haste
 function StatTooltips:GetHasteTooltip(tooltip, value, rating)
@@ -55,7 +44,7 @@ function StatTooltips:GetHasteTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.6, 0.95, 0.95})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("HASTE", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.HASTE, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -81,7 +70,7 @@ function StatTooltips:GetCritTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.95, 0.95, 0.6})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("CRIT", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.CRIT, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -107,7 +96,7 @@ function StatTooltips:GetMasteryTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.95, 0.7, 0.5})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("MASTERY", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.MASTERY, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -145,7 +134,7 @@ function StatTooltips:GetVersatilityTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.7, 0.9, 0.7})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("VERSATILITY", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.VERSATILITY, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -170,7 +159,7 @@ function StatTooltips:GetSpeedTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.85, 0.7, 0.95})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("SPEED", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.SPEED, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -194,7 +183,7 @@ function StatTooltips:GetLeechTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.95, 0.7, 0.7})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("LEECH", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.LEECH, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -219,7 +208,7 @@ function StatTooltips:GetAvoidanceTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.7, 0.8, 0.95})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("AVOIDANCE", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.AVOIDANCE, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -351,7 +340,7 @@ function StatTooltips:GetDefenseTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.50, 0.50, 0.80})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("DEFENSE", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.DEFENSE, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -376,7 +365,7 @@ function StatTooltips:GetDodgeTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.40, 0.70, 0.40})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("DODGE", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.DODGE, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -401,7 +390,7 @@ function StatTooltips:GetParryTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.70, 0.40, 0.40})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("PARRY", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.PARRY, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -427,7 +416,7 @@ function StatTooltips:GetBlockTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.60, 0.60, 0.30})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("BLOCK", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.BLOCK, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -452,7 +441,7 @@ function StatTooltips:GetArmorPenetrationTooltip(tooltip, value, rating)
         AddValue(tooltip, "Current Rating", math.floor(rating + 0.5), {0.75, 0.60, 0.30})
 
         -- Rating needed for next percentage point
-        local ratingForNext = GetRatingForNextPercent("ARMOR_PENETRATION", rating, value)
+        local ratingForNext = PDS.Stats:GetRatingForNextPercent(PDS.Stats.STAT_TYPES.ARMOR_PENETRATION, rating, value)
         if ratingForNext > 0 then
             AddValue(tooltip, "Rating for +1%", ratingForNext, {0.7, 0.7, 0.7})
         end
@@ -468,6 +457,9 @@ end
 -- Main function to show tooltip for a specific stat type
 function StatTooltips:ShowTooltip(tooltip, statType, value, rating)
     if not tooltip or not statType then return end
+
+    -- Ensure value is not nil to prevent crashes
+    value = value or 0
 
     -- Clear any existing tooltip content
     tooltip:ClearLines()

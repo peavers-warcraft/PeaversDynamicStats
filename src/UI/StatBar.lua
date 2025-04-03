@@ -179,15 +179,11 @@ function StatBar:Update(value, maxValue, change)
 	if value ~= self.value then
 		self.value = value or 0
 
-		local percentValue = math.min(self.value, 100)
-		local overflowValue = 0
+		-- Get the bar values from Stats.lua
+		local percentValue, overflowValue = PDS.Stats:CalculateBarValues(self.value)
 
-		-- Calculate overflow value if the stat exceeds 100%
-		if self.value > 100 then
-			overflowValue = self.value - 100
-			-- Cap overflow at 100% for visual clarity
-			overflowValue = math.min(overflowValue, 100)
-
+		-- Show or hide the overflow bar based on the overflow value
+		if overflowValue > 0 then
 			-- Show the overflow bar
 			if self.frame.overflowBar then
 				self.frame.overflowBar:Show()
@@ -199,14 +195,8 @@ function StatBar:Update(value, maxValue, change)
 			end
 		end
 
-		local displayValue = PDS.Utils:FormatPercent(self.value)
-
-		-- If showRatings is enabled, get the rating and add it to the display value
-		if PDS.Config.showRatings then
-			local rating = PDS.Stats:GetRating(self.statType)
-			-- Always show rating value, even if it's 0
-			displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
-		end
+		-- Get the formatted display value from Stats.lua
+		local displayValue = PDS.Stats:GetDisplayValue(self.statType, self.value)
 
 		local currentText = self.frame.valueText:GetText()
 		if currentText ~= displayValue then
@@ -224,18 +214,10 @@ function StatBar:Update(value, maxValue, change)
 			-- Reset alpha to full visibility for the new change display
 			self.frame.changeText:SetAlpha(1.0)
 
-			-- Format and display the change value with appropriate sign
-			local changeDisplay = PDS.Utils:FormatChange(change)
+			-- Get the formatted change display value and color from Stats.lua
+			local changeDisplay, r, g, b = PDS.Stats:GetChangeDisplayValue(change)
 			self.frame.changeText:SetText(changeDisplay)
-
-			-- Set color based on change direction for better visual feedback
-			if change > 0 then
-				self.frame.changeText:SetTextColor(0, 1, 0) -- Green for positive changes
-			elseif change < 0 then
-				self.frame.changeText:SetTextColor(1, 0, 0) -- Red for negative changes
-			else
-				self.frame.changeText:SetTextColor(1, 1, 1) -- White for no change (shouldn't happen)
-			end
+			self.frame.changeText:SetTextColor(r, g, b)
 
 			-- Start the fade-out animation to gradually hide the change indicator
 			-- This will make the text fade out over a few seconds instead of staying static
