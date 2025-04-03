@@ -3,9 +3,14 @@ local Core = PDS.Core
 
 -- Creates or recreates all stat bars based on current configuration
 function Core:CreateBars()
-	-- Clear existing bars
+	-- Clean up existing bars
 	for _, bar in ipairs(self.bars) do
-		bar.frame:Hide()
+		-- Call destroy method to properly clean up tooltips
+		if bar.Destroy then
+			bar:Destroy()
+		else
+			bar.frame:Hide()
+		end
 	end
 	self.bars = {}
 

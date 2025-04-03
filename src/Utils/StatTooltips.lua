@@ -456,59 +456,60 @@ end
 
 -- Main function to show tooltip for a specific stat type
 function StatTooltips:ShowTooltip(tooltip, statType, value, rating)
-    if not tooltip or not statType then return end
+	if not tooltip or not statType then return end
 
-    -- Ensure value is not nil to prevent crashes
-    value = value or 0
+	-- Ensure value is not nil to prevent crashes
+	value = value or 0
 
-    -- Clear any existing tooltip content
-    tooltip:ClearLines()
+	-- Always clear lines before adding new content
+	tooltip:ClearLines()
 
-    -- Call the appropriate tooltip function based on stat type
-    -- Primary stats
-    if statType == PDS.Stats.STAT_TYPES.STRENGTH then
-        self:GetStrengthTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.AGILITY then
-        self:GetAgilityTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.INTELLECT then
-        self:GetIntellectTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.STAMINA then
-        self:GetStaminaTooltip(tooltip, value, rating)
-    -- Secondary stats
-    elseif statType == PDS.Stats.STAT_TYPES.HASTE then
-        self:GetHasteTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.CRIT then
-        self:GetCritTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.MASTERY then
-        self:GetMasteryTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.VERSATILITY then
-        self:GetVersatilityTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.SPEED then
-        self:GetSpeedTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.LEECH then
-        self:GetLeechTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.AVOIDANCE then
-        self:GetAvoidanceTooltip(tooltip, value, rating)
-    -- Combat ratings
-    elseif statType == PDS.Stats.STAT_TYPES.DEFENSE then
-        self:GetDefenseTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.DODGE then
-        self:GetDodgeTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.PARRY then
-        self:GetParryTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.BLOCK then
-        self:GetBlockTooltip(tooltip, value, rating)
-    elseif statType == PDS.Stats.STAT_TYPES.ARMOR_PENETRATION then
-        self:GetArmorPenetrationTooltip(tooltip, value, rating)
-    end
+	-- Call the appropriate tooltip function based on stat type
+	-- Primary stats
+	if statType == PDS.Stats.STAT_TYPES.STRENGTH then
+		self:GetStrengthTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.AGILITY then
+		self:GetAgilityTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.INTELLECT then
+		self:GetIntellectTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.STAMINA then
+		self:GetStaminaTooltip(tooltip, value, rating)
+		-- Secondary stats
+	elseif statType == PDS.Stats.STAT_TYPES.HASTE then
+		self:GetHasteTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.CRIT then
+		self:GetCritTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.MASTERY then
+		self:GetMasteryTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.VERSATILITY then
+		self:GetVersatilityTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.SPEED then
+		self:GetSpeedTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.LEECH then
+		self:GetLeechTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.AVOIDANCE then
+		self:GetAvoidanceTooltip(tooltip, value, rating)
+		-- Combat ratings
+	elseif statType == PDS.Stats.STAT_TYPES.DEFENSE then
+		self:GetDefenseTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.DODGE then
+		self:GetDodgeTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.PARRY then
+		self:GetParryTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.BLOCK then
+		self:GetBlockTooltip(tooltip, value, rating)
+	elseif statType == PDS.Stats.STAT_TYPES.ARMOR_PENETRATION then
+		self:GetArmorPenetrationTooltip(tooltip, value, rating)
+	end
 
-    -- Add history information if the module is available and enabled
-    if PDS.StatHistory and PDS.Config.enableStatHistory then
-        PDS.StatHistory:AddHistoryToTooltip(tooltip, statType)
-    end
+	-- Add history information if the module is available and enabled
+	if PDS.StatHistory and PDS.Config.enableStatHistory then
+		PDS.StatHistory:AddHistoryToTooltip(tooltip, statType)
+	end
 
-    -- Show the tooltip
-    tooltip:Show()
+	-- Force show the tooltip
+	tooltip:Show()
 end
+
 
 return StatTooltips

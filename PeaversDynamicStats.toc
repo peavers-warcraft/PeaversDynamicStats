@@ -25,12 +25,12 @@ src\Utils\Config.lua
 src\Utils\ConfigUI.lua
 src\Utils\StatTooltips.lua
 
+# UI components needed by Core
+src\UI\StatBar.lua
+src\UI\TitleBar.lua
+src\UI\BarManager.lua
+
 # Core
 src\Core\Core.lua
 src\Core\Events.lua
 src\Core\SlashCommands.lua
-
-# UI
-src\UI\StatBar.lua
-src\UI\TitleBar.lua
-src\UI\Bars.lua

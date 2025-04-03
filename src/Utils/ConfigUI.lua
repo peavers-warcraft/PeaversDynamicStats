@@ -85,8 +85,9 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
         local onClick = function(self)
             Config.showStats[statType] = self:GetChecked()
             Config:Save()
-            if PDS.Core and PDS.Core.CreateBars then
-                PDS.Core:CreateBars()
+            if PDS.BarManager then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
             end
         end
 
@@ -163,12 +164,11 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
             -- Update color picker appearance
             colorPicker:SetBackdropColor(defaultR, defaultG, defaultB)
 
-            -- Update all bars if they exist
-            if PDS.Core and PDS.Core.bars then
-                for _, bar in ipairs(PDS.Core.bars) do
-                    if bar.statType == statType then
-                        bar:UpdateColor()
-                    end
+            -- Update the bar if it exists
+            if PDS.BarManager then
+                local bar = PDS.BarManager:GetBar(statType)
+                if bar then
+                    bar:UpdateColor()
                 end
             end
         end)
@@ -196,12 +196,11 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
                 Config.customColors[statType] = {r = newR, g = newG, b = newB}
                 Config:Save()
 
-                -- Update all bars if they exist
-                if PDS.Core and PDS.Core.bars then
-                    for _, bar in ipairs(PDS.Core.bars) do
-                        if bar.statType == statType then
-                            bar:UpdateColor()
-                        end
+                -- Update the bar if it exists
+                if PDS.BarManager then
+                    local bar = PDS.BarManager:GetBar(statType)
+                    if bar then
+                        bar:UpdateColor()
                     end
                 end
             end
@@ -289,8 +288,9 @@ function ConfigUI:CreateBarOptions(content, yPos, baseSpacing, sectionSpacing)
         spacingLabel:SetText("Bar Spacing: " .. roundedValue)
         Config.barSpacing = roundedValue
         Config:Save()
-        if PDS.Core and PDS.Core.CreateBars then
-            PDS.Core:CreateBars()
+        if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+            PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+            PDS.Core:AdjustFrameHeight()
         end
     end)
 
@@ -329,8 +329,9 @@ function ConfigUI:CreateBarOptions(content, yPos, baseSpacing, sectionSpacing)
         heightLabel:SetText("Bar Height: " .. roundedValue)
         Config.barHeight = roundedValue
         Config:Save()
-        if PDS.Core and PDS.Core.CreateBars then
-            PDS.Core:CreateBars()
+        if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+            PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+            PDS.Core:AdjustFrameHeight()
         end
     end)
 
@@ -372,10 +373,8 @@ function ConfigUI:CreateBarOptions(content, yPos, baseSpacing, sectionSpacing)
         Config:Save()
         if PDS.Core and PDS.Core.frame then
             PDS.Core.frame:SetWidth(roundedValue)
-            if PDS.Core.bars then
-                for _, bar in ipairs(PDS.Core.bars) do
-                    bar:UpdateWidth()
-                end
+            if PDS.BarManager then
+                PDS.BarManager:ResizeBars()
             end
         end
     end)
@@ -424,10 +423,8 @@ function ConfigUI:CreateBarOptions(content, yPos, baseSpacing, sectionSpacing)
         barBgOpacityLabel:SetText("Bar Background Opacity: " .. math.floor(roundedValue * 100) .. "%")
         Config.barBgAlpha = roundedValue
         Config:Save()
-        if PDS.Core and PDS.Core.bars then
-            for _, bar in ipairs(PDS.Core.bars) do
-                bar:UpdateBackgroundOpacity()
-            end
+        if PDS.BarManager then
+            PDS.BarManager:ResizeBars()
         end
     end)
 
@@ -590,8 +587,9 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
                 Config.fontFace = path
                 UIDropDownMenu_SetText(fontDropdown, name)
                 Config:Save()
-                if PDS.Core and PDS.Core.CreateBars then
-                    PDS.Core:CreateBars()
+                if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                    PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                    PDS.Core:AdjustFrameHeight()
                 end
             end
             UIDropDownMenu_AddButton(info)
@@ -612,8 +610,9 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
         function(self)
             Config.fontOutline = self:GetChecked() and "OUTLINE" or ""
             Config:Save()
-            if PDS.Core and PDS.Core.CreateBars then
-                PDS.Core:CreateBars()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
             end
         end
     )
@@ -631,8 +630,9 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
         function(self)
             Config.fontShadow = self:GetChecked()
             Config:Save()
-            if PDS.Core and PDS.Core.CreateBars then
-                PDS.Core:CreateBars()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
             end
         end
     )
@@ -671,8 +671,9 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
         fontSizeLabel:SetText("Font Size: " .. roundedValue)
         Config.fontSize = roundedValue
         Config:Save()
-        if PDS.Core and PDS.Core.CreateBars then
-            PDS.Core:CreateBars()
+        if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+            PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+            PDS.Core:AdjustFrameHeight()
         end
     end)
 
@@ -713,10 +714,8 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
                 Config.barTexture = path
                 UIDropDownMenu_SetText(textureDropdown, name)
                 Config:Save()
-                if PDS.Core and PDS.Core.bars then
-                    for _, bar in ipairs(PDS.Core.bars) do
-                        bar:UpdateTexture()
-                    end
+                if PDS.BarManager then
+                    PDS.BarManager:ResizeBars()
                 end
             end
             UIDropDownMenu_AddButton(info)
@@ -737,8 +736,9 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
         function(self)
             Config.showStatChanges = self:GetChecked()
             Config:Save()
-            if PDS.Core and PDS.Core.CreateBars then
-                PDS.Core:CreateBars()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
             end
         end
     )
@@ -756,8 +756,9 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
         function(self)
             Config.showRatings = self:GetChecked()
             Config:Save()
-            if PDS.Core and PDS.Core.CreateBars then
-                PDS.Core:CreateBars()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
             end
         end
     )
@@ -775,8 +776,9 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
         function(self)
             Config.showOverflowBars = self:GetChecked()
             Config:Save()
-            if PDS.Core and PDS.Core.CreateBars then
-                PDS.Core:CreateBars()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
             end
         end
     )
