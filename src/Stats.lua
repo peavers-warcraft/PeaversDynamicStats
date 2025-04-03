@@ -289,11 +289,11 @@ function Stats:GetValue(statType)
     elseif statType == Stats.STAT_TYPES.DEFENSE then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_DEFENSE_SKILL)
     elseif statType == Stats.STAT_TYPES.DODGE then
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_DODGE)
+        value = GetDodgeChance()
     elseif statType == Stats.STAT_TYPES.PARRY then
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_PARRY)
+        value = GetParryChance()
     elseif statType == Stats.STAT_TYPES.BLOCK then
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_BLOCK)
+        value = GetBlockChance()
     elseif statType == Stats.STAT_TYPES.ARMOR_PENETRATION then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_ARMOR_PENETRATION)
     end
