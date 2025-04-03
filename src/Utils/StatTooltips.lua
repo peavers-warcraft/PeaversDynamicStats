@@ -34,9 +34,6 @@ end
 
 -- Generate tooltip content for Haste
 function StatTooltips:GetHasteTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Haste")
-    AddDescription(tooltip, "Increases attack speed, casting speed, and some resource generation rates.")
-
     -- Current values
     AddValue(tooltip, "Current Haste", PDS.Utils:FormatPercent(value), {0.6, 0.95, 0.95}) -- Pastel Cyan to match bar color
 
@@ -60,9 +57,6 @@ end
 
 -- Generate tooltip content for Critical Strike
 function StatTooltips:GetCritTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Critical Strike")
-    AddDescription(tooltip, "Increases your chance to critically strike with attacks and spells, dealing increased damage or healing.")
-
     -- Current values
     AddValue(tooltip, "Current Crit Chance", PDS.Utils:FormatPercent(value), {0.95, 0.95, 0.6}) -- Pastel Yellow to match bar color
 
@@ -86,9 +80,6 @@ end
 
 -- Generate tooltip content for Mastery
 function StatTooltips:GetMasteryTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Mastery")
-    AddDescription(tooltip, "Improves a class-specific bonus determined by your specialization.")
-
     -- Current values
     AddValue(tooltip, "Current Mastery", PDS.Utils:FormatPercent(value), {0.95, 0.7, 0.5}) -- Pastel Orange to match bar color
 
@@ -123,9 +114,6 @@ end
 
 -- Generate tooltip content for Versatility
 function StatTooltips:GetVersatilityTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Versatility")
-    AddDescription(tooltip, "Increases damage and healing done, and reduces damage taken.")
-
     -- Current values
     AddValue(tooltip, "Damage/Healing Bonus", PDS.Utils:FormatPercent(value), {0.7, 0.9, 0.7}) -- Pastel Green to match bar color
     AddValue(tooltip, "Damage Reduction", PDS.Utils:FormatPercent(value / 2), {0.7, 0.9, 0.7})
@@ -149,9 +137,6 @@ end
 
 -- Generate tooltip content for Speed
 function StatTooltips:GetSpeedTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Speed")
-    AddDescription(tooltip, "Increases movement speed.")
-
     -- Current values
     AddValue(tooltip, "Current Speed Bonus", PDS.Utils:FormatPercent(value), {0.85, 0.7, 0.95}) -- Pastel Purple to match bar color
 
@@ -173,9 +158,6 @@ end
 
 -- Generate tooltip content for Leech
 function StatTooltips:GetLeechTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Leech")
-    AddDescription(tooltip, "Heals you for a portion of all damage and healing done.")
-
     -- Current values
     AddValue(tooltip, "Current Leech", PDS.Utils:FormatPercent(value), {0.95, 0.7, 0.7}) -- Pastel Red to match bar color
 
@@ -198,9 +180,6 @@ end
 
 -- Generate tooltip content for Avoidance
 function StatTooltips:GetAvoidanceTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Avoidance")
-    AddDescription(tooltip, "Reduces area-of-effect damage taken.")
-
     -- Current values
     AddValue(tooltip, "AoE Damage Reduction", PDS.Utils:FormatPercent(value), {0.7, 0.8, 0.95}) -- Pastel Blue to match bar color
 
@@ -222,9 +201,6 @@ end
 
 -- Generate tooltip content for Strength
 function StatTooltips:GetStrengthTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Strength")
-    AddDescription(tooltip, "Increases attack power for Paladins, Warriors, and Death Knights.")
-
     -- Current values
     AddValue(tooltip, "Percent Increase", PDS.Utils:FormatPercent(value), {0.95, 0.6, 0.6}) -- Pastel Red to match bar color
 
@@ -249,9 +225,6 @@ end
 
 -- Generate tooltip content for Agility
 function StatTooltips:GetAgilityTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Agility")
-    AddDescription(tooltip, "Increases attack power for Hunters, Rogues, Shamans, Monks, and Druids.")
-
     -- Current values
     AddValue(tooltip, "Percent Increase", PDS.Utils:FormatPercent(value), {0.6, 0.95, 0.6}) -- Pastel Green to match bar color
 
@@ -277,9 +250,6 @@ end
 
 -- Generate tooltip content for Intellect
 function StatTooltips:GetIntellectTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Intellect")
-    AddDescription(tooltip, "Increases spell power for Priests, Mages, Warlocks, Druids, Shamans, Monks, and Paladins.")
-
     -- Current values
     AddValue(tooltip, "Percent Increase", PDS.Utils:FormatPercent(value), {0.6, 0.6, 0.95}) -- Pastel Blue to match bar color
 
@@ -304,9 +274,6 @@ end
 
 -- Generate tooltip content for Stamina
 function StatTooltips:GetStaminaTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Stamina")
-    AddDescription(tooltip, "Increases health points for all classes.")
-
     -- Current values
     AddValue(tooltip, "Percent Increase", PDS.Utils:FormatPercent(value), {0.95, 0.8, 0.6}) -- Pastel Orange to match bar color
 
@@ -330,9 +297,6 @@ end
 
 -- Generate tooltip content for Defense
 function StatTooltips:GetDefenseTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Defense")
-    AddDescription(tooltip, "Increases your defense skill, reducing the chance to be hit by attacks.")
-
     -- Current values
     AddValue(tooltip, "Defense Bonus", PDS.Utils:FormatPercent(value), {0.50, 0.50, 0.80}) -- Steel Blue to match bar color
 
@@ -355,9 +319,6 @@ end
 
 -- Generate tooltip content for Dodge
 function StatTooltips:GetDodgeTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Dodge")
-    AddDescription(tooltip, "Increases your chance to dodge attacks, avoiding all damage.")
-
     -- Current values
     AddValue(tooltip, "Dodge Chance", PDS.Utils:FormatPercent(value), {0.40, 0.70, 0.40}) -- Forest Green to match bar color
 
@@ -380,9 +341,6 @@ end
 
 -- Generate tooltip content for Parry
 function StatTooltips:GetParryTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Parry")
-    AddDescription(tooltip, "Increases your chance to parry attacks, avoiding all damage and enabling a quick counter-attack.")
-
     -- Current values
     AddValue(tooltip, "Parry Chance", PDS.Utils:FormatPercent(value), {0.70, 0.40, 0.40}) -- Rust Red to match bar color
 
@@ -406,9 +364,6 @@ end
 
 -- Generate tooltip content for Block
 function StatTooltips:GetBlockTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Block")
-    AddDescription(tooltip, "Increases your chance to block attacks with a shield, reducing damage taken.")
-
     -- Current values
     AddValue(tooltip, "Block Chance", PDS.Utils:FormatPercent(value), {0.60, 0.60, 0.30}) -- Olive to match bar color
 
@@ -431,9 +386,6 @@ end
 
 -- Generate tooltip content for Armor Penetration
 function StatTooltips:GetArmorPenetrationTooltip(tooltip, value, rating)
-    AddHeader(tooltip, "Armor Penetration")
-    AddDescription(tooltip, "Allows your physical attacks to ignore a portion of the target's armor.")
-
     -- Current values
     AddValue(tooltip, "Armor Ignored", PDS.Utils:FormatPercent(value), {0.75, 0.60, 0.30}) -- Bronze to match bar color
 
@@ -454,6 +406,92 @@ function StatTooltips:GetArmorPenetrationTooltip(tooltip, value, rating)
     AddLine(tooltip, "• Increases physical damage against armored targets", 0.8, 0.8, 0.8, true)
 end
 
+-- Get the description for a specific stat type
+function StatTooltips:GetStatDescription(statType)
+    -- Return the appropriate description based on stat type
+    if statType == PDS.Stats.STAT_TYPES.STRENGTH then
+        return "Increases attack power for Strength-based classes."
+    elseif statType == PDS.Stats.STAT_TYPES.AGILITY then
+        return "Increases attack power for Agility-based classes and provides a small amount of armor and critical strike."
+    elseif statType == PDS.Stats.STAT_TYPES.INTELLECT then
+        return "Increases spell power and the size of your mana pool."
+    elseif statType == PDS.Stats.STAT_TYPES.STAMINA then
+        return "Increases your maximum health."
+    elseif statType == PDS.Stats.STAT_TYPES.HASTE then
+        return "Increases attack speed, casting speed, and some resource generation rates."
+    elseif statType == PDS.Stats.STAT_TYPES.CRIT then
+        return "Increases your chance to critically strike with attacks and spells, dealing increased damage or healing."
+    elseif statType == PDS.Stats.STAT_TYPES.MASTERY then
+        return "Improves a class-specific bonus determined by your specialization."
+    elseif statType == PDS.Stats.STAT_TYPES.VERSATILITY then
+        return "Increases damage and healing done, and reduces damage taken."
+    elseif statType == PDS.Stats.STAT_TYPES.SPEED then
+        return "Increases movement speed."
+    elseif statType == PDS.Stats.STAT_TYPES.LEECH then
+        return "Heals you for a portion of all damage and healing done."
+    elseif statType == PDS.Stats.STAT_TYPES.AVOIDANCE then
+        return "Reduces damage taken from area-of-effect attacks."
+    elseif statType == PDS.Stats.STAT_TYPES.DEFENSE then
+        return "Increases your chance to dodge, parry, and block attacks."
+    elseif statType == PDS.Stats.STAT_TYPES.DODGE then
+        return "Increases your chance to dodge attacks, avoiding all damage."
+    elseif statType == PDS.Stats.STAT_TYPES.PARRY then
+        return "Increases your chance to parry attacks, avoiding all damage and enabling counter-attacks."
+    elseif statType == PDS.Stats.STAT_TYPES.BLOCK then
+        return "Increases your chance to block attacks with a shield, reducing damage taken."
+    elseif statType == PDS.Stats.STAT_TYPES.ARMOR_PENETRATION then
+        return "Allows your physical attacks to ignore a portion of the target's armor."
+    else
+        return "Improves your character's performance."
+    end
+end
+
+-- Centralized function to add stat tooltip content
+function StatTooltips:AddStatTooltipContent(tooltip, statType, value, rating)
+    -- Add header and description for the stat
+    local statName = PDS.Stats:GetName(statType)
+    AddHeader(tooltip, statName)
+    AddDescription(tooltip, self:GetStatDescription(statType))
+
+    -- Call the appropriate tooltip function based on stat type
+    -- Primary stats
+    if statType == PDS.Stats.STAT_TYPES.STRENGTH then
+        self:GetStrengthTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.AGILITY then
+        self:GetAgilityTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.INTELLECT then
+        self:GetIntellectTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.STAMINA then
+        self:GetStaminaTooltip(tooltip, value, rating)
+        -- Secondary stats
+    elseif statType == PDS.Stats.STAT_TYPES.HASTE then
+        self:GetHasteTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.CRIT then
+        self:GetCritTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.MASTERY then
+        self:GetMasteryTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.VERSATILITY then
+        self:GetVersatilityTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.SPEED then
+        self:GetSpeedTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.LEECH then
+        self:GetLeechTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.AVOIDANCE then
+        self:GetAvoidanceTooltip(tooltip, value, rating)
+        -- Combat ratings
+    elseif statType == PDS.Stats.STAT_TYPES.DEFENSE then
+        self:GetDefenseTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.DODGE then
+        self:GetDodgeTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.PARRY then
+        self:GetParryTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.BLOCK then
+        self:GetBlockTooltip(tooltip, value, rating)
+    elseif statType == PDS.Stats.STAT_TYPES.ARMOR_PENETRATION then
+        self:GetArmorPenetrationTooltip(tooltip, value, rating)
+    end
+end
+
 -- Main function to show tooltip for a specific stat type
 function StatTooltips:ShowTooltip(tooltip, statType, value, rating)
 	if not tooltip or not statType then return end
@@ -464,43 +502,8 @@ function StatTooltips:ShowTooltip(tooltip, statType, value, rating)
 	-- Always clear lines before adding new content
 	tooltip:ClearLines()
 
-	-- Call the appropriate tooltip function based on stat type
-	-- Primary stats
-	if statType == PDS.Stats.STAT_TYPES.STRENGTH then
-		self:GetStrengthTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.AGILITY then
-		self:GetAgilityTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.INTELLECT then
-		self:GetIntellectTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.STAMINA then
-		self:GetStaminaTooltip(tooltip, value, rating)
-		-- Secondary stats
-	elseif statType == PDS.Stats.STAT_TYPES.HASTE then
-		self:GetHasteTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.CRIT then
-		self:GetCritTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.MASTERY then
-		self:GetMasteryTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.VERSATILITY then
-		self:GetVersatilityTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.SPEED then
-		self:GetSpeedTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.LEECH then
-		self:GetLeechTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.AVOIDANCE then
-		self:GetAvoidanceTooltip(tooltip, value, rating)
-		-- Combat ratings
-	elseif statType == PDS.Stats.STAT_TYPES.DEFENSE then
-		self:GetDefenseTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.DODGE then
-		self:GetDodgeTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.PARRY then
-		self:GetParryTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.BLOCK then
-		self:GetBlockTooltip(tooltip, value, rating)
-	elseif statType == PDS.Stats.STAT_TYPES.ARMOR_PENETRATION then
-		self:GetArmorPenetrationTooltip(tooltip, value, rating)
-	end
+	-- Add the centralized tooltip content
+	self:AddStatTooltipContent(tooltip, statType, value, rating)
 
 	-- Add history information if the module is available and enabled
 	if PDS.StatHistory and PDS.Config.enableStatHistory then
