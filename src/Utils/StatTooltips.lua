@@ -458,6 +458,9 @@ end
 function StatTooltips:ShowTooltip(tooltip, statType, value, rating)
     if not tooltip or not statType then return end
 
+    -- Ensure value is not nil to prevent crashes
+    value = value or 0
+
     -- Clear any existing tooltip content
     tooltip:ClearLines()
 

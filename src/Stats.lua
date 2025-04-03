@@ -3,7 +3,7 @@ local Stats = PDS.Stats
 
 -- Combat Rating constants - updated for 11.0.0+
 Stats.COMBAT_RATINGS = {
-    CR_WEAPON_SKILL = 1,
+    CR_WEAPON_SKILL = 1,         -- Removed in patch 6.0.2
     CR_DEFENSE_SKILL = 2,
     CR_DODGE = 3,
     CR_PARRY = 4,
@@ -14,26 +14,27 @@ Stats.COMBAT_RATINGS = {
     CR_CRIT_MELEE = 9,
     CR_CRIT_RANGED = 10,
     CR_CRIT_SPELL = 11,
-    CR_HIT_TAKEN_MELEE = 12,
-    CR_HIT_TAKEN_RANGED = 13,
-    CR_HIT_TAKEN_SPELL = 14,
+    CR_MULTISTRIKE = 12,         -- Formerly CR_HIT_TAKEN_MELEE until patch 6.0.2
+    CR_READINESS = 13,           -- Formerly CR_HIT_TAKEN_SPELL until patch 6.0.2
+    CR_SPEED = 14,               -- Formerly CR_HIT_TAKEN_SPELL until patch 6.0.2
     CR_RESILIENCE_CRIT_TAKEN = 15,
     CR_RESILIENCE_PLAYER_DAMAGE_TAKEN = 16,
-    CR_CRIT_TAKEN_SPELL = 17,
+    CR_LIFESTEAL = 17,           -- Formerly CR_CRIT_TAKEN_SPELL until patch 6.0.2
     CR_HASTE_MELEE = 18,
     CR_HASTE_RANGED = 19,
     CR_HASTE_SPELL = 20,
-    CR_WEAPON_SKILL_MAINHAND = 21,
-    CR_WEAPON_SKILL_OFFHAND = 22,
-    CR_WEAPON_SKILL_RANGED = 23,
+    CR_AVOIDANCE = 21,           -- Formerly CR_WEAPON_SKILL_MAINHAND until patch 6.0.2
+    -- CR_WEAPON_SKILL_OFFHAND = 22, -- Removed in patch 6.0.2
+    -- CR_WEAPON_SKILL_RANGED = 23,  -- Removed in patch 6.0.2
     CR_EXPERTISE = 24,
     CR_ARMOR_PENETRATION = 25,
     CR_MASTERY = 26,
+    -- CR_PVP_POWER = 27,           -- Removed in patch 6.0.2
+    -- Index 28 is missing or unused
     CR_VERSATILITY_DAMAGE_DONE = 29,
     CR_VERSATILITY_DAMAGE_TAKEN = 30,
-    CR_SPEED = 31,
-    CR_LIFESTEAL = 32,
-    CR_AVOIDANCE = 33
+    -- CR_SPEED is now 14 instead of 31
+    -- CR_LIFESTEAL is now 17 instead of 32
 }
 
 -- Stat types - updated for 11.0.0+
@@ -141,6 +142,20 @@ Stats.STAT_ORDER = {
     Stats.STAT_TYPES.DODGE,
     Stats.STAT_TYPES.PARRY,
     Stats.STAT_TYPES.BLOCK
+}
+
+-- Combat Rating to Stat Type mapping for easier lookups
+Stats.RATING_MAP = {
+    [Stats.COMBAT_RATINGS.CR_DODGE] = Stats.STAT_TYPES.DODGE,
+    [Stats.COMBAT_RATINGS.CR_PARRY] = Stats.STAT_TYPES.PARRY,
+    [Stats.COMBAT_RATINGS.CR_BLOCK] = Stats.STAT_TYPES.BLOCK,
+    [Stats.COMBAT_RATINGS.CR_CRIT_MELEE] = Stats.STAT_TYPES.CRIT,
+    [Stats.COMBAT_RATINGS.CR_HASTE_MELEE] = Stats.STAT_TYPES.HASTE,
+    [Stats.COMBAT_RATINGS.CR_MASTERY] = Stats.STAT_TYPES.MASTERY,
+    [Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE] = Stats.STAT_TYPES.VERSATILITY,
+    [Stats.COMBAT_RATINGS.CR_SPEED] = Stats.STAT_TYPES.SPEED,
+    [Stats.COMBAT_RATINGS.CR_LIFESTEAL] = Stats.STAT_TYPES.LEECH,
+    [Stats.COMBAT_RATINGS.CR_AVOIDANCE] = Stats.STAT_TYPES.AVOIDANCE
 }
 
 -- Class spec bonuses - Using Blizzard API directly when possible
@@ -290,20 +305,33 @@ function Stats:GetValue(statType)
                 value = 100
             end
         end
-        -- Secondary stats - Using direct API calls
+        -- Secondary stats - Using direct API calls with insights from the WeakAura
     elseif statType == Stats.STAT_TYPES.HASTE then
         value = GetHaste()
     elseif statType == Stats.STAT_TYPES.CRIT then
-        value = GetCritChance()
+        -- Based on WeakAura, use GetSpellCritChance for spell-specific crit
+        -- Using spell school 2 (Fire) for consistent values
+        value = GetSpellCritChance(2)
     elseif statType == Stats.STAT_TYPES.MASTERY then
         value = GetMasteryEffect()
     elseif statType == Stats.STAT_TYPES.VERSATILITY then
-        -- Fix for versatility stats
+        -- Fixed versatility implementation based on WeakAura code
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+
+        -- If GetVersatilityBonus function exists, add it (for compatibility)
+        if GetVersatilityBonus then
+            value = value + GetVersatilityBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        if GetVersatilityBonus then
+            value = value + GetVersatilityBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+        if GetVersatilityBonus then
+            value = value + GetVersatilityBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+        end
     elseif statType == Stats.STAT_TYPES.SPEED then
         value = GetSpeed()
     elseif statType == Stats.STAT_TYPES.LEECH then
@@ -528,13 +556,48 @@ end
 function Stats:GetDisplayValue(statType, value, showRating)
     local displayValue = PDS.Utils:FormatPercent(value)
 
+    -- If showRating is not specified, use the config setting
     if showRating == nil then
         showRating = PDS.Config.showRatings
     end
 
+    -- If showRatings is enabled, get the rating and add it to the display value
     if showRating then
-        local rating = self:GetRating(statType)
-        displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
+        -- Get raw rating value directly using GetCombatRating
+        local rating = nil
+
+        -- Map stat types to combat ratings
+        if statType == Stats.STAT_TYPES.DODGE then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
+        elseif statType == Stats.STAT_TYPES.PARRY then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
+        elseif statType == Stats.STAT_TYPES.BLOCK then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_BLOCK)
+        elseif statType == Stats.STAT_TYPES.HASTE then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+        elseif statType == Stats.STAT_TYPES.CRIT then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+        elseif statType == Stats.STAT_TYPES.MASTERY then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
+        elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+        elseif statType == Stats.STAT_TYPES.SPEED then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
+        elseif statType == Stats.STAT_TYPES.LEECH then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
+        elseif statType == Stats.STAT_TYPES.AVOIDANCE then
+            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_AVOIDANCE)
+        else
+            -- Fallback to using GetRating method
+            rating = self:GetRating(statType)
+        end
+
+        -- If we have a rating value, add it to the display value
+        if rating and rating > 0 then
+            displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
+        end
     end
 
     return displayValue
