@@ -141,7 +141,7 @@ function Config:Load()
 	if PeaversDynamicStatsDB.customColors then
 		self.customColors = PeaversDynamicStatsDB.customColors
 	end
-	if PeaversDynamicStatsDB.showOverflowBars then
+	if PeaversDynamicStatsDB.showOverflowBars ~= nil then
 		self.showOverflowBars = PeaversDynamicStatsDB.showOverflowBars
 	end
 	if PeaversDynamicStatsDB.showStatChanges ~= nil then
