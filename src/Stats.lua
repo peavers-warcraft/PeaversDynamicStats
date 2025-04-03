@@ -518,4 +518,88 @@ function Stats:GetCurrentClassSpecBonuses()
     return bonuses
 end
 
+-- Calculates the rating needed for the next percentage point of a stat
+-- Parameters:
+--   statType: The stat type (e.g., Stats.STAT_TYPES.HASTE)
+--   currentRating: The current rating value
+--   currentPercent: The current percentage value
+-- Returns:
+--   The rating needed for the next percentage point
+function Stats:GetRatingForNextPercent(statType, currentRating, currentPercent)
+    -- This is an approximation and would need to be adjusted for each stat type
+    -- and character level in a real implementation
+    local nextPercent = math.floor(currentPercent) + 1
+    local ratingPerPercent = currentRating / currentPercent
+
+    if ratingPerPercent <= 0 then return 0 end
+
+    return math.ceil(nextPercent * ratingPerPercent - currentRating)
+end
+
+-- Calculates the bar values for display
+-- Parameters:
+--   value: The stat value
+-- Returns:
+--   percentValue: The value capped at 100 for the main bar
+--   overflowValue: The value beyond 100 for the overflow bar (0-100)
+function Stats:CalculateBarValues(value)
+    local percentValue = math.min(value, 100)
+    local overflowValue = 0
+
+    -- Calculate overflow value if the stat exceeds 100%
+    if value > 100 then
+        overflowValue = value - 100
+        -- Cap overflow at 100% for visual clarity
+        overflowValue = math.min(overflowValue, 100)
+    end
+
+    return percentValue, overflowValue
+end
+
+-- Gets the formatted display value for a stat
+-- Parameters:
+--   statType: The stat type
+--   value: The stat value
+--   showRating: Whether to include the rating value (default: uses PDS.Config.showRatings)
+-- Returns:
+--   The formatted display value string
+function Stats:GetDisplayValue(statType, value, showRating)
+    local displayValue = PDS.Utils:FormatPercent(value)
+
+    -- If showRating is not specified, use the config setting
+    if showRating == nil then
+        showRating = PDS.Config.showRatings
+    end
+
+    -- If showRatings is enabled, get the rating and add it to the display value
+    if showRating then
+        local rating = self:GetRating(statType)
+        -- Always show rating value, even if it's 0
+        displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
+    end
+
+    return displayValue
+end
+
+-- Gets the formatted change display value and color for a stat change
+-- Parameters:
+--   change: The change value
+-- Returns:
+--   changeDisplay: The formatted change string
+--   r, g, b: The color values for the change text
+function Stats:GetChangeDisplayValue(change)
+    -- Format and display the change value with appropriate sign
+    local changeDisplay = PDS.Utils:FormatChange(change)
+    local r, g, b = 1, 1, 1 -- Default to white
+
+    -- Set color based on change direction for better visual feedback
+    if change > 0 then
+        r, g, b = 0, 1, 0 -- Green for positive changes
+    elseif change < 0 then
+        r, g, b = 1, 0, 0 -- Red for negative changes
+    end
+
+    return changeDisplay, r, g, b
+end
+
 return Stats
