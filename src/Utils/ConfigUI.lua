@@ -763,6 +763,25 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
     )
     yPos = newY - 10
 
+    -- Show overflow bars checkbox
+    local showOverflowBarsCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversShowOverflowBarsCheckbox",
+        "Show Overflow Bars",
+        subControlIndent,
+        yPos,
+        Config.showOverflowBars,
+        { 1, 1, 1 },
+        function(self)
+            Config.showOverflowBars = self:GetChecked()
+            Config:Save()
+            if PDS.Core and PDS.Core.CreateBars then
+                PDS.Core:CreateBars()
+            end
+        end
+    )
+    yPos = newY - 10
+
     -- Show tooltips checkbox
     local showTooltipsCheckbox, newY = UI:CreateCheckbox(
         content,
