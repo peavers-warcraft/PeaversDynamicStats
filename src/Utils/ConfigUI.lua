@@ -59,13 +59,9 @@ function ConfigUI:InitializeOptions()
     -- Update content height based on the last element position
     content:SetHeight(math.abs(yPos) + 50)
 
-    -- Register with the Interface Options
-    if Settings and Settings.RegisterCanvasLayoutCategory then
-        Config.categoryID = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
-        Settings.RegisterAddOnCategory(Config.categoryID)
-    else
-        InterfaceOptions_AddCategory(panel)
-    end
+    -- Register with the Interface Options using the latest API
+    Config.categoryID = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+    Settings.RegisterAddOnCategory(Config.categoryID)
 
     return panel
 end
@@ -179,15 +175,8 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
                 if restore then
                     newR, newG, newB = unpack(restore)
                 else
-                    -- Handle different API versions for getting color
-                    if ColorPickerFrame.GetColorRGB then
-                        newR, newG, newB = ColorPickerFrame:GetColorRGB()
-                    elseif ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.GetColorRGB then
-                        newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
-                    else
-                        -- Fallback to stored values if API methods aren't available
-                        newR, newG, newB = colorPicker:GetBackdropColor()
-                    end
+                    -- Get color using the latest API
+                    newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
                 end
 
                 colorPicker:SetBackdropColor(newR, newG, newB)
@@ -215,12 +204,8 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
             ColorPickerFrame.hasOpacity = false
             ColorPickerFrame.previousValues = { r, g, b }
 
-            -- Handle different API versions for setting color
-            if ColorPickerFrame.SetColorRGB then
-                ColorPickerFrame:SetColorRGB(r, g, b)
-            elseif ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
-                ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
-            end
+            -- Set color using the latest API
+            ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
 
             ColorPickerFrame:Hide() -- Hide first to trigger OnShow handler
             ColorPickerFrame:Show()
@@ -826,12 +811,7 @@ end
 -- Opens the configuration panel
 function ConfigUI:OpenOptions()
     -- No need to initialize options panel here, it's already initialized in Main.lua
-    if Settings and Settings.OpenToCategory then
-        Settings.OpenToCategory("PeaversDynamicStats")
-    else
-        InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
-        InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
-    end
+    Settings.OpenToCategory("PeaversDynamicStats")
 end
 
 -- Attach the ConfigUI to the Config namespace

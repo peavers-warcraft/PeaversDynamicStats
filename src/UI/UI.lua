@@ -178,15 +178,8 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 			if restore then
 				newR, newG, newB = unpack(restore)
 			else
-				-- Handle different API versions for getting color
-				if ColorPickerFrame.GetColorRGB then
-					newR, newG, newB = ColorPickerFrame:GetColorRGB()
-				elseif ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.GetColorRGB then
-					newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
-				else
-					-- Fallback to stored values if API methods aren't available
-					newR, newG, newB = colorFrame:GetBackdropColor()
-				end
+				-- Get color using the latest API
+				newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
 			end
 
 			colorFrame:SetBackdropColor(newR, newG, newB)
@@ -206,12 +199,8 @@ function UI:CreateColorPicker(parent, name, label, x, y, initialColor, onChange)
 		ColorPickerFrame.hasOpacity = false
 		ColorPickerFrame.previousValues = { r, g, b }
 
-		-- Handle different API versions for setting color
-		if ColorPickerFrame.SetColorRGB then
-			ColorPickerFrame:SetColorRGB(r, g, b)
-		elseif ColorPickerFrame.Content and ColorPickerFrame.Content.ColorPicker and ColorPickerFrame.Content.ColorPicker.SetColorRGB then
-			ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
-		end
+		-- Set color using the latest API
+		ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
 
 		ColorPickerFrame:Hide() -- Hide first to trigger OnShow handler
 		ColorPickerFrame:Show()

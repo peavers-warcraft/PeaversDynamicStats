@@ -228,100 +228,59 @@ function Stats:GetValue(statType)
 
     -- Primary stats
     if statType == Stats.STAT_TYPES.STRENGTH then
-        if C_Attributes and C_Attributes.GetAttribute then
+        -- Try to use C_Attributes if available, otherwise fall back to C_Stats, then UnitStat
+        if C_Attributes then
             value = C_Attributes.GetAttribute("player", "Strength") or 0
+        elseif C_Stats then
+            value = C_Stats.GetStatByID(1) or 0
         else
-            local base, total, posBuff, negBuff = UnitStat("player", 1)
-            if Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] > 0 then
-                value = 100
-                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] then
-                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH]) / Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH]) * 100
-                end
-                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.STRENGTH)
-                value = value + buffPercentage
-            else
-                self:InitializeBaseValues()
-                value = 100
-            end
+            -- Fallback to UnitStat which is more widely available
+            local base, _, posBuff, negBuff = UnitStat("player", 1)
+            value = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        if C_Attributes and C_Attributes.GetAttribute then
+        if C_Attributes then
             value = C_Attributes.GetAttribute("player", "Agility") or 0
+        elseif C_Stats then
+            value = C_Stats.GetStatByID(2) or 0
         else
-            local base, total, posBuff, negBuff = UnitStat("player", 2)
-            if Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] > 0 then
-                value = 100
-                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] then
-                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY]) / Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY]) * 100
-                end
-                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.AGILITY)
-                value = value + buffPercentage
-            else
-                self:InitializeBaseValues()
-                value = 100
-            end
+            local base, _, posBuff, negBuff = UnitStat("player", 2)
+            value = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        if C_Attributes and C_Attributes.GetAttribute then
+        if C_Attributes then
             value = C_Attributes.GetAttribute("player", "Intellect") or 0
+        elseif C_Stats then
+            value = C_Stats.GetStatByID(4) or 0
         else
-            local base, total, posBuff, negBuff = UnitStat("player", 4)
-            if Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT] > 0 then
-                value = 100
-                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT] then
-                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT]) / Stats.BASE_VALUES[Stats.STAT_TYPES.INTELLECT]) * 100
-                end
-                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.INTELLECT)
-                value = value + buffPercentage
-            else
-                self:InitializeBaseValues()
-                value = 100
-            end
+            local base, _, posBuff, negBuff = UnitStat("player", 4)
+            value = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.STAMINA then
-        if C_Attributes and C_Attributes.GetAttribute then
+        if C_Attributes then
             value = C_Attributes.GetAttribute("player", "Stamina") or 0
+        elseif C_Stats then
+            value = C_Stats.GetStatByID(3) or 0
         else
-            local base, total, posBuff, negBuff = UnitStat("player", 3)
-            if Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] > 0 then
-                value = 100
-                if base > Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] then
-                    value = value + ((base - Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA]) / Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA]) * 100
-                end
-                local buffPercentage = self:GetBuffPercentage(Stats.STAT_TYPES.STAMINA)
-                value = value + buffPercentage
-            else
-                self:InitializeBaseValues()
-                value = 100
-            end
+            local base, _, posBuff, negBuff = UnitStat("player", 3)
+            value = base + posBuff + negBuff
         end
-        -- Secondary stats - Using direct API calls with insights from the WeakAura
+        -- Secondary stats - Using direct API calls for better performance
     elseif statType == Stats.STAT_TYPES.HASTE then
         value = GetHaste()
     elseif statType == Stats.STAT_TYPES.CRIT then
-        -- Based on WeakAura, use GetSpellCritChance for spell-specific crit
+        -- Using GetSpellCritChance for more accurate spell-specific crit values
         -- Using spell school 2 (Fire) for consistent values
         value = GetSpellCritChance(2)
     elseif statType == Stats.STAT_TYPES.MASTERY then
         value = GetMasteryEffect()
     elseif statType == Stats.STAT_TYPES.VERSATILITY then
-        -- Fixed versatility implementation based on WeakAura code
+        -- Improved versatility implementation for better accuracy
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-
-        -- If GetVersatilityBonus function exists, add it (for compatibility)
-        if GetVersatilityBonus then
-            value = value + GetVersatilityBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        if GetVersatilityBonus then
-            value = value + GetVersatilityBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
-        if GetVersatilityBonus then
-            value = value + GetVersatilityBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
-        end
     elseif statType == Stats.STAT_TYPES.SPEED then
         value = GetSpeed()
     elseif statType == Stats.STAT_TYPES.LEECH then
@@ -346,32 +305,33 @@ function Stats:GetRating(statType)
 
     -- Primary stats - return the total stat value
     if statType == Stats.STAT_TYPES.STRENGTH then
-        if C_Stats and C_Stats.GetStatByID then
+        if C_Stats then
             rating = C_Stats.GetStatByID(1) or 0
         else
-            local _, total = UnitStat("player", 1)
-            rating = total or 0
+            -- Fallback to UnitStat which is more widely available
+            local base, _, posBuff, negBuff = UnitStat("player", 1)
+            rating = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        if C_Stats and C_Stats.GetStatByID then
+        if C_Stats then
             rating = C_Stats.GetStatByID(2) or 0
         else
-            local _, total = UnitStat("player", 2)
-            rating = total or 0
+            local base, _, posBuff, negBuff = UnitStat("player", 2)
+            rating = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        if C_Stats and C_Stats.GetStatByID then
+        if C_Stats then
             rating = C_Stats.GetStatByID(4) or 0
         else
-            local _, total = UnitStat("player", 4)
-            rating = total or 0
+            local base, _, posBuff, negBuff = UnitStat("player", 4)
+            rating = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.STAMINA then
-        if C_Stats and C_Stats.GetStatByID then
+        if C_Stats then
             rating = C_Stats.GetStatByID(3) or 0
         else
-            local _, total = UnitStat("player", 3)
-            rating = total or 0
+            local base, _, posBuff, negBuff = UnitStat("player", 3)
+            rating = base + posBuff + negBuff
         end
         -- Secondary stats - return the combat rating using direct API calls
     elseif statType == Stats.STAT_TYPES.HASTE then
