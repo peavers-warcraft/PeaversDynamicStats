@@ -9,13 +9,8 @@ SlashCmdList["PEAVERSDYNAMICSTATS"] = function(msg)
 		if PDS.Config.OpenOptionsCommand then
 			PDS.Config.OpenOptionsCommand()
 		else
-			-- Fallback to direct category opening
-			if Settings and Settings.OpenToCategory then
-				Settings.OpenToCategory("PeaversDynamicStats")
-			else
-				InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
-				InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
-			end
+ 		-- Open category using the latest API
+ 		Settings.OpenToCategory("PeaversDynamicStats")
 		end
 	else
 		-- Toggle main frame visibility

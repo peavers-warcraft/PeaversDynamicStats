@@ -14,7 +14,6 @@ function Core:Initialize()
 
 	self.frame = CreateFrame("Frame", "PeaversDynamicStatsFrame", UIParent, "BackdropTemplate")
 	self.frame:SetSize(PDS.Config.frameWidth, PDS.Config.frameHeight)
-	self.frame:SetPoint(PDS.Config.framePoint, PDS.Config.frameX, PDS.Config.frameY)
 	self.frame:SetBackdrop({
 		bgFile = "Interface\\BUTTONS\\WHITE8X8",
 		edgeFile = "Interface\\BUTTONS\\WHITE8X8",
@@ -34,6 +33,12 @@ function Core:Initialize()
 
 	-- Create bars using the BarManager
 	PDS.BarManager:CreateBars(self.contentFrame)
+
+	-- Adjust frame height based on visible bars
+	self:AdjustFrameHeight()
+
+	-- Now set the position after bars are created and frame height is adjusted
+	self.frame:SetPoint(PDS.Config.framePoint, PDS.Config.frameX, PDS.Config.frameY)
 
 	self:UpdateFrameLock()
 

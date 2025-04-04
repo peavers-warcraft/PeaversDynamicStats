@@ -118,12 +118,8 @@ function BarManager:AdjustFrameHeight(frame, contentFrame, titleBarVisible)
         end
     end
 
-    -- Adjust content frame position based on title bar visibility
-    if titleBarVisible then
-        contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -20)
-    else
-        contentFrame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-    end
+    -- Content frame position is managed by Core:UpdateTitleBarVisibility
+    -- to avoid duplicate repositioning that could cause UI glitches
 end
 
 -- Gets a bar by its stat type

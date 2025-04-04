@@ -11,15 +11,8 @@ PDS.Config = {}
 PDS.Stats = {}
 
 -- Version information
--- Use C_AddOns.GetAddOnMetadata for newer WoW versions, fall back to GetAddOnMetadata for older versions
 local function getAddOnMetadata(name, key)
-    if C_AddOns and C_AddOns.GetAddOnMetadata then
-        return C_AddOns.GetAddOnMetadata(name, key)
-    elseif GetAddOnMetadata then
-        return GetAddOnMetadata(name, key)
-    else
-        return nil
-    end
+    return C_AddOns.GetAddOnMetadata(name, key)
 end
 
 PDS.version = getAddOnMetadata(addonName, "Version") or "1.0.5"
