@@ -42,8 +42,16 @@ function Core:Initialize()
 
 	self:UpdateFrameLock()
 
+	-- Determine initial visibility based on settings and combat state
+	local inCombat = InCombatLockdown()
+
 	if PDS.Config.showOnLogin then
-		self.frame:Show()
+		if PDS.Config.hideOutOfCombat and not inCombat then
+			-- Hide if out of combat and hideOutOfCombat is enabled
+			self.frame:Hide()
+		else
+			self.frame:Show()
+		end
 	else
 		self.frame:Hide()
 	end

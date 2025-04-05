@@ -37,6 +37,7 @@ PDS.Config = {
 	showRatings = true, -- Show rating values
 	showTooltips = true, -- Show enhanced tooltips on hover
 	enableStatHistory = true, -- Enable stat history tracking
+	hideOutOfCombat = false, -- Hide the addon when out of combat
 }
 
 -- Initialize showStats with values from Stats.STAT_TYPES
@@ -76,6 +77,7 @@ function Config:Save()
 	PeaversDynamicStatsDB.showRatings = self.showRatings
 	PeaversDynamicStatsDB.showTooltips = self.showTooltips
 	PeaversDynamicStatsDB.enableStatHistory = self.enableStatHistory
+	PeaversDynamicStatsDB.hideOutOfCombat = self.hideOutOfCombat
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -155,6 +157,9 @@ function Config:Load()
 	end
 	if PeaversDynamicStatsDB.enableStatHistory ~= nil then
 		self.enableStatHistory = PeaversDynamicStatsDB.enableStatHistory
+	end
+	if PeaversDynamicStatsDB.hideOutOfCombat ~= nil then
+		self.hideOutOfCombat = PeaversDynamicStatsDB.hideOutOfCombat
 	end
 end
 
@@ -273,5 +278,10 @@ function Config:Initialize()
     -- Ensure enableStatHistory is enabled by default
     if self.enableStatHistory == nil then
         self.enableStatHistory = true
+    end
+
+    -- Ensure hideOutOfCombat is disabled by default
+    if self.hideOutOfCombat == nil then
+        self.hideOutOfCombat = false
     end
 end
