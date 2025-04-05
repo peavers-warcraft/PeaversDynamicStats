@@ -17,6 +17,7 @@ These bars dynamically update during combat letting you know exactly if you're a
 - **Movable and Lockable Frame**: Position the stats display anywhere on your screen and lock it in place to prevent accidental movement.
 - **Performance Optimized**: Efficient design with minimal CPU usage, only updating bars when stat values actually change.
 - **Show/Hide Individual Stats**: Choose which secondary stats to display based on your preferences and class needs.
+- **Combat-Only Mode**: Option to automatically hide the addon when out of combat and show it during combat.
 
 ## How to Use
 

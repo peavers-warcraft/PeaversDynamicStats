@@ -471,6 +471,31 @@ function ConfigUI:CreateVisualOptions(content, yPos, baseSpacing, sectionSpacing
             end
         end
     )
+    yPos = newY
+
+    -- Hide out of combat checkbox
+    local hideOutOfCombatCheckbox, newY = UI:CreateCheckbox(
+        content,
+        "PeaversHideOutOfCombatCheckbox",
+        "Hide When Out of Combat",
+        subControlIndent,
+        yPos,
+        Config.hideOutOfCombat,
+        { 1, 1, 1 },
+        function(self)
+            Config.hideOutOfCombat = self:GetChecked()
+            Config:Save()
+            -- Apply the change immediately if out of combat
+            if PDS.Core and PDS.Core.frame then
+                local inCombat = InCombatLockdown()
+                if self:GetChecked() and not inCombat then
+                    PDS.Core.frame:Hide()
+                elseif not self:GetChecked() and not PDS.Core.frame:IsShown() then
+                    PDS.Core.frame:Show()
+                end
+            end
+        end
+    )
     yPos = newY - 10
 
     -- Add a thin separator

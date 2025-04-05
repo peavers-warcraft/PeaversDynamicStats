@@ -10,8 +10,16 @@ function Core:OnEvent(event, ...)
 		PDS.BarManager:UpdateAllBars()
 	elseif event == "PLAYER_REGEN_DISABLED" then
 		inCombat = true
+		-- Always show the frame when entering combat if hideOutOfCombat is enabled
+		if PDS.Config.hideOutOfCombat and not PDS.Core.frame:IsShown() then
+			PDS.Core.frame:Show()
+		end
 	elseif event == "PLAYER_REGEN_ENABLED" then
 		inCombat = false
+		-- Hide the frame when leaving combat if hideOutOfCombat is enabled
+		if PDS.Config.hideOutOfCombat and PDS.Core.frame:IsShown() then
+			PDS.Core.frame:Hide()
+		end
 	end
 end
 
