@@ -3,7 +3,7 @@ local Config = PDS.Config
 local UI = PDS.UI
 local ConfigUI = {}
 
--- Initialize ConfigUI namespace
+-- Initialize ConfigUI.lua namespace
 PDS.Config.UI = ConfigUI
 
 -- Utility functions to reduce code duplication
