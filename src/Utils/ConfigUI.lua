@@ -681,38 +681,6 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     textureContainer:SetPoint("TOPLEFT", controlIndent, yPos)
     yPos = yPos - 65
 
-    -- Bar opacity slider
-    local barOpacityContainer, barOpacitySlider = Utils:CreateSlider(
-        content, "PeaversBarOpacitySlider",
-        "Bar Opacity", 0, 1, 0.05,
-        Config.barAlpha, sliderWidth,
-        function(value)
-            Config.barAlpha = value
-            Config:Save()
-            if PDS.BarManager then
-                PDS.BarManager:UpdateBarsWithSorting(true)
-            end
-        end
-    )
-    barOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    yPos = yPos - 55
-
-    -- Bar background opacity slider
-    local barBgOpacityContainer, barBgOpacitySlider = Utils:CreateSlider(
-        content, "PeaversBarBgOpacitySlider",
-        "Bar Background Opacity", 0, 1, 0.05,
-        Config.barBgAlpha, sliderWidth,
-        function(value)
-            Config.barBgAlpha = value
-            Config:Save()
-            if PDS.BarManager then
-                PDS.BarManager:ResizeBars()
-            end
-        end
-    )
-    barBgOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    yPos = yPos - 65
-
     -- Add a thin separator
     local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
     yPos = newY - 15
