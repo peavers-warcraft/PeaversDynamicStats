@@ -1,6 +1,6 @@
-## Interface: 110100, 110105
+## Interface: 110105
 
-## Title: PeaversDynamicStats
+## Title: |cff3abdf7Peavers|rDynamicStats
 ## Notes: Displays secondary stats (haste, crit, mastery, versatility) in a movable frame
 ## IconTexture: Interface\AddOns\PeaversDynamicStats\src\Media\Icon.tga
 
@@ -9,6 +9,8 @@
 ## X-Curse-Project-ID: 1230220
 
 ## SavedVariables: PeaversDynamicStatsDB
+
+## Category-enUS: Peavers
 
 # Main
 src\Main.lua
