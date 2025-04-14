@@ -5,7 +5,7 @@
 ## IconTexture: Interface\AddOns\PeaversDynamicStats\src\Media\Icon.tga
 
 ## Author: Peavers
-## Version: 1.0.35
+## Version: 1.0.36
 ## X-Curse-Project-ID: 1230220
 
 ## SavedVariables: PeaversDynamicStatsDB
