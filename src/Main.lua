@@ -32,6 +32,11 @@ frame:SetScript("OnEvent", function(self, event, arg1)
             PDS.Config.UI:InitializeOptions()
         end
 
+        -- Initialize support UI
+        if PDS.SupportUI and PDS.SupportUI.Initialize then
+            PDS.SupportUI:Initialize()
+        end
+
         -- Initialize core components
         PDS.Core:Initialize()
 

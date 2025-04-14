@@ -308,8 +308,9 @@ function ConfigUI:InitializeOptions()
     content:SetHeight(math.abs(yPos) + 50)
 
     -- Register with the Interface Options using the latest API
-    Config.categoryID = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
-    Settings.RegisterAddOnCategory(Config.categoryID)
+	PDS.mainCategory = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+	PDS.mainCategory.ID = panel.name
+	Settings.RegisterAddOnCategory(PDS.mainCategory)
 
     return panel
 end
