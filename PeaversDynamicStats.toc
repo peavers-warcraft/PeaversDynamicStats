@@ -25,6 +25,7 @@ src\Stats.lua
 src\Utils\Utils.lua
 src\Utils\Config.lua
 src\Utils\ConfigUI.lua
+src\Utils\SupportUI.lua
 src\Utils\StatTooltips.lua
 
 # UI components needed by Core
