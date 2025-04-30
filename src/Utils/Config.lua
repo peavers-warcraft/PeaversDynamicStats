@@ -241,47 +241,44 @@ function Config:GetBarTextures()
 	return result
 end
 
--- Initialize the configuration when the addon loads
 function Config:Initialize()
-    -- Load saved configuration
     self:Load()
-
-    -- Ensure all required stats are in the showStats table
-    for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
-        if self.showStats[statType] == nil then
-            -- Enable all stats by default, including primary stats
-            self.showStats[statType] = true
-        end
-
+    
+    if not next(self.showStats) then
+        self.showStats = {}
     end
-
-    -- Ensure showStatChanges is enabled by default
+    
     if self.showStatChanges == nil then
         self.showStatChanges = true
     end
 
-    -- Ensure showRatings is enabled by default
     if self.showRatings == nil then
         self.showRatings = true
     end
 
-    -- Ensure showOverflowBars is enabled by default
     if self.showOverflowBars == nil then
         self.showOverflowBars = true
     end
 
-    -- Ensure showTooltips is enabled by default
     if self.showTooltips == nil then
         self.showTooltips = true
     end
 
-    -- Ensure enableStatHistory is enabled by default
     if self.enableStatHistory == nil then
         self.enableStatHistory = true
     end
 
-    -- Ensure hideOutOfCombat is disabled by default
     if self.hideOutOfCombat == nil then
         self.hideOutOfCombat = false
+    end
+end
+
+function Config:InitializeStatSettings()
+    if PDS.Stats and PDS.Stats.STAT_ORDER then
+        for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+            if self.showStats[statType] == nil then
+                self.showStats[statType] = true
+            end
+        end
     end
 end

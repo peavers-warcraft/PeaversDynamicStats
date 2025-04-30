@@ -43,12 +43,7 @@ frame:SetScript("OnEvent", function(self, event, arg1)
         -- Register other events after initialization
         PDS.Core:RegisterEvents()
 
-        -- Show frame if configured to show on login
-        if PDS.Config.showOnLogin then
-            PDS.Core.frame:Show()
-        else
-            PDS.Core.frame:Hide()
-        end
+        -- Frame visibility is managed in Core.lua's Initialize function
 
         -- Unregister the ADDON_LOADED event as we don't need it anymore
         self:UnregisterEvent("ADDON_LOADED")
