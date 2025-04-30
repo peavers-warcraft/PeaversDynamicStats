@@ -2,12 +2,13 @@ local addonName, PDS = ...
 local Core = {}
 PDS.Core = Core
 
--- Sets up the addon's main frame and components
 function Core:Initialize()
-	-- Initialize base values for primary stats
 	PDS.Stats:InitializeBaseValues()
-
-	-- Initialize stat history tracking
+	
+	if PDS.Config and PDS.Config.InitializeStatSettings then
+		PDS.Config:InitializeStatSettings()
+	end
+	
 	if PDS.StatHistory then
 		PDS.StatHistory:Initialize()
 	end
@@ -42,17 +43,19 @@ function Core:Initialize()
 
 	self:UpdateFrameLock()
 
-	-- Determine initial visibility based on settings and combat state
 	local inCombat = InCombatLockdown()
 
 	if PDS.Config.showOnLogin then
 		if PDS.Config.hideOutOfCombat and not inCombat then
-			-- Hide if out of combat and hideOutOfCombat is enabled
 			self.frame:Hide()
 		else
 			self.frame:Show()
 		end
 	else
+		self.frame:Hide()
+	end
+	
+	if PDS.Config.hideOutOfCombat and not inCombat then
 		self.frame:Hide()
 	end
 end
@@ -92,6 +95,13 @@ function Core:UpdateFrameLock()
 		self.frame:RegisterForDrag("")
 		self.frame:SetScript("OnDragStart", nil)
 		self.frame:SetScript("OnDragStop", nil)
+		
+		-- Make content frame draggable if title bar is hidden
+		self.contentFrame:SetMovable(false)
+		self.contentFrame:EnableMouse(true) -- Keep mouse enabled for tooltips
+		self.contentFrame:RegisterForDrag("")
+		self.contentFrame:SetScript("OnDragStart", nil)
+		self.contentFrame:SetScript("OnDragStop", nil)
 	else
 		self.frame:SetMovable(true)
 		self.frame:EnableMouse(true)
@@ -101,6 +111,23 @@ function Core:UpdateFrameLock()
 			frame:StopMovingOrSizing()
 
 			local point, _, _, x, y = frame:GetPoint()
+			PDS.Config.framePoint = point
+			PDS.Config.frameX = x
+			PDS.Config.frameY = y
+			PDS.Config:Save()
+		end)
+		
+		-- Make content frame draggable when title bar is hidden
+		self.contentFrame:SetMovable(true)
+		self.contentFrame:EnableMouse(true)
+		self.contentFrame:RegisterForDrag("LeftButton")
+		self.contentFrame:SetScript("OnDragStart", function()
+			self.frame:StartMoving()
+		end)
+		self.contentFrame:SetScript("OnDragStop", function()
+			self.frame:StopMovingOrSizing()
+			
+			local point, _, _, x, y = self.frame:GetPoint()
 			PDS.Config.framePoint = point
 			PDS.Config.frameX = x
 			PDS.Config.frameY = y
@@ -121,6 +148,7 @@ function Core:UpdateTitleBarVisibility()
 		end
 
 		self:AdjustFrameHeight()
+		self:UpdateFrameLock() -- Update dragging behavior when title bar visibility changes
 	end
 end
 

@@ -548,6 +548,30 @@ function StatBar:InitTooltip()
 	self.frame:SetScript("OnLeave", function()
 		self:HideTooltip()
 	end)
+	
+	self.frame:SetScript("OnMouseDown", function(frame, button)
+		if button == "LeftButton" and not PDS.Config.lockPosition then
+			local parentFrame = PDS.Core.frame
+			if parentFrame and parentFrame:GetScript("OnDragStart") then
+				parentFrame:StartMoving()
+			end
+		end
+	end)
+	
+	self.frame:SetScript("OnMouseUp", function(frame, button)
+		if button == "LeftButton" and not PDS.Config.lockPosition then
+			local parentFrame = PDS.Core.frame
+			if parentFrame and parentFrame:GetScript("OnDragStop") then
+				parentFrame:StopMovingOrSizing()
+				
+				local point, _, _, x, y = parentFrame:GetPoint()
+				PDS.Config.framePoint = point
+				PDS.Config.frameX = x
+				PDS.Config.frameY = y
+				PDS.Config:Save()
+			end
+		end
+	end)
 
 	-- Set up mouse event handlers for overflow bar if it exists
 	if self.frame.overflowBar then
@@ -557,6 +581,30 @@ function StatBar:InitTooltip()
 
 		self.frame.overflowBar:SetScript("OnLeave", function()
 			self:HideTooltip()
+		end)
+		
+		self.frame.overflowBar:SetScript("OnMouseDown", function(frame, button)
+				if button == "LeftButton" and not PDS.Config.lockPosition then
+					local parentFrame = PDS.Core.frame
+				if parentFrame and parentFrame:GetScript("OnDragStart") then
+					parentFrame:StartMoving()
+				end
+			end
+		end)
+		
+		self.frame.overflowBar:SetScript("OnMouseUp", function(frame, button)
+				if button == "LeftButton" and not PDS.Config.lockPosition then
+				local parentFrame = PDS.Core.frame
+				if parentFrame and parentFrame:GetScript("OnDragStop") then
+					parentFrame:StopMovingOrSizing()
+					
+						local point, _, _, x, y = parentFrame:GetPoint()
+					PDS.Config.framePoint = point
+					PDS.Config.frameX = x
+					PDS.Config.frameY = y
+					PDS.Config:Save()
+				end
+			end
 		end)
 	end
 
@@ -577,11 +625,15 @@ function StatBar:Destroy()
 		self.frame:Hide()
 		self.frame:SetScript("OnEnter", nil)
 		self.frame:SetScript("OnLeave", nil)
+		self.frame:SetScript("OnMouseDown", nil)
+		self.frame:SetScript("OnMouseUp", nil)
 	end
 
 	-- Clear overflow bar scripts if it exists
 	if self.frame and self.frame.overflowBar then
 		self.frame.overflowBar:SetScript("OnEnter", nil)
 		self.frame.overflowBar:SetScript("OnLeave", nil)
+		self.frame.overflowBar:SetScript("OnMouseDown", nil)
+		self.frame.overflowBar:SetScript("OnMouseUp", nil)
 	end
 end
