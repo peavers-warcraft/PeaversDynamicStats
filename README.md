@@ -2,16 +2,21 @@
 
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/peavers/PeaversDynamicStats)](https://github.com/peavers/PeaversDynamicStats/commits/master) [![Last commit](https://img.shields.io/github/last-commit/peavers/PeaversDynamicStats)](https://github.com/peavers/PeaversDynamicStats/master) [![CurseForge](https://img.shields.io/curseforge/dt/1230220?label=CurseForge&color=F16436)](https://www.curseforge.com/wow/addons/peaversdynamicstats)
 
-**A World of Warcraft addon that visualizes your primary and secondary stats with dynamic bars that update in real-time during combat.**
+**A World of Warcraft addon that visualizes your primary and secondary stats with dynamic bars that update in real-time
+during combat.**
 
 ## Overview
 
-PeaversDynamicStats provides visual representation of your character's stats through customizable bars. These bars dynamically update during combat, allowing you to monitor stat procs and buffs exactly when you need to know if you're about to deal massive damage.
+PeaversDynamicStats provides visual representation of your character's stats through customizable bars. These bars
+dynamically update during combat, allowing you to monitor stat procs and buffs exactly when you need to know if you're
+about to deal massive damage.
 
 ## Features
 
-- **Real-time Primary Stat Tracking**: Visualizes strength, agility, intellect, and stamina as percentage increases from base values
-- **Real-time Secondary Stat Tracking**: Displays haste, critical strike, mastery, and versatility percentages with customizable bars
+- **Real-time Primary Stat Tracking**: Visualizes strength, agility, intellect, and stamina as percentage increases from
+  base values
+- **Real-time Secondary Stat Tracking**: Displays haste, critical strike, mastery, and versatility percentages with
+  customizable bars
 - **Stat History Tracking**: Records stat changes over time and displays historical data in tooltips
 - **Combat-Aware Updates**: Increases update frequency during combat for more precise monitoring
 - **Highly Customizable Interface**: Adjust bar colors, textures, spacing, height, width, and background opacity
@@ -40,4 +45,6 @@ PeaversDynamicStats provides visual representation of your character's stats thr
 
 ## Support & Feedback
 
-If you encounter any issues or have suggestions for improvements, please submit them via [GitHub Issues](https://github.com/peavers/PeaversDynamicStats/issues). Your feedback is valuable in enhancing the addon experience for all players.
+If you encounter any issues or have suggestions for improvements, please submit them
+via [GitHub Issues](https://github.com/peavers/PeaversDynamicStats/issues). Your feedback is valuable in enhancing the
+addon experience for all players.

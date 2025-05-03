@@ -8,7 +8,8 @@ $currentDirPath = $currentDir.Path
 $wowAddonPathNormalized = $wowAddonPath
 
 # Create the destination directory if it doesn't exist
-if (!(Test-Path -Path $wowAddonPathNormalized)) {
+if (!(Test-Path -Path $wowAddonPathNormalized))
+{
     New-Item -ItemType Directory -Path $wowAddonPathNormalized -Force
 }
 
