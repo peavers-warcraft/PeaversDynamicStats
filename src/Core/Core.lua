@@ -2,6 +2,9 @@ local addonName, PDS = ...
 local Core = {}
 PDS.Core = Core
 
+-- Init combat state
+Core.inCombat = false
+
 function Core:Initialize()
 	PDS.Stats:InitializeBaseValues()
 	
@@ -44,6 +47,7 @@ function Core:Initialize()
 	self:UpdateFrameLock()
 
 	local inCombat = InCombatLockdown()
+	self.inCombat = inCombat
 
 	if PDS.Config.showOnLogin then
 		if PDS.Config.hideOutOfCombat and not inCombat then
@@ -58,27 +62,6 @@ function Core:Initialize()
 	if PDS.Config.hideOutOfCombat and not inCombat then
 		self.frame:Hide()
 	end
-end
-
--- Registers all required events
-function Core:RegisterEvents()
-	local frame = CreateFrame("Frame")
-	self.eventFrame = frame
-
-	frame:RegisterEvent("UNIT_STATS")
-	frame:RegisterEvent("UNIT_AURA")
-	frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-	frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-	frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-	frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-
-	-- Set up event and update handlers
-	frame:SetScript("OnEvent", function(self, event, ...)
-		Core:OnEvent(event, ...)
-	end)
-	frame:SetScript("OnUpdate", function(self, elapsed)
-		Core:OnUpdate(elapsed)
-	end)
 end
 
 -- Recalculates frame height based on number of bars and title bar visibility

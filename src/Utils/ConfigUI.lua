@@ -1,10 +1,10 @@
 local _, PDS = ...
 local Config = PDS.Config
 local UI = PDS.UI
-local ConfigUI = {}
 
 -- Initialize ConfigUI.lua namespace
-PDS.Config.UI = ConfigUI
+local ConfigUI = {}
+PDS.ConfigUI = ConfigUI
 
 -- Utility functions to reduce code duplication
 local Utils = {}
@@ -245,7 +245,7 @@ function ConfigUI:InitializeOptions()
     end
 
     local panel = CreateFrame("Frame")
-    panel.name = "PeaversDynamicStats"
+    panel.name = "Settings"
 
     local scrollFrame, content = UI:CreateScrollFrame(panel)
     local yPos = 0
@@ -307,11 +307,13 @@ function ConfigUI:InitializeOptions()
     -- Update content height based on the last element position
     content:SetHeight(math.abs(yPos) + 50)
 
-    -- Register with the Interface Options using the latest API
-	PDS.mainCategory = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
-	PDS.mainCategory.ID = panel.name
-	Settings.RegisterAddOnCategory(PDS.mainCategory)
-
+        -- Let PeaversCommons handle category registration
+    -- The panel will be added as the first subcategory automatically
+    
+    panel.OnRefresh = function() end
+    panel.OnCommit = function() end
+    panel.OnDefault = function() end
+    
     return panel
 end
 
@@ -903,13 +905,23 @@ end
 
 -- Opens the configuration panel
 function ConfigUI:OpenOptions()
-    -- No need to initialize options panel here, it's already initialized in Main.lua
-    Settings.OpenToCategory("PeaversDynamicStats")
+    -- Use the direct registration category and subcategory names
+    if PDS.directCategory and PDS.directSettingsCategory then
+        Settings.OpenToCategory(PDS.directSettingsCategory)
+    else
+        -- Fallback: try to open directly using the name
+        Settings.OpenToCategory("PeaversDynamicStats")
+    end
 end
 
 -- Handler for the /pds config command
 PDS.Config.OpenOptionsCommand = function()
     ConfigUI:OpenOptions()
+end
+
+-- Initialize the configuration UI when called
+function ConfigUI:Initialize()
+    self.panel = self:InitializeOptions()
 end
 
 return ConfigUI
