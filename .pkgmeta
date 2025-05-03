@@ -3,6 +3,9 @@ package-as: PeaversDynamicStats
 externals:
   PeaversCommons: https://github.com/peavers/PeaversCommons
 
+move-folders:
+  PeaversDynamicStats/PeaversCommons: PeaversCommons
+
 ignore:
   - .*.sh
   - .*.ps1
