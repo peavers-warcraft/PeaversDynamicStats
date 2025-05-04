@@ -96,17 +96,6 @@ PeaversCommons.Events:Init(addonName, function()
         PDS.Config:Save()
     end)
 
-    -- Set up OnUpdate handler for stats
-    PeaversCommons.Events:RegisterOnUpdate(0.5, function(elapsed)
-        local interval = PDS.Core.inCombat and PDS.Config.combatUpdateInterval or 2.0
-        PDS.BarManager:UpdateAllBars()
-
-        -- Record stat history if the module is available
-        if PDS.StatHistory then
-            PDS.StatHistory:RecordStats()
-        end
-    end, "PDS_Update")
-
     -- DIRECT REGISTRATION APPROACH
     -- This ensures the addon appears in Options > Addons regardless of PeaversCommons logic
     C_Timer.After(0.5, function()

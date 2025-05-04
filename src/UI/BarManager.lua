@@ -80,7 +80,6 @@ function BarManager:ResizeBars()
         bar:UpdateTexture()
         bar:UpdateFont()
         bar:UpdateBackgroundOpacity()
-        bar:InitTooltip() -- Reinitialize tooltips to ensure they're correctly set up
     end
 
     -- Return the total height of all bars for frame adjustment
