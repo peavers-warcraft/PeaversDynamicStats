@@ -301,19 +301,16 @@ function ConfigUI:InitializeOptions()
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
 
-    -- 5. BEHAVIOR SETTINGS SECTION
-    yPos = self:CreateBehaviorOptions(content, yPos, baseSpacing, sectionSpacing)
-
     -- Update content height based on the last element position
     content:SetHeight(math.abs(yPos) + 50)
 
         -- Let PeaversCommons handle category registration
     -- The panel will be added as the first subcategory automatically
-    
+
     panel.OnRefresh = function() end
     panel.OnCommit = function() end
     panel.OnDefault = function() end
-    
+
     return panel
 end
 
@@ -842,63 +839,6 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
         end
     )
     yPos = newY - 15 -- Update yPos for the next element
-
-    return yPos
-end
-
--- 5. BEHAVIOR SETTINGS - Sorting, grouping, and other behavioral settings
-function ConfigUI:CreateBehaviorOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
-    local controlIndent = baseSpacing + 15
-    local subControlIndent = controlIndent + 15
-    local sliderWidth = 400
-
-    -- Behavior Settings section header
-    local header, newY = Utils:CreateSectionHeader(content, "Behavior Settings", baseSpacing, yPos)
-    yPos = newY - 10
-
-    -- Initialize values with defaults if they don't exist
-    if Config.showTooltips == nil then Config.showTooltips = true end
-    if Config.enableStatHistory == nil then Config.enableStatHistory = true end
-    if not Config.sortOption then Config.sortOption = "VALUE_DESC" end
-
-    -- Tooltip and Stat Tracking
-    local tooltipLabel, newY = Utils:CreateSubsectionLabel(content, "Tooltips and Tracking:", controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Show tooltips checkbox
-    local _, newY = Utils:CreateCheckbox(
-        content, "PeaversShowTooltipsCheckbox",
-        "Show Enhanced Tooltips", controlIndent, yPos,
-        Config.showTooltips,
-        function(checked)
-            Config.showTooltips = checked
-            Config:Save()
-        end
-    )
-    yPos = newY - 8 -- Update yPos for the next element
-
-    -- Enable stat history tracking checkbox
-    local _, newY = Utils:CreateCheckbox(
-        content, "PeaversEnableStatHistoryCheckbox",
-        "Enable Stat History Tracking", controlIndent, yPos,
-        Config.enableStatHistory,
-        function(checked)
-            Config.enableStatHistory = checked
-            Config:Save()
-            -- Clear history data if disabled
-            if not checked and PDS.StatHistory then
-                PDS.StatHistory:Clear()
-            end
-        end
-    )
-    yPos = newY - 20 -- Update yPos for the next element
-
-    -- Add a thin separator
-    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
-
-    yPos = yPos - 65 -- Update yPos for the next element
 
     return yPos
 end

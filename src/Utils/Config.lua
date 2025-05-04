@@ -35,8 +35,6 @@ PDS.Config = {
     showOverflowBars = true, -- Show overflow bars for stats exceeding 100%
     showStatChanges = true, -- Show stat value changes
     showRatings = true,    -- Show rating values
-    showTooltips = true,   -- Show enhanced tooltips on hover
-    enableStatHistory = true, -- Enable stat history tracking
     hideOutOfCombat = false, -- Hide the addon when out of combat
 }
 
@@ -75,8 +73,6 @@ function Config:Save()
     PeaversDynamicStatsDB.showOverflowBars = self.showOverflowBars
     PeaversDynamicStatsDB.showStatChanges = self.showStatChanges
     PeaversDynamicStatsDB.showRatings = self.showRatings
-    PeaversDynamicStatsDB.showTooltips = self.showTooltips
-    PeaversDynamicStatsDB.enableStatHistory = self.enableStatHistory
     PeaversDynamicStatsDB.hideOutOfCombat = self.hideOutOfCombat
 end
 
@@ -151,12 +147,6 @@ function Config:Load()
     end
     if PeaversDynamicStatsDB.showRatings ~= nil then
         self.showRatings = PeaversDynamicStatsDB.showRatings
-    end
-    if PeaversDynamicStatsDB.showTooltips ~= nil then
-        self.showTooltips = PeaversDynamicStatsDB.showTooltips
-    end
-    if PeaversDynamicStatsDB.enableStatHistory ~= nil then
-        self.enableStatHistory = PeaversDynamicStatsDB.enableStatHistory
     end
     if PeaversDynamicStatsDB.hideOutOfCombat ~= nil then
         self.hideOutOfCombat = PeaversDynamicStatsDB.hideOutOfCombat
@@ -258,14 +248,6 @@ function Config:Initialize()
 
     if self.showOverflowBars == nil then
         self.showOverflowBars = true
-    end
-
-    if self.showTooltips == nil then
-        self.showTooltips = true
-    end
-
-    if self.enableStatHistory == nil then
-        self.enableStatHistory = true
     end
 
     if self.hideOutOfCombat == nil then
