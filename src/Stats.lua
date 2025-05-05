@@ -1,4 +1,7 @@
 local _, PDS = ...
+
+-- Initialize Stats namespace if needed
+PDS.Stats = PDS.Stats or {}
 local Stats = PDS.Stats
 
 -- Combat Rating constants - updated for 11.0.0+

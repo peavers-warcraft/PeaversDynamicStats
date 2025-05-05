@@ -4,16 +4,36 @@ local addonName, PDS = ...
 PDS.Utils = {}
 local Utils = PDS.Utils
 
+-- Access PeaversCommons if available
+local PeaversCommons = _G.PeaversCommons
+
 -- Print a message to the chat frame with addon prefix
 function Utils.Print(message)
     if not message then return end
-    print("|cff3abdf7Peavers|rDynamicStats: " .. message)
+    
+    -- Use PeaversCommons.Utils.Print if available
+    if PeaversCommons and PeaversCommons.Utils and PeaversCommons.Utils.Print then
+        PeaversCommons.Utils.Print("DynamicStats: " .. message)
+    else
+        -- Fallback to direct printing
+        print("|cff3abdf7Peavers|rDynamicStats: " .. message)
+    end
 end
 
 -- Debug print only when debug mode is enabled
 function Utils.Debug(message)
-    if not message or not PDS.Config or not PDS.Config.DEBUG_ENABLED then return end
-    print("|cffff9900[DEBUG]|r " .. message)
+    if not message then return end
+    
+    -- Make sure Config is available and DEBUG_ENABLED is true
+    if not PDS.Config or not PDS.Config.DEBUG_ENABLED then return end
+    
+    -- Use PeaversCommons.Utils.Debug if available
+    if PeaversCommons and PeaversCommons.Utils and PeaversCommons.Utils.Debug then
+        PeaversCommons.Utils.Debug("DynamicStats: " .. message)
+    else
+        -- Fallback to direct debugging
+        print("|cffff9900[DEBUG]|r " .. message)
+    end
 end
 
 -- Safely access global variables by name

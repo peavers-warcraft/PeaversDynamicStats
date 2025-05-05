@@ -6,12 +6,12 @@ local PeaversCommons = _G.PeaversCommons
 -- Initialize addon namespace and modules
 PDS = PDS or {}
 
--- Module namespaces
-PDS.Core = {}
-PDS.UI = {}
-PDS.Utils = {}
-PDS.Config = {}
-PDS.Stats = {}
+-- Module namespaces (initialize them if they don't exist)
+PDS.Core = PDS.Core or {}
+PDS.UI = PDS.UI or {}
+PDS.Utils = PDS.Utils or {}
+PDS.Config = PDS.Config or {}
+PDS.Stats = PDS.Stats or {}
 
 -- Version information
 local function getAddOnMetadata(name, key)
@@ -43,9 +43,36 @@ PeaversCommons.SlashCommands:Register(addonName, "pds", {
 
 -- Initialize addon using the PeaversCommons Events module
 PeaversCommons.Events:Init(addonName, function()
-    -- Initialize configuration
-    PDS.Config:Initialize()
-
+    -- Make sure Stats is initialized if possible
+    if PDS.Stats.Initialize then
+        PDS.Stats:Initialize()
+    end
+    
+    -- Make sure Config is properly loaded
+    if not PDS.Config or not PDS.Config.Save then
+        -- Create a minimal Config if something went wrong
+        -- Use PDS.Utils.Print if initialized
+        if PDS.Utils and PDS.Utils.Print then
+            PDS.Utils.Print("Config module not properly loaded, using defaults")
+        -- Or use PeaversCommons.Utils.Print if available
+        elseif PeaversCommons and PeaversCommons.Utils and PeaversCommons.Utils.Print then
+            PeaversCommons.Utils.Print("DynamicStats: Config module not properly loaded, using defaults")
+        -- Fallback to direct printing if nothing else works
+        else
+            print("|cff3abdf7Peavers|rDynamicStats: Config module not properly loaded, using defaults")
+        end
+        
+        PDS.Config = {
+            enabled = true,
+            showTitleBar = true,
+            bgAlpha = 0.8,
+            showOverflowBars = true,
+            showStatChanges = true,
+            showRatings = true,
+            Save = function() end -- No-op function
+        }
+    end
+    
     -- Initialize configuration UI
     if PDS.ConfigUI and PDS.ConfigUI.Initialize then
         PDS.ConfigUI:Initialize()
@@ -76,11 +103,8 @@ PeaversCommons.Events:Init(addonName, function()
         -- Save current settings for the previous spec
         PDS.Config:Save()
         
-        -- Update identifier for new spec
-        PDS.Config:UpdateCurrentIdentifiers()
-        
-        -- Load settings for the new spec
-        PDS.Config:Load()
+        -- For profile-based configs, we don't need to manually update identifiers or load
+        -- The ConfigManager handles that automatically on the next access
         
         -- Update all bars with the new spec's settings
         PDS.BarManager:UpdateAllBars()

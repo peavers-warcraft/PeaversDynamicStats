@@ -6,126 +6,36 @@ local UI = PDS.UI
 local ConfigUI = {}
 PDS.ConfigUI = ConfigUI
 
--- Utility functions to reduce code duplication
+-- Access PeaversCommons utilities
+local PeaversCommons = _G.PeaversCommons
+local ConfigUIUtils = PeaversCommons.ConfigUIUtils
+
+-- Utility functions to reduce code duplication (now using PeaversCommons.ConfigUIUtils)
 local Utils = {}
 
 -- Creates a slider with standardized formatting
 function Utils:CreateSlider(parent, name, label, min, max, step, defaultVal, width, callback)
-    local container = CreateFrame("Frame", nil, parent)
-    container:SetSize(width or 400, 50)
-
-    local labelText = container:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    labelText:SetPoint("TOPLEFT", 0, 0)
-    labelText:SetText(label .. ": " .. defaultVal)
-
-    local slider = CreateFrame("Slider", name, container, "OptionsSliderTemplate")
-    slider:SetPoint("TOPLEFT", 0, -20)
-    slider:SetWidth(width or 400)
-    slider:SetMinMaxValues(min, max)
-    slider:SetValueStep(step)
-    slider:SetValue(defaultVal)
-
-    -- Hide default slider text
-    local sliderName = slider:GetName()
-    if sliderName then
-        local lowText = PDS.Utils:GetGlobal(sliderName .. "Low")
-        local highText = PDS.Utils:GetGlobal(sliderName .. "High")
-        local valueText = PDS.Utils:GetGlobal(sliderName .. "Text")
-
-        if lowText then lowText:SetText("") end
-        if highText then highText:SetText("") end
-        if valueText then valueText:SetText("") end
-    end
-
-    slider:SetScript("OnValueChanged", function(self, value)
-        local roundedValue
-        if step < 1 then
-            -- For decimal values (like opacity 0-1)
-            roundedValue = PDS.Utils:Round(value * (1 / step)) / (1 / step)
-        else
-            roundedValue = PDS.Utils:Round(value)
-        end
-
-        -- Format percentages
-        if min == 0 and max == 1 then
-            labelText:SetText(label .. ": " .. math.floor(roundedValue * 100) .. "%")
-        else
-            labelText:SetText(label .. ": " .. roundedValue)
-        end
-
-        -- Call the provided callback with the rounded value
-        if callback then
-            callback(roundedValue)
-        end
-    end)
-
-    return container, slider, labelText
+    return ConfigUIUtils.CreateSlider(parent, name, label, min, max, step, defaultVal, width, callback)
 end
 
 -- Creates a dropdown with standardized formatting
 function Utils:CreateDropdown(parent, name, label, options, defaultOption, width, callback)
-    local container = CreateFrame("Frame", nil, parent)
-    container:SetSize(width or 400, 60)
-
-    local labelText = container:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    labelText:SetPoint("TOPLEFT", 0, 0)
-    labelText:SetText(label)
-
-    local dropdown = CreateFrame("Frame", name, container, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("TOPLEFT", 0, -20)
-    UIDropDownMenu_SetWidth(dropdown, (width or 400) - 55)
-    UIDropDownMenu_SetText(dropdown, defaultOption)
-
-    UIDropDownMenu_Initialize(dropdown, function(self, level)
-        local info = UIDropDownMenu_CreateInfo()
-        for value, text in pairs(options) do
-            info.text = text
-            info.checked = (value == defaultOption or text == defaultOption)
-            info.func = function()
-                UIDropDownMenu_SetText(dropdown, text)
-                if callback then
-                    callback(value)
-                end
-            end
-            UIDropDownMenu_AddButton(info)
-        end
-    end)
-
-    return container, dropdown, labelText
+    return ConfigUIUtils.CreateDropdown(parent, name, label, options, defaultOption, width, callback)
 end
 
--- Creates a checkbox with standardized formatting - FIXED version
+-- Creates a checkbox with standardized formatting
 function Utils:CreateCheckbox(parent, name, label, x, y, checked, callback)
-    local checkbox, newY = UI:CreateCheckbox(
-        parent,
-        name,
-        label,
-        x, -- Pass the x parameter explicitly
-        y, -- Pass the y parameter explicitly
-        checked,
-        { 1, 1, 1 },
-        function(self)
-            if callback then
-                callback(self:GetChecked())
-            end
-        end
-    )
-
-    return checkbox, newY -- Return both the checkbox and the new y position
+    return ConfigUIUtils.CreateCheckbox(parent, name, label, x, y, checked, callback)
 end
 
 -- Creates a section header with standardized formatting
 function Utils:CreateSectionHeader(parent, text, indent, yPos, fontSize)
-    local header, newY = UI:CreateSectionHeader(parent, text, indent, yPos)
-    header:SetFont(header:GetFont(), fontSize or 18)
-    return header, newY
+    return ConfigUIUtils.CreateSectionHeader(parent, text, indent, yPos, fontSize)
 end
 
 -- Creates a subsection label with standardized formatting
 function Utils:CreateSubsectionLabel(parent, text, indent, y)
-    local label, newY = UI:CreateLabel(parent, text, indent, y, "GameFontNormalSmall")
-    label:SetTextColor(0.9, 0.9, 0.9)
-    return label, newY
+    return ConfigUIUtils.CreateSubsectionLabel(parent, text, indent, y)
 end
 
 -- Creates a color picker for a stat
@@ -139,71 +49,16 @@ function Utils:CreateStatColorPicker(parent, statType, y, indent)
         r, g, b = PDS.Stats:GetColor(statType)
     end
 
-    -- Create a container frame for better alignment of color picker and label
-    local colorContainer = CreateFrame("Frame", nil, parent)
-    colorContainer:SetSize(400, 30)
-    colorContainer:SetPoint("TOPLEFT", indent, y)
-
-    local colorLabel = colorContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    colorLabel:SetPoint("LEFT", 0, 0)
-    colorLabel:SetText("Bar Color:")
-
-    local colorPicker = CreateFrame("Button", "PeaversStat" .. statType .. "ColorPicker", colorContainer,
-        "BackdropTemplate")
-    colorPicker:SetPoint("LEFT", colorLabel, "RIGHT", 10, 0)
-    colorPicker:SetSize(20, 20)
-    colorPicker:SetBackdrop({
-        bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true,
-        tileSize = 16,
-        edgeSize = 8,
-        insets = { left = 2, right = 2, top = 2, bottom = 2 }
-    })
-    colorPicker:SetBackdropColor(r, g, b)
-
-    local colorText = colorContainer:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    colorText:SetPoint("LEFT", colorPicker, "RIGHT", 10, 0)
-    colorText:SetText("Change color")
-
-    -- Create reset button
-    local resetButton = CreateFrame("Button", "PeaversStat" .. statType .. "ResetButton", colorContainer,
-        "UIPanelButtonTemplate")
-    resetButton:SetSize(80, 20)
-    resetButton:SetPoint("LEFT", colorText, "RIGHT", 15, 0)
-    resetButton:SetText("Reset")
-    resetButton:SetScript("OnClick", function()
-        -- Remove custom color
-        Config.customColors[statType] = nil
-        Config:Save()
-
-        -- Get default color
-        local defaultR, defaultG, defaultB = PDS.Stats:GetColor(statType)
-
-        -- Update color picker appearance
-        colorPicker:SetBackdropColor(defaultR, defaultG, defaultB)
-
-        -- Update the bar if it exists
-        if PDS.BarManager then
-            local bar = PDS.BarManager:GetBar(statType)
-            if bar then
-                bar:UpdateColor()
-            end
-        end
-    end)
-
-    colorPicker:SetScript("OnClick", function()
-        local function ColorCallback(restore)
-            local newR, newG, newB
-            if restore then
-                newR, newG, newB = unpack(restore)
-            else
-                -- Get color using the latest API
-                newR, newG, newB = ColorPickerFrame.Content.ColorPicker:GetColorRGB()
-            end
-
-            colorPicker:SetBackdropColor(newR, newG, newB)
-
+    -- Use the ConfigUIUtils for creating a color picker with reset functionality
+    local colorContainer, colorPicker, resetButton, newY = ConfigUIUtils.CreateColorPicker(
+        parent,
+        "PeaversStat" .. statType .. "ColorPicker",
+        "Bar Color:",
+        indent,
+        y,
+        {r = r, g = g, b = b},
+        -- Color change handler
+        function(newR, newG, newB)
             -- Save the custom color
             Config.customColors[statType] = { r = newR, g = newG, b = newB }
             Config:Save()
@@ -215,26 +70,30 @@ function Utils:CreateStatColorPicker(parent, statType, y, indent)
                     bar:UpdateColor()
                 end
             end
+        end,
+        -- Reset handler
+        function()
+            -- Remove custom color
+            Config.customColors[statType] = nil
+            Config:Save()
+
+            -- Get default color
+            local defaultR, defaultG, defaultB = PDS.Stats:GetColor(statType)
+
+            -- Update color picker appearance
+            colorPicker:SetBackdropColor(defaultR, defaultG, defaultB)
+
+            -- Update the bar if it exists
+            if PDS.BarManager then
+                local bar = PDS.BarManager:GetBar(statType)
+                if bar then
+                    bar:UpdateColor()
+                end
+            end
         end
+    )
 
-        local r, g, b = colorPicker:GetBackdropColor()
-
-        -- Set both func and swatchFunc for compatibility with different API versions
-        ColorPickerFrame.func = ColorCallback
-        ColorPickerFrame.swatchFunc = ColorCallback
-        ColorPickerFrame.cancelFunc = ColorCallback
-        ColorPickerFrame.opacityFunc = nil
-        ColorPickerFrame.hasOpacity = false
-        ColorPickerFrame.previousValues = { r, g, b }
-
-        -- Set color using the latest API
-        ColorPickerFrame.Content.ColorPicker:SetColorRGB(r, g, b)
-
-        ColorPickerFrame:Hide() -- Hide first to trigger OnShow handler
-        ColorPickerFrame:Show()
-    end)
-
-    return y - 35
+    return newY
 end
 
 -- Creates and initializes the options panel
@@ -244,34 +103,16 @@ function ConfigUI:InitializeOptions()
         return
     end
 
-    local panel = CreateFrame("Frame")
-    panel.name = "Settings"
+    -- Use ConfigUIUtils to create a standard settings panel
+    local panel = ConfigUIUtils.CreateSettingsPanel(
+        "Settings",
+        "Configuration options for the dynamic stats display"
+    )
 
-    local scrollFrame, content = UI:CreateScrollFrame(panel)
-    local yPos = 0
-
-    -- Golden ratio for spacing (approximately 1.618)
-    local goldenRatio = 1.618
-    local baseSpacing = 25
-    local sectionSpacing = baseSpacing * goldenRatio -- ~40px
-
-    -- Create header and description
-    local title = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", baseSpacing, yPos)
-    title:SetText("Peavers Dynamic Stats")
-    title:SetTextColor(1, 0.84, 0) -- Gold color for main title
-    title:SetFont(title:GetFont(), 24, "OUTLINE")
-    yPos = yPos - (baseSpacing * goldenRatio)
-
-    local subtitle = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    subtitle:SetPoint("TOPLEFT", baseSpacing, yPos)
-    subtitle:SetText("Configuration options for the dynamic stats display")
-    subtitle:SetFont(subtitle:GetFont(), 14)
-    yPos = yPos - sectionSpacing
-
-    -- Add a separator after the header
-    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
-    yPos = newY - baseSpacing
+    local content = panel.content
+    local yPos = panel.yPos
+    local baseSpacing = panel.baseSpacing
+    local sectionSpacing = panel.sectionSpacing
 
     -- 1. DISPLAY SETTINGS SECTION
     yPos = self:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacing)
@@ -293,10 +134,10 @@ function ConfigUI:InitializeOptions()
     -- Add a separator between major sections
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
-    
+
     -- 3.5. SPEC SETTINGS SECTION
     yPos = self:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
-    
+
     -- Add a separator between major sections
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
@@ -309,14 +150,10 @@ function ConfigUI:InitializeOptions()
     yPos = newY - baseSpacing
 
     -- Update content height based on the last element position
-    content:SetHeight(math.abs(yPos) + 50)
+    panel:UpdateContentHeight(yPos)
 
-        -- Let PeaversCommons handle category registration
+    -- Let PeaversCommons handle category registration
     -- The panel will be added as the first subcategory automatically
-
-    panel.OnRefresh = function() end
-    panel.OnCommit = function() end
-    panel.OnDefault = function() end
 
     return panel
 end
@@ -759,17 +596,17 @@ function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
     sectionSpacing = sectionSpacing or 40
     local controlIndent = baseSpacing + 15
     local subControlIndent = controlIndent + 15
-    
+
     -- Specialization Settings section header
     local header, newY = Utils:CreateSectionHeader(content, "Specialization Settings", baseSpacing, yPos)
     yPos = newY - 10
-    
+
     -- Add "NEW" badge
     local newBadge = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     newBadge:SetPoint("LEFT", header, "RIGHT", 10, 0)
     newBadge:SetText("NEW!")
     newBadge:SetTextColor(0, 1, 0)
-    
+
     -- Create a colored glow around the NEW badge
     local newBadgeGlow = content:CreateTexture(nil, "BACKGROUND")
     newBadgeGlow:SetPoint("CENTER", newBadge, "CENTER", 0, 0)
@@ -777,36 +614,36 @@ function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
     newBadgeGlow:SetTexture("Interface\\SpellActivationOverlay\\IconAlert")
     newBadgeGlow:SetBlendMode("ADD")
     newBadgeGlow:SetAlpha(0.7)
-    
+
     -- Animate the glow
     local animGroup = newBadgeGlow:CreateAnimationGroup()
     animGroup:SetLooping("REPEAT")
-    
+
     local fadeOut = animGroup:CreateAnimation("Alpha")
     fadeOut:SetFromAlpha(0.7)
     fadeOut:SetToAlpha(0.3)
     fadeOut:SetDuration(1)
     fadeOut:SetOrder(1)
-    
+
     local fadeIn = animGroup:CreateAnimation("Alpha")
     fadeIn:SetFromAlpha(0.3)
     fadeIn:SetToAlpha(0.7)
     fadeIn:SetDuration(1)
     fadeIn:SetOrder(2)
-    
+
     animGroup:Play()
-    
+
     -- Add explanation about specialization settings
     local specExplanation = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     specExplanation:SetPoint("TOPLEFT", baseSpacing + 15, yPos)
     specExplanation:SetWidth(400)
     specExplanation:SetJustifyH("LEFT")
     specExplanation:SetText("Control whether your addon settings should be shared between all specializations or customized per spec.")
-    
+
     -- Calculate the height of the explanation text
     local explanationHeight = 40
     yPos = yPos - explanationHeight - 10
-    
+
     -- Use shared spec settings checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversUseSharedSpecCheckbox",
@@ -815,13 +652,13 @@ function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
         function(checked)
             Config.useSharedSpec = checked
             Config:Save()
-            
+
             -- If checked, copy current settings to the shared profile
             if checked then
                 local charKey = Config:GetCharacterKey()
                 local currentProfileKey = charKey .. "-" .. tostring(Config.currentSpec)
                 local sharedProfileKey = charKey .. "-shared"
-                
+
                 -- Make sure SavedVariables DB exists
                 if PeaversDynamicStatsDB and PeaversDynamicStatsDB.profiles then
                     -- Copy current spec settings to shared profile if it exists
@@ -830,7 +667,7 @@ function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
                     end
                 end
             end
-            
+
             -- Show a message to the user
             if checked then
                 PDS.Utils.Print("Settings will now be shared across all specializations")
@@ -840,7 +677,7 @@ function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
         end
     )
     yPos = newY - 8
-    
+
     -- Add extra info text
     local extraInfo = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     extraInfo:SetPoint("TOPLEFT", subControlIndent, yPos)
@@ -848,11 +685,11 @@ function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
     extraInfo:SetJustifyH("LEFT")
     extraInfo:SetTextColor(0.8, 0.8, 1)
     extraInfo:SetText("When enabled, your stat visibility, bar appearance, and other settings will be the same for all specs. When disabled, each spec can have unique settings.")
-    
+
     -- Calculate height based on the text
     local infoHeight = 50
     yPos = yPos - infoHeight - 10
-    
+
     return yPos
 end
 

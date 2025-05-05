@@ -22,7 +22,6 @@ src\Stats.lua
 src\Utils\Utils.lua
 src\Utils\Config.lua
 src\Utils\ConfigUI.lua
-src\Utils\Patrons.lua
 
 # UI components needed by Core
 src\UI\StatBar.lua
