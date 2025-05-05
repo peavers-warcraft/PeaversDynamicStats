@@ -2,7 +2,6 @@ local addonName, PDS = ...
 local Core = {}
 PDS.Core = Core
 
--- Init combat state
 Core.inCombat = false
 
 function Core:Initialize()
@@ -35,15 +34,9 @@ function Core:Initialize()
 
 	self:UpdateTitleBarVisibility()
 
-	-- Create bars using the BarManager
 	PDS.BarManager:CreateBars(self.contentFrame)
-
-	-- Adjust frame height based on visible bars
 	self:AdjustFrameHeight()
-
-	-- Now set the position after bars are created and frame height is adjusted
 	self.frame:SetPoint(PDS.Config.framePoint, PDS.Config.frameX, PDS.Config.frameY)
-
 	self:UpdateFrameLock()
 
 	local inCombat = InCombatLockdown()
@@ -64,24 +57,20 @@ function Core:Initialize()
 	end
 end
 
--- Recalculates frame height based on number of bars and title bar visibility
 function Core:AdjustFrameHeight()
-	-- Use the BarManager to adjust frame height
 	PDS.BarManager:AdjustFrameHeight(self.frame, self.contentFrame, PDS.Config.showTitleBar)
 end
 
--- Enables or disables frame dragging based on lock setting
 function Core:UpdateFrameLock()
 	if PDS.Config.lockPosition then
 		self.frame:SetMovable(false)
-		self.frame:EnableMouse(true) -- Keep mouse enabled for tooltips
+		self.frame:EnableMouse(true)
 		self.frame:RegisterForDrag("")
 		self.frame:SetScript("OnDragStart", nil)
 		self.frame:SetScript("OnDragStop", nil)
 		
-		-- Make content frame draggable if title bar is hidden
 		self.contentFrame:SetMovable(false)
-		self.contentFrame:EnableMouse(true) -- Keep mouse enabled for tooltips
+		self.contentFrame:EnableMouse(true)
 		self.contentFrame:RegisterForDrag("")
 		self.contentFrame:SetScript("OnDragStart", nil)
 		self.contentFrame:SetScript("OnDragStop", nil)
@@ -100,7 +89,6 @@ function Core:UpdateFrameLock()
 			PDS.Config:Save()
 		end)
 		
-		-- Make content frame draggable when title bar is hidden
 		self.contentFrame:SetMovable(true)
 		self.contentFrame:EnableMouse(true)
 		self.contentFrame:RegisterForDrag("LeftButton")
@@ -119,7 +107,6 @@ function Core:UpdateFrameLock()
 	end
 end
 
--- Shows or hides the title bar and adjusts content frame accordingly
 function Core:UpdateTitleBarVisibility()
 	if self.titleBar then
 		if PDS.Config.showTitleBar then
@@ -131,7 +118,7 @@ function Core:UpdateTitleBarVisibility()
 		end
 
 		self:AdjustFrameHeight()
-		self:UpdateFrameLock() -- Update dragging behavior when title bar visibility changes
+		self:UpdateFrameLock()
 	end
 end
 
