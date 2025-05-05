@@ -293,6 +293,13 @@ function ConfigUI:InitializeOptions()
     -- Add a separator between major sections
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
+    
+    -- 3.5. SPEC SETTINGS SECTION
+    yPos = self:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
+    
+    -- Add a separator between major sections
+    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
+    yPos = newY - baseSpacing
 
     -- 4. TEXT SETTINGS SECTION
     yPos = self:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
@@ -746,6 +753,109 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
 end
 
 -- 4. TEXT SETTINGS - Font and text appearance settings
+-- 3.5 SPECIALIZATION OPTIONS - Settings for per-spec configuration
+function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
+    baseSpacing = baseSpacing or 25
+    sectionSpacing = sectionSpacing or 40
+    local controlIndent = baseSpacing + 15
+    local subControlIndent = controlIndent + 15
+    
+    -- Specialization Settings section header
+    local header, newY = Utils:CreateSectionHeader(content, "Specialization Settings", baseSpacing, yPos)
+    yPos = newY - 10
+    
+    -- Add "NEW" badge
+    local newBadge = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    newBadge:SetPoint("LEFT", header, "RIGHT", 10, 0)
+    newBadge:SetText("NEW!")
+    newBadge:SetTextColor(0, 1, 0)
+    
+    -- Create a colored glow around the NEW badge
+    local newBadgeGlow = content:CreateTexture(nil, "BACKGROUND")
+    newBadgeGlow:SetPoint("CENTER", newBadge, "CENTER", 0, 0)
+    newBadgeGlow:SetSize(50, 25)
+    newBadgeGlow:SetTexture("Interface\\SpellActivationOverlay\\IconAlert")
+    newBadgeGlow:SetBlendMode("ADD")
+    newBadgeGlow:SetAlpha(0.7)
+    
+    -- Animate the glow
+    local animGroup = newBadgeGlow:CreateAnimationGroup()
+    animGroup:SetLooping("REPEAT")
+    
+    local fadeOut = animGroup:CreateAnimation("Alpha")
+    fadeOut:SetFromAlpha(0.7)
+    fadeOut:SetToAlpha(0.3)
+    fadeOut:SetDuration(1)
+    fadeOut:SetOrder(1)
+    
+    local fadeIn = animGroup:CreateAnimation("Alpha")
+    fadeIn:SetFromAlpha(0.3)
+    fadeIn:SetToAlpha(0.7)
+    fadeIn:SetDuration(1)
+    fadeIn:SetOrder(2)
+    
+    animGroup:Play()
+    
+    -- Add explanation about specialization settings
+    local specExplanation = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    specExplanation:SetPoint("TOPLEFT", baseSpacing + 15, yPos)
+    specExplanation:SetWidth(400)
+    specExplanation:SetJustifyH("LEFT")
+    specExplanation:SetText("Control whether your addon settings should be shared between all specializations or customized per spec.")
+    
+    -- Calculate the height of the explanation text
+    local explanationHeight = 40
+    yPos = yPos - explanationHeight - 10
+    
+    -- Use shared spec settings checkbox
+    local _, newY = Utils:CreateCheckbox(
+        content, "PeaversUseSharedSpecCheckbox",
+        "Use same settings for all specializations", controlIndent, yPos,
+        Config.useSharedSpec,
+        function(checked)
+            Config.useSharedSpec = checked
+            Config:Save()
+            
+            -- If checked, copy current settings to the shared profile
+            if checked then
+                local charKey = Config:GetCharacterKey()
+                local currentProfileKey = charKey .. "-" .. tostring(Config.currentSpec)
+                local sharedProfileKey = charKey .. "-shared"
+                
+                -- Make sure SavedVariables DB exists
+                if PeaversDynamicStatsDB and PeaversDynamicStatsDB.profiles then
+                    -- Copy current spec settings to shared profile if it exists
+                    if PeaversDynamicStatsDB.profiles[currentProfileKey] then
+                        PeaversDynamicStatsDB.profiles[sharedProfileKey] = Config:CopyTable(PeaversDynamicStatsDB.profiles[currentProfileKey])
+                    end
+                end
+            end
+            
+            -- Show a message to the user
+            if checked then
+                PDS.Utils.Print("Settings will now be shared across all specializations")
+            else
+                PDS.Utils.Print("Each specialization will now use its own settings")
+            end
+        end
+    )
+    yPos = newY - 8
+    
+    -- Add extra info text
+    local extraInfo = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    extraInfo:SetPoint("TOPLEFT", subControlIndent, yPos)
+    extraInfo:SetWidth(380)
+    extraInfo:SetJustifyH("LEFT")
+    extraInfo:SetTextColor(0.8, 0.8, 1)
+    extraInfo:SetText("When enabled, your stat visibility, bar appearance, and other settings will be the same for all specs. When disabled, each spec can have unique settings.")
+    
+    -- Calculate height based on the text
+    local infoHeight = 50
+    yPos = yPos - infoHeight - 10
+    
+    return yPos
+end
+
 function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     baseSpacing = baseSpacing or 25
     sectionSpacing = sectionSpacing or 40

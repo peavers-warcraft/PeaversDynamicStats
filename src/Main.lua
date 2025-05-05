@@ -73,6 +73,16 @@ PeaversCommons.Events:Init(addonName, function()
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED", function()
+        -- Save current settings for the previous spec
+        PDS.Config:Save()
+        
+        -- Update identifier for new spec
+        PDS.Config:UpdateCurrentIdentifiers()
+        
+        -- Load settings for the new spec
+        PDS.Config:Load()
+        
+        -- Update all bars with the new spec's settings
         PDS.BarManager:UpdateAllBars()
     end)
 
