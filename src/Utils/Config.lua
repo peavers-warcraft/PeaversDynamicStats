@@ -36,6 +36,15 @@ PDS.Config = {
     showStatChanges = true, -- Show stat value changes
     showRatings = true,    -- Show rating values
     hideOutOfCombat = false, -- Hide the addon when out of combat
+
+    -- Character identification
+    currentCharacter = nil,
+    currentRealm = nil,
+    currentSpec = nil,
+    specIDs = {},
+    
+    -- Per-spec settings
+    useSharedSpec = true, -- NEW: Use same settings for all specs (enabled by default)
 }
 
 -- Initialize showStats with values from Stats.STAT_TYPES
@@ -45,111 +54,380 @@ end
 
 local Config = PDS.Config
 
+-- Functions to get player identification information
+function Config:GetPlayerName()
+    return UnitName("player")
+end
+
+function Config:GetRealmName()
+    local realm = GetRealmName()
+    return realm
+end
+
+function Config:GetSpecialization()
+    local currentSpec = GetSpecialization()
+    if not currentSpec then
+        return nil
+    end
+    
+    local specID = GetSpecializationInfo(currentSpec)
+    return specID
+end
+
+function Config:GetCharacterKey()
+    return self:GetPlayerName() .. "-" .. self:GetRealmName()
+end
+
+function Config:GetFullProfileKey()
+    local charKey = self:GetCharacterKey()
+    
+    -- If using shared spec settings, just return the character key
+    if self.useSharedSpec then
+        return charKey .. "-shared"
+    end
+    
+    -- Otherwise use per-spec settings
+    local specID = self:GetSpecialization()
+    if not specID then
+        -- Fall back to character-only key if spec not available
+        return charKey
+    end
+    
+    return charKey .. "-" .. tostring(specID)
+end
+
+function Config:UpdateCurrentIdentifiers()
+    self.currentCharacter = self:GetPlayerName()
+    self.currentRealm = self:GetRealmName()
+    self.currentSpec = self:GetSpecialization()
+end
+
 -- Saves all configuration values to the SavedVariables database
 function Config:Save()
+    -- Initialize database structure if it doesn't exist
     if not PeaversDynamicStatsDB then
-        PeaversDynamicStatsDB = {}
+        PeaversDynamicStatsDB = {
+            profiles = {},       -- Per-character + spec profiles
+            characters = {},     -- Character-specific data
+            global = {}          -- Global settings
+        }
     end
-
-    PeaversDynamicStatsDB.fontFace = self.fontFace
-    PeaversDynamicStatsDB.fontSize = self.fontSize
-    PeaversDynamicStatsDB.fontOutline = self.fontOutline
-    PeaversDynamicStatsDB.fontShadow = self.fontShadow
-    PeaversDynamicStatsDB.framePoint = self.framePoint
-    PeaversDynamicStatsDB.frameX = self.frameX
-    PeaversDynamicStatsDB.frameY = self.frameY
-    PeaversDynamicStatsDB.frameWidth = self.frameWidth
-    PeaversDynamicStatsDB.barWidth = self.barWidth
-    PeaversDynamicStatsDB.barHeight = self.barHeight
-    PeaversDynamicStatsDB.barTexture = self.barTexture
-    PeaversDynamicStatsDB.barBgAlpha = self.barBgAlpha
-    PeaversDynamicStatsDB.bgAlpha = self.bgAlpha
-    PeaversDynamicStatsDB.bgColor = self.bgColor
-    PeaversDynamicStatsDB.showStats = self.showStats
-    PeaversDynamicStatsDB.barSpacing = self.barSpacing
-    PeaversDynamicStatsDB.showTitleBar = self.showTitleBar
-    PeaversDynamicStatsDB.lockPosition = self.lockPosition
-    PeaversDynamicStatsDB.customColors = self.customColors
-    PeaversDynamicStatsDB.showOverflowBars = self.showOverflowBars
-    PeaversDynamicStatsDB.showStatChanges = self.showStatChanges
-    PeaversDynamicStatsDB.showRatings = self.showRatings
-    PeaversDynamicStatsDB.hideOutOfCombat = self.hideOutOfCombat
+    
+    -- Initialize structure components if they don't exist
+    PeaversDynamicStatsDB.profiles = PeaversDynamicStatsDB.profiles or {}
+    PeaversDynamicStatsDB.characters = PeaversDynamicStatsDB.characters or {}
+    PeaversDynamicStatsDB.global = PeaversDynamicStatsDB.global or {}
+    
+    -- Update current identifiers
+    self:UpdateCurrentIdentifiers()
+    
+    -- Get character key (CharacterName-Realm)
+    local charKey = self:GetCharacterKey()
+    
+    -- Get full profile key (CharacterName-Realm-SpecID)
+    local profileKey = self:GetFullProfileKey()
+    
+    -- Initialize character data if it doesn't exist
+    if not PeaversDynamicStatsDB.characters[charKey] then
+        PeaversDynamicStatsDB.characters[charKey] = {
+            lastSpec = self.currentSpec,
+            specs = {}
+        }
+    end
+    
+    -- Update character's last specialization
+    PeaversDynamicStatsDB.characters[charKey].lastSpec = self.currentSpec
+    
+    -- Add current spec to list of this character's specs
+    if self.currentSpec then
+        -- Make sure the specs table is initialized
+        PeaversDynamicStatsDB.characters[charKey].specs = PeaversDynamicStatsDB.characters[charKey].specs or {}
+        
+        -- Add the spec to the list if it's not already there
+        local specKey = tostring(self.currentSpec)
+        if not PeaversDynamicStatsDB.characters[charKey].specs[specKey] then
+            PeaversDynamicStatsDB.characters[charKey].specs[specKey] = true
+        end
+    end
+    
+    -- Initialize profile data if it doesn't exist
+    if not PeaversDynamicStatsDB.profiles[profileKey] then
+        PeaversDynamicStatsDB.profiles[profileKey] = {}
+    end
+    
+    -- Save global settings that are not specific to profiles
+    PeaversDynamicStatsDB.global.useSharedSpec = self.useSharedSpec
+    
+    -- Save current settings to the profile
+    local profile = PeaversDynamicStatsDB.profiles[profileKey]
+    
+    -- Save all configuration settings to the profile
+    profile.fontFace = self.fontFace
+    profile.fontSize = self.fontSize
+    profile.fontOutline = self.fontOutline
+    profile.fontShadow = self.fontShadow
+    profile.framePoint = self.framePoint
+    profile.frameX = self.frameX
+    profile.frameY = self.frameY
+    profile.frameWidth = self.frameWidth
+    profile.barWidth = self.barWidth
+    profile.barHeight = self.barHeight
+    profile.barTexture = self.barTexture
+    profile.barBgAlpha = self.barBgAlpha
+    profile.bgAlpha = self.bgAlpha
+    profile.bgColor = self.bgColor
+    profile.showStats = self.showStats
+    profile.barSpacing = self.barSpacing
+    profile.showTitleBar = self.showTitleBar
+    profile.lockPosition = self.lockPosition
+    profile.customColors = self.customColors
+    profile.showOverflowBars = self.showOverflowBars
+    profile.showStatChanges = self.showStatChanges
+    profile.showRatings = self.showRatings
+    profile.hideOutOfCombat = self.hideOutOfCombat
 end
 
 -- Loads configuration values from the SavedVariables database
 function Config:Load()
+    -- If no saved data exists, return
     if not PeaversDynamicStatsDB then
         return
     end
+    
+    -- Ensure the database has the correct structure
+    if not PeaversDynamicStatsDB.profiles then
+        PeaversDynamicStatsDB.profiles = {}
+    end
+    
+    if not PeaversDynamicStatsDB.characters then
+        PeaversDynamicStatsDB.characters = {}
+    end
+    
+    if not PeaversDynamicStatsDB.global then
+        PeaversDynamicStatsDB.global = {}
+    end
+    
+    -- Convert old database format to new format if needed
+    self:MigrateOldData()
+    
+    -- Update current identifiers
+    self:UpdateCurrentIdentifiers()
+    
+    -- Load global settings
+    if PeaversDynamicStatsDB.global then
+        if PeaversDynamicStatsDB.global.useSharedSpec ~= nil then
+            self.useSharedSpec = PeaversDynamicStatsDB.global.useSharedSpec
+        end
+    end
+    
+    -- Get character key (CharacterName-Realm)
+    local charKey = self:GetCharacterKey()
+    
+    -- Get full profile key (CharacterName-Realm-SpecID)
+    local profileKey = self:GetFullProfileKey()
+    
+    -- Initialize character data if it doesn't exist
+    if not PeaversDynamicStatsDB.characters[charKey] then
+        PeaversDynamicStatsDB.characters[charKey] = {
+            lastSpec = self.currentSpec,
+            specs = {}
+        }
+    end
+    
+    -- If we don't have a profile for this character+spec combo, create one
+    if not PeaversDynamicStatsDB.profiles[profileKey] then
+        -- See if this character exists but with a different spec
+        local lastSpec = PeaversDynamicStatsDB.characters[charKey].lastSpec
+        if lastSpec then
+            -- Try to find a profile with that spec
+            local lastProfileKey = charKey .. "-" .. lastSpec
+            if PeaversDynamicStatsDB.profiles[lastProfileKey] then
+                -- Copy that profile for our new spec
+                PeaversDynamicStatsDB.profiles[profileKey] = self:CopyTable(PeaversDynamicStatsDB.profiles[lastProfileKey])
+            end
+        end
+    end
+    
+    -- If we still don't have a profile, create an empty one
+    if not PeaversDynamicStatsDB.profiles[profileKey] then
+        PeaversDynamicStatsDB.profiles[profileKey] = {}
+    end
+    
+    -- Load settings from the profile
+    local profile = PeaversDynamicStatsDB.profiles[profileKey]
+    
+    -- Load settings from the profile, using defaults if not found
+    if profile.fontFace then
+        self.fontFace = profile.fontFace
+    end
+    if profile.fontSize then
+        self.fontSize = profile.fontSize
+    end
+    if profile.fontOutline then
+        self.fontOutline = profile.fontOutline
+    end
+    if profile.fontShadow ~= nil then
+        self.fontShadow = profile.fontShadow
+    end
+    if profile.framePoint then
+        self.framePoint = profile.framePoint
+    end
+    if profile.frameX then
+        self.frameX = profile.frameX
+    end
+    if profile.frameY then
+        self.frameY = profile.frameY
+    end
+    if profile.frameWidth then
+        self.frameWidth = profile.frameWidth
+    end
+    if profile.barWidth then
+        self.barWidth = profile.barWidth
+    end
+    if profile.barHeight then
+        self.barHeight = profile.barHeight
+    end
+    if profile.barTexture then
+        self.barTexture = profile.barTexture
+    end
+    if profile.barBgAlpha then
+        self.barBgAlpha = profile.barBgAlpha
+    end
+    if profile.bgAlpha then
+        self.bgAlpha = profile.bgAlpha
+    end
+    if profile.bgColor then
+        self.bgColor = profile.bgColor
+    end
+    if profile.showStats then
+        self.showStats = profile.showStats
+    end
+    if profile.barSpacing then
+        self.barSpacing = profile.barSpacing
+    end
+    if profile.showTitleBar ~= nil then
+        self.showTitleBar = profile.showTitleBar
+    end
+    if profile.lockPosition ~= nil then
+        self.lockPosition = profile.lockPosition
+    end
+    if profile.customColors then
+        self.customColors = profile.customColors
+    end
+    if profile.showOverflowBars ~= nil then
+        self.showOverflowBars = profile.showOverflowBars
+    end
+    if profile.showStatChanges ~= nil then
+        self.showStatChanges = profile.showStatChanges
+    end
+    if profile.showRatings ~= nil then
+        self.showRatings = profile.showRatings
+    end
+    if profile.hideOutOfCombat ~= nil then
+        self.hideOutOfCombat = profile.hideOutOfCombat
+    end
+end
 
-    if PeaversDynamicStatsDB.fontFace then
-        self.fontFace = PeaversDynamicStatsDB.fontFace
+-- Helper function to make a deep copy of a table
+function Config:CopyTable(source)
+    if type(source) ~= "table" then
+        return source
     end
-    if PeaversDynamicStatsDB.fontSize then
-        self.fontSize = PeaversDynamicStatsDB.fontSize
+    
+    local copy = {}
+    for key, value in pairs(source) do
+        if type(value) == "table" then
+            copy[key] = self:CopyTable(value)
+        else
+            copy[key] = value
+        end
     end
-    if PeaversDynamicStatsDB.fontOutline then
-        self.fontOutline = PeaversDynamicStatsDB.fontOutline
-    end
-    if PeaversDynamicStatsDB.fontShadow ~= nil then
-        self.fontShadow = PeaversDynamicStatsDB.fontShadow
-    end
-    if PeaversDynamicStatsDB.framePoint then
-        self.framePoint = PeaversDynamicStatsDB.framePoint
-    end
-    if PeaversDynamicStatsDB.frameX then
-        self.frameX = PeaversDynamicStatsDB.frameX
-    end
-    if PeaversDynamicStatsDB.frameY then
-        self.frameY = PeaversDynamicStatsDB.frameY
-    end
-    if PeaversDynamicStatsDB.frameWidth then
-        self.frameWidth = PeaversDynamicStatsDB.frameWidth
-    end
-    if PeaversDynamicStatsDB.barWidth then
-        self.barWidth = PeaversDynamicStatsDB.barWidth
-    end
-    if PeaversDynamicStatsDB.barHeight then
-        self.barHeight = PeaversDynamicStatsDB.barHeight
-    end
-    if PeaversDynamicStatsDB.barTexture then
-        self.barTexture = PeaversDynamicStatsDB.barTexture
-    end
-    if PeaversDynamicStatsDB.barBgAlpha then
-        self.barBgAlpha = PeaversDynamicStatsDB.barBgAlpha
-    end
-    if PeaversDynamicStatsDB.bgAlpha then
-        self.bgAlpha = PeaversDynamicStatsDB.bgAlpha
-    end
-    if PeaversDynamicStatsDB.bgColor then
-        self.bgColor = PeaversDynamicStatsDB.bgColor
-    end
-    if PeaversDynamicStatsDB.showStats then
-        self.showStats = PeaversDynamicStatsDB.showStats
-    end
-    if PeaversDynamicStatsDB.barSpacing then
-        self.barSpacing = PeaversDynamicStatsDB.barSpacing
-    end
-    if PeaversDynamicStatsDB.showTitleBar ~= nil then
-        self.showTitleBar = PeaversDynamicStatsDB.showTitleBar
-    end
-    if PeaversDynamicStatsDB.lockPosition ~= nil then
-        self.lockPosition = PeaversDynamicStatsDB.lockPosition
-    end
-    if PeaversDynamicStatsDB.customColors then
-        self.customColors = PeaversDynamicStatsDB.customColors
-    end
-    if PeaversDynamicStatsDB.showOverflowBars ~= nil then
-        self.showOverflowBars = PeaversDynamicStatsDB.showOverflowBars
-    end
-    if PeaversDynamicStatsDB.showStatChanges ~= nil then
-        self.showStatChanges = PeaversDynamicStatsDB.showStatChanges
-    end
-    if PeaversDynamicStatsDB.showRatings ~= nil then
-        self.showRatings = PeaversDynamicStatsDB.showRatings
-    end
-    if PeaversDynamicStatsDB.hideOutOfCombat ~= nil then
-        self.hideOutOfCombat = PeaversDynamicStatsDB.hideOutOfCombat
+    
+    return copy
+end
+
+-- Migration helper for old database format
+function Config:MigrateOldData()
+    -- Only migrate if we have old format (direct keys in the root) and no profiles yet
+    if PeaversDynamicStatsDB.fontFace and (not PeaversDynamicStatsDB.profiles or not next(PeaversDynamicStatsDB.profiles)) then
+        -- Initialize the new structure
+        PeaversDynamicStatsDB.profiles = {}
+        PeaversDynamicStatsDB.characters = {}
+        PeaversDynamicStatsDB.global = {}
+        
+        -- Update identifiers
+        self:UpdateCurrentIdentifiers()
+        
+        -- Create character and profile entries
+        local charKey = self:GetCharacterKey()
+        local profileKey = self:GetFullProfileKey()
+        
+        -- Initialize character data
+        PeaversDynamicStatsDB.characters[charKey] = {
+            lastSpec = self.currentSpec,
+            specs = {}
+        }
+        
+        -- Add current spec to character specs
+        if self.currentSpec then
+            -- Make sure the specs table is initialized
+            PeaversDynamicStatsDB.characters[charKey].specs = PeaversDynamicStatsDB.characters[charKey].specs or {}
+            
+            -- Add the spec to the list
+            PeaversDynamicStatsDB.characters[charKey].specs[tostring(self.currentSpec)] = true
+        end
+        
+        -- Create profile with old settings
+        PeaversDynamicStatsDB.profiles[profileKey] = {
+            fontFace = PeaversDynamicStatsDB.fontFace,
+            fontSize = PeaversDynamicStatsDB.fontSize,
+            fontOutline = PeaversDynamicStatsDB.fontOutline,
+            fontShadow = PeaversDynamicStatsDB.fontShadow,
+            framePoint = PeaversDynamicStatsDB.framePoint,
+            frameX = PeaversDynamicStatsDB.frameX,
+            frameY = PeaversDynamicStatsDB.frameY,
+            frameWidth = PeaversDynamicStatsDB.frameWidth,
+            barWidth = PeaversDynamicStatsDB.barWidth,
+            barHeight = PeaversDynamicStatsDB.barHeight,
+            barTexture = PeaversDynamicStatsDB.barTexture,
+            barBgAlpha = PeaversDynamicStatsDB.barBgAlpha,
+            bgAlpha = PeaversDynamicStatsDB.bgAlpha,
+            bgColor = PeaversDynamicStatsDB.bgColor,
+            showStats = PeaversDynamicStatsDB.showStats,
+            barSpacing = PeaversDynamicStatsDB.barSpacing,
+            showTitleBar = PeaversDynamicStatsDB.showTitleBar,
+            lockPosition = PeaversDynamicStatsDB.lockPosition,
+            customColors = PeaversDynamicStatsDB.customColors,
+            showOverflowBars = PeaversDynamicStatsDB.showOverflowBars,
+            showStatChanges = PeaversDynamicStatsDB.showStatChanges,
+            showRatings = PeaversDynamicStatsDB.showRatings,
+            hideOutOfCombat = PeaversDynamicStatsDB.hideOutOfCombat
+        }
+        
+        -- Clean up old format data
+        PeaversDynamicStatsDB.fontFace = nil
+        PeaversDynamicStatsDB.fontSize = nil
+        PeaversDynamicStatsDB.fontOutline = nil
+        PeaversDynamicStatsDB.fontShadow = nil
+        PeaversDynamicStatsDB.framePoint = nil
+        PeaversDynamicStatsDB.frameX = nil
+        PeaversDynamicStatsDB.frameY = nil
+        PeaversDynamicStatsDB.frameWidth = nil
+        PeaversDynamicStatsDB.barWidth = nil
+        PeaversDynamicStatsDB.barHeight = nil
+        PeaversDynamicStatsDB.barTexture = nil
+        PeaversDynamicStatsDB.barBgAlpha = nil
+        PeaversDynamicStatsDB.bgAlpha = nil
+        PeaversDynamicStatsDB.bgColor = nil
+        PeaversDynamicStatsDB.showStats = nil
+        PeaversDynamicStatsDB.barSpacing = nil
+        PeaversDynamicStatsDB.showTitleBar = nil
+        PeaversDynamicStatsDB.lockPosition = nil
+        PeaversDynamicStatsDB.customColors = nil
+        PeaversDynamicStatsDB.showOverflowBars = nil
+        PeaversDynamicStatsDB.showStatChanges = nil
+        PeaversDynamicStatsDB.showRatings = nil
+        PeaversDynamicStatsDB.hideOutOfCombat = nil
     end
 end
 
@@ -232,8 +510,13 @@ function Config:GetBarTextures()
 end
 
 function Config:Initialize()
+    -- Update current character, realm, and spec identifiers
+    self:UpdateCurrentIdentifiers()
+    
+    -- Load settings for the current character and spec
     self:Load()
 
+    -- Initialize default values if they're not set
     if not next(self.showStats) then
         self.showStats = {}
     end
@@ -252,6 +535,12 @@ function Config:Initialize()
 
     if self.hideOutOfCombat == nil then
         self.hideOutOfCombat = false
+    end
+    
+    -- Initialize the spec ID list for debugging/info
+    self.specIDs = self.specIDs or {}
+    if self.currentSpec then
+        self.specIDs[tostring(self.currentSpec)] = true
     end
 end
 

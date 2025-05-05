@@ -4,6 +4,18 @@ local addonName, PDS = ...
 PDS.Utils = {}
 local Utils = PDS.Utils
 
+-- Print a message to the chat frame with addon prefix
+function Utils.Print(message)
+    if not message then return end
+    print("|cff3abdf7Peavers|rDynamicStats: " .. message)
+end
+
+-- Debug print only when debug mode is enabled
+function Utils.Debug(message)
+    if not message or not PDS.Config or not PDS.Config.DEBUG_ENABLED then return end
+    print("|cffff9900[DEBUG]|r " .. message)
+end
+
 -- Safely access global variables by name
 function Utils:GetGlobal(name)
     if name and type(name) == "string" then
