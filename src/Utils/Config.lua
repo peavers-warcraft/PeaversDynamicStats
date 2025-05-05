@@ -187,9 +187,13 @@ end
 
 -- Loads configuration values from the SavedVariables database
 function Config:Load()
-    -- If no saved data exists, return
+    -- If no saved data exists, initialize it
     if not PeaversDynamicStatsDB then
-        return
+        PeaversDynamicStatsDB = {
+            profiles = {},       -- Per-character + spec profiles
+            characters = {},     -- Character-specific data
+            global = {}          -- Global settings
+        }
     end
     
     -- Ensure the database has the correct structure
@@ -540,6 +544,9 @@ function Config:Initialize()
     if self.currentSpec then
         self.specIDs[tostring(self.currentSpec)] = true
     end
+    
+    -- Save settings after initialization to ensure they're persisted
+    self:Save()
 end
 
 function Config:InitializeStatSettings()
