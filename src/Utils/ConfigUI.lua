@@ -496,6 +496,22 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     )
     spacingContainer:SetPoint("TOPLEFT", controlIndent, yPos)
     yPos = yPos - 65
+    
+    -- Bar background opacity slider
+    local bgOpacityContainer, bgOpacitySlider = Utils:CreateSlider(
+        content, "PeaversBarBgAlphaSlider",
+        "Bar Background Opacity", 0, 1, 0.05,
+        Config.barBgAlpha, sliderWidth,
+        function(value)
+            Config.barBgAlpha = value
+            Config:Save()
+            if PDS.BarManager then
+                PDS.BarManager:ResizeBars()
+            end
+        end
+    )
+    bgOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    yPos = yPos - 65
 
     -- Add a thin separator
     local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
@@ -527,7 +543,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Add a thin separator
     local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
     yPos = newY - 15
-
+    
     -- Additional Bar Options
     local additionalLabel, newY = Utils:CreateSubsectionLabel(content, "Additional Bar Options:", controlIndent, yPos)
     yPos = newY - 8
@@ -792,6 +808,9 @@ end
 
 -- Opens the configuration panel
 function ConfigUI:OpenOptions()
+    -- Ensure settings are saved before opening
+    PDS.Config:Save()
+    
     -- Use the direct registration category and subcategory names
     if PDS.directCategory and PDS.directSettingsCategory then
         Settings.OpenToCategory(PDS.directSettingsCategory)
@@ -809,6 +828,43 @@ end
 -- Initialize the configuration UI when called
 function ConfigUI:Initialize()
     self.panel = self:InitializeOptions()
+    
+    -- Hook Settings panel to ensure settings are saved when opened and closed
+    if Settings then
+        if Settings.OpenToCategory then
+            hooksecurefunc(Settings, "OpenToCategory", function()
+                -- Save settings before opening to ensure we have the latest
+                PDS.Config:Save()
+            end)
+        end
+        
+        if Settings.CloseUI then
+            hooksecurefunc(Settings, "CloseUI", function()
+                -- Ensure settings are saved when closing the panel
+                PDS.Config:Save()
+                
+                -- Force a delayed save to ensure everything is written
+                C_Timer.After(0.5, function()
+                    PDS.Config:Save()
+                end)
+            end)
+        end
+    end
+    
+    -- For older clients using InterfaceOptionsFrame
+    if InterfaceOptionsFrame then
+        if not self.frameHooksRegistered then
+            InterfaceOptionsFrame:HookScript("OnHide", function()
+                PDS.Config:Save()
+                
+                -- Force a delayed save to ensure everything is written
+                C_Timer.After(0.5, function()
+                    PDS.Config:Save()
+                end)
+            end)
+            self.frameHooksRegistered = true
+        end
+    end
 end
 
 return ConfigUI

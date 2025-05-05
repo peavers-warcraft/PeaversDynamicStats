@@ -14,7 +14,37 @@ function Core:Initialize()
 	if PDS.StatHistory then
 		PDS.StatHistory:Initialize()
 	end
-
+	
+	-- Set up auto-save hook for whenever settings are modified
+	local autoSaveTimer = nil
+	local function QueueSettingsSave()
+		-- Cancel any pending timer to avoid multiple rapid saves
+		if autoSaveTimer then 
+			autoSaveTimer:Cancel()
+		end
+		
+		-- Set a new timer to save settings after a short delay
+		autoSaveTimer = C_Timer.NewTimer(2, function()
+			if PDS.Config then
+				PDS.Config:Save()
+				autoSaveTimer = nil
+			end
+		end)
+	end
+	
+	-- Register an event to catch settings changes
+	local settingsFrame = CreateFrame("Frame")
+	settingsFrame:RegisterEvent("VARIABLES_LOADED")
+	settingsFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	settingsFrame:RegisterEvent("ADDON_LOADED")
+	settingsFrame:SetScript("OnEvent", function(self, event, ...)
+		if event == "ADDON_LOADED" and ... == addonName then
+			QueueSettingsSave()
+		elseif event == "VARIABLES_LOADED" or event == "PLAYER_ENTERING_WORLD" then
+			QueueSettingsSave()
+		end
+	end)
+	
 	self.frame = CreateFrame("Frame", "PeaversDynamicStatsFrame", UIParent, "BackdropTemplate")
 	self.frame:SetSize(PDS.Config.frameWidth, PDS.Config.frameHeight)
 	self.frame:SetBackdrop({

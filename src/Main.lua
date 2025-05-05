@@ -39,6 +39,14 @@ PeaversCommons.SlashCommands:Register(addonName, "pds", {
     default = function()
         ToggleStatsDisplay()
     end,
+    config = function()
+        -- Use the addon's own OpenOptions function
+        if PDS.ConfigUI and PDS.ConfigUI.OpenOptions then
+            PDS.ConfigUI:OpenOptions()
+        elseif PDS.Config and PDS.Config.OpenOptionsCommand then
+            PDS.Config.OpenOptionsCommand()
+        end
+    end
 })
 
 -- Initialize addon using the PeaversCommons Events module
@@ -48,7 +56,7 @@ PeaversCommons.Events:Init(addonName, function()
         PDS.Stats:Initialize()
     end
     
-    -- Make sure Config is properly loaded
+    -- Make sure Config is properly loaded and initialized
     if not PDS.Config or not PDS.Config.Save then
         -- Create a minimal Config if something went wrong
         -- Use PDS.Utils.Print if initialized
@@ -71,6 +79,11 @@ PeaversCommons.Events:Init(addonName, function()
             showRatings = true,
             Save = function() end -- No-op function
         }
+    else
+        -- Config exists, make sure it's properly initialized 
+        if PDS.Config.Initialize then
+            PDS.Config:Initialize()
+        end
     end
     
     -- Initialize configuration UI
@@ -81,6 +94,11 @@ PeaversCommons.Events:Init(addonName, function()
     -- Initialize patrons support
     if PDS.Patrons and PDS.Patrons.Initialize then
         PDS.Patrons:Initialize()
+    end
+    
+    -- Initialize the SaveGuard system for robust settings persistence
+    if PDS.SaveGuard and PDS.SaveGuard.Initialize then
+        PDS.SaveGuard:Initialize()
     end
 
     -- Initialize core components
@@ -124,11 +142,17 @@ PeaversCommons.Events:Init(addonName, function()
         if PDS.Config.hideOutOfCombat then
             PDS.Core.frame:Hide()
         end
+        -- Save settings when combat ends
+        PDS.Config:Save()
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_LOGOUT", function()
         PDS.Config:Save()
     end)
+    
+    -- Removed redundant PLAYER_ENTERING_WORLD handler as it's now handled by SaveGuard
+    
+    -- Removed redundant ADDON_LOADED handler as it's now handled by SaveGuard
 
     -- Use the centralized SettingsUI system from PeaversCommons
     C_Timer.After(0.5, function()
