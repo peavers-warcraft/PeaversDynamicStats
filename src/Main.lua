@@ -55,6 +55,11 @@ PeaversCommons.Events:Init(addonName, function()
     if PDS.SupportUI and PDS.SupportUI.Initialize then
         PDS.SupportUI:Initialize()
     end
+    
+    -- Initialize patrons support
+    if PDS.Patrons and PDS.Patrons.Initialize then
+        PDS.Patrons:Initialize()
+    end
 
     -- Initialize core components
     PDS.Core:Initialize()
@@ -215,6 +220,7 @@ PeaversCommons.Events:Init(addonName, function()
             -- Store the category
             PDS.directCategory = category
             PDS.directPanel = mainPanel
+            PDS.supportPanel = mainPanel  -- Also make it accessible as supportPanel
 
             -- In case the ConfigUI panel wasn't properly initialized before, try to initialize it now
             if not PDS.ConfigUI.panel and PDS.ConfigUI.InitializeOptions then
