@@ -47,10 +47,8 @@ PDS.Config = {
     useSharedSpec = true, -- NEW: Use same settings for all specs (enabled by default)
 }
 
--- Initialize showStats with values from Stats.STAT_TYPES
-for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
-    PDS.Config.showStats[statType] = true
-end
+-- Make sure the Stats module is loaded before accessing STAT_ORDER
+-- This will be properly initialized in the InitializeStatSettings function
 
 local Config = PDS.Config
 
@@ -545,8 +543,25 @@ function Config:Initialize()
 end
 
 function Config:InitializeStatSettings()
+    -- Initialize showStats if it's not already defined
+    self.showStats = self.showStats or {}
+    
+    -- Make sure Stats module is loaded and has STAT_ORDER defined
     if PDS.Stats and PDS.Stats.STAT_ORDER then
         for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+            if self.showStats[statType] == nil then
+                self.showStats[statType] = true
+            end
+        end
+    else
+        -- Fallback if Stats.STAT_ORDER is not available
+        local defaultStats = {
+            "STRENGTH", "AGILITY", "INTELLECT", "STAMINA",
+            "CRIT", "HASTE", "MASTERY", "VERSATILITY", 
+            "DODGE", "PARRY", "BLOCK", "LEECH", "AVOIDANCE", "SPEED"
+        }
+        
+        for _, statType in ipairs(defaultStats) do
             if self.showStats[statType] == nil then
                 self.showStats[statType] = true
             end
