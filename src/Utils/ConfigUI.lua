@@ -8,7 +8,20 @@ PDS.ConfigUI = ConfigUI
 
 -- Access PeaversCommons utilities
 local PeaversCommons = _G.PeaversCommons
+-- Ensure PeaversCommons is loaded
+if not PeaversCommons then
+    print("|cffff0000Error:|r PeaversCommons not found. Please ensure it is installed and enabled.")
+    return
+end
+
+-- Access required utilities
 local ConfigUIUtils = PeaversCommons.ConfigUIUtils
+
+-- Verify dependencies are loaded
+if not ConfigUIUtils then
+    print("|cffff0000Error:|r PeaversCommons.ConfigUIUtils not found. Please ensure PeaversCommons is up to date.")
+    return
+end
 
 -- Utility functions to reduce code duplication (now using PeaversCommons.ConfigUIUtils)
 local Utils = {}
