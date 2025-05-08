@@ -5,6 +5,9 @@
 **A World of Warcraft addon that visualizes your primary and secondary stats with dynamic bars that update in real-time
 during combat.**
 
+### New!
+Check out [peavers.io](https://peavers.io) and [bootstrap.peavers.io](https://bootstrap.peavers.io) for all my WoW addons and support.
+
 ## Overview
 
 PeaversDynamicStats provides visual representation of your character's stats through customizable bars. These bars
