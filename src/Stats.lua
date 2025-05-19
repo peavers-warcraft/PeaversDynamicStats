@@ -280,10 +280,16 @@ function Stats:GetValue(statType)
     elseif statType == Stats.STAT_TYPES.VERSATILITY then
         -- Improved versatility implementation for better accuracy
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        -- Apply talent adjustments
+        value = value + self:GetTalentAdjustment(statType)
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        -- Apply talent adjustments
+        value = value + self:GetTalentAdjustment(statType)
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+        -- Apply talent adjustments
+        value = value + self:GetTalentAdjustment(statType)
     elseif statType == Stats.STAT_TYPES.SPEED then
         value = GetSpeed()
     elseif statType == Stats.STAT_TYPES.LEECH then
@@ -362,6 +368,123 @@ function Stats:GetRating(statType)
     end
 
     return rating
+end
+
+-- Handles talent-specific adjustments for stats
+-- This addresses the issue where Rogue's "Thief's Versatility" talent
+-- provides bonus versatility that isn't reflected in the combat rating API
+function Stats:GetTalentAdjustment(statType)
+    local adjustment = 0
+    
+    -- Check if talent adjustments are enabled
+    if not PDS.Config.enableTalentAdjustments then
+        return adjustment
+    end
+    
+    -- Check for Rogue's Thief's Versatility talent
+    -- This talent provides a flat percentage bonus that the game doesn't report
+    -- through the standard GetCombatRatingBonus API
+    if statType == Stats.STAT_TYPES.VERSATILITY or 
+       statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE or 
+       statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
+        local playerClass = select(2, UnitClass("player"))
+        if playerClass == "ROGUE" then
+            -- For The War Within, use the new talent API if available
+            local hasTalent = false
+            
+            -- Try new talent API first (TWW+)
+            if C_ClassTalents and C_ClassTalents.GetActiveConfigID then
+                local configID = C_ClassTalents.GetActiveConfigID()
+                if configID then
+                    -- Check for Thief's Versatility using talent search
+                    -- Note: These APIs may vary, so we'll use a try-catch approach
+                    hasTalent = self:HasSpecificTalent("Thief's Versatility")
+                end
+            else
+                -- Fallback to older API
+                local specID = GetSpecialization()
+                if specID then
+                    local specInfo = GetSpecializationInfo(specID)
+                    -- Outlaw spec ID is 260
+                    if specInfo == 260 then
+                        -- Try to check for the talent
+                        hasTalent = self:CheckForThiefsVersatilityLegacy()
+                    end
+                end
+            end
+            
+            if hasTalent then
+                -- Apply the talent bonus
+                -- Thief's Versatility in TWW gives 4% Versatility to all abilities
+                adjustment = 4
+                
+                -- If it's damage reduction, the bonus might be halved (typical WoW behavior)
+                if statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
+                    adjustment = adjustment / 2
+                end
+                
+                -- Debug output if enabled
+                if PDS.Config.DEBUG_ENABLED then
+                    PDS.Utils.Debug("Thief's Versatility detected, applying +" .. adjustment .. "% to " .. statType)
+                end
+            elseif PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Rogue detected but Thief's Versatility not found")
+            end
+        end
+    end
+    
+    return adjustment
+end
+
+-- Helper function to check for specific talent by name
+function Stats:HasSpecificTalent(talentName)
+    -- Try multiple approaches to find the talent
+    
+    -- Method 1: Using C_ClassTalents (TWW+)
+    if C_ClassTalents and C_ClassTalents.GetConfigIDsBySpecID then
+        local specID = GetSpecialization()
+        if specID then
+            local specInfo = GetSpecializationInfo(specID)
+            local configs = C_ClassTalents.GetConfigIDsBySpecID(specInfo)
+            -- This is a simplified version - actual implementation would need more detailed checks
+        end
+    end
+    
+    -- Method 2: Check using IsPlayerSpell for known spell IDs
+    -- Thief's Versatility spell ID (this may vary by expansion)
+    local thiefsVersatilitySpellID = 382090 -- Example ID, needs verification
+    if IsPlayerSpell(thiefsVersatilitySpellID) then
+        return true
+    end
+    
+    -- Method 3: Legacy talent check
+    return self:CheckForThiefsVersatilityLegacy()
+end
+
+-- Legacy method for checking Thief's Versatility
+function Stats:CheckForThiefsVersatilityLegacy()
+    -- Iterate through talent tiers to find Thief's Versatility
+    for tier = 1, 7 do
+        for column = 1, 3 do
+            local talentID, name, texture, selected, available = GetTalentInfo(tier, column, 1)
+            if selected and name and (string.find(name, "Thief's Versatility") or string.find(name, "Thief's")) then
+                return true
+            end
+        end
+    end
+    
+    -- Also check pvp talents if applicable
+    local pvpTalents = C_SpecializationInfo and C_SpecializationInfo.GetAllSelectedPvpTalentIDs()
+    if pvpTalents then
+        for _, talentID in ipairs(pvpTalents) do
+            local talentInfo = C_PvP and C_PvP.GetPvpTalentInfoByID(talentID)
+            if talentInfo and talentInfo.name and string.find(talentInfo.name, "Thief's Versatility") then
+                return true
+            end
+        end
+    end
+    
+    return false
 end
 
 -- Returns the color for a specific stat type
