@@ -612,7 +612,21 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
             end
         end
     )
-
+    yPos = newY - 8 -- Update yPos for the next element
+    
+    -- Enable talent adjustments checkbox
+    local _, newY = Utils:CreateCheckbox(
+        content, "PeaversEnableTalentAdjustmentsCheckbox",
+        "Enable Talent Adjustments (Rogue: Thief's Versatility)", controlIndent, yPos,
+        Config.enableTalentAdjustments,
+        function(checked)
+            Config.enableTalentAdjustments = checked
+            Config:Save()
+            if PDS.BarManager then
+                PDS.BarManager:UpdateAllBars()
+            end
+        end
+    )
     yPos = newY - 8 -- Update yPos for the next element
 
     return yPos
