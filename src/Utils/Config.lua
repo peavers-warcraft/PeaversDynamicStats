@@ -37,6 +37,7 @@ PDS.Config = {
     showRatings = true,    -- Show rating values
     hideOutOfCombat = false, -- Hide the addon when out of combat
     enableTalentAdjustments = true, -- Enable talent-specific stat adjustments
+    DEBUG_ENABLED = false,  -- Enable debug logging
 
     -- Character identification
     currentCharacter = nil,
@@ -185,6 +186,7 @@ function Config:Save()
     profile.showRatings = self.showRatings
     profile.hideOutOfCombat = self.hideOutOfCombat
     profile.enableTalentAdjustments = self.enableTalentAdjustments
+    profile.DEBUG_ENABLED = self.DEBUG_ENABLED
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -332,6 +334,9 @@ function Config:Load()
     end
     if profile.enableTalentAdjustments ~= nil then
         self.enableTalentAdjustments = profile.enableTalentAdjustments
+    end
+    if profile.DEBUG_ENABLED ~= nil then
+        self.DEBUG_ENABLED = profile.DEBUG_ENABLED
     end
 end
 

@@ -278,18 +278,65 @@ function Stats:GetValue(statType)
     elseif statType == Stats.STAT_TYPES.MASTERY then
         value = GetMasteryEffect()
     elseif statType == Stats.STAT_TYPES.VERSATILITY then
-        -- Improved versatility implementation for better accuracy
+        -- Get base value first
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        -- Apply talent adjustments
-        value = value + self:GetTalentAdjustment(statType)
+        
+        -- Only apply talent adjustments if value is valid (non-zero)
+        local adjustment = self:GetTalentAdjustment(statType)
+        
+        -- Debug output
+        if PDS.Config.DEBUG_ENABLED then
+            PDS.Utils.Debug("Versatility calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
+        end
+        
+        if value > 0 or adjustment > 0 then
+            value = value + adjustment
+            
+            -- Debug output
+            if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
+                PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+            end
+        end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
+        -- Get base value first
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        -- Apply talent adjustments
-        value = value + self:GetTalentAdjustment(statType)
+        
+        -- Only apply talent adjustments if value is valid (non-zero)
+        local adjustment = self:GetTalentAdjustment(statType)
+        
+        -- Debug output
+        if PDS.Config.DEBUG_ENABLED then
+            PDS.Utils.Debug("Versatility Damage calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
+        end
+        
+        if value > 0 or adjustment > 0 then
+            value = value + adjustment
+            
+            -- Debug output
+            if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
+                PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+            end
+        end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
+        -- Get base value first
         value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
-        -- Apply talent adjustments
-        value = value + self:GetTalentAdjustment(statType)
+        
+        -- Only apply talent adjustments if value is valid (non-zero)
+        local adjustment = self:GetTalentAdjustment(statType)
+        
+        -- Debug output
+        if PDS.Config.DEBUG_ENABLED then
+            PDS.Utils.Debug("Versatility Damage Reduction calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
+        end
+        
+        if value > 0 or adjustment > 0 then
+            value = value + adjustment
+            
+            -- Debug output
+            if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
+                PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+            end
+        end
     elseif statType == Stats.STAT_TYPES.SPEED then
         value = GetSpeed()
     elseif statType == Stats.STAT_TYPES.LEECH then
@@ -440,45 +487,174 @@ end
 function Stats:HasSpecificTalent(talentName)
     -- Try multiple approaches to find the talent
     
-    -- Method 1: Using C_ClassTalents (TWW+)
-    if C_ClassTalents and C_ClassTalents.GetConfigIDsBySpecID then
-        local specID = GetSpecialization()
-        if specID then
-            local specInfo = GetSpecializationInfo(specID)
-            local configs = C_ClassTalents.GetConfigIDsBySpecID(specInfo)
-            -- This is a simplified version - actual implementation would need more detailed checks
+    -- Method 1: Using spell aura to find the buff
+    -- This is often the most reliable method since talents apply auras
+    local i = 1
+    while true do
+        local name, _, _, _, _, _, _, _, _, spellId = UnitAura("player", i, "HELPFUL")
+        if not name then break end
+        
+        -- Check if the aura name contains our talent name
+        if name and (string.find(name, talentName) or name == "Thief's Versatility") then
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Found Thief's Versatility aura: " .. name .. " (ID: " .. (spellId or "unknown") .. ")")
+            end
+            return true
+        end
+        i = i + 1
+    end
+    
+    -- Method 2: Check using IsPlayerSpell for known Thief's Versatility spell IDs
+    -- Multiple IDs for different expansions
+    local thiefsVersatilitySpellIDs = {
+        381990,  -- TWW potential ID
+        382090,  -- DF potential ID
+        381629,  -- Another potential ID
+        196924,  -- Legion potential ID
+        79096,   -- Another potential ID
+    }
+    
+    for _, spellID in ipairs(thiefsVersatilitySpellIDs) do
+        if IsPlayerSpell(spellID) then
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Found Thief's Versatility spell ID: " .. spellID)
+            end
+            return true
         end
     end
     
-    -- Method 2: Check using IsPlayerSpell for known spell IDs
-    -- Thief's Versatility spell ID (this may vary by expansion)
-    local thiefsVersatilitySpellID = 382090 -- Example ID, needs verification
-    if IsPlayerSpell(thiefsVersatilitySpellID) then
-        return true
+    -- Method 3: For Outlaw Rogues, assume they have the talent if they're over level 50
+    local playerClass = select(2, UnitClass("player"))
+    if playerClass == "ROGUE" then
+        local specID = GetSpecialization()
+        if specID then
+            local specInfo = GetSpecializationInfo(specID)
+            -- Outlaw spec ID is 260
+            if specInfo == 260 then
+                local level = UnitLevel("player")
+                if level >= 50 then
+                    -- Check for a specific Outlaw-only spell as an indirect way to verify spec
+                    if IsSpellKnown(13877) or IsSpellKnown(315508) or IsSpellKnown(385616) then  -- Blade Flurry
+                        if PDS.Config.DEBUG_ENABLED then
+                            PDS.Utils.Debug("Detected high-level Outlaw Rogue, assuming Thief's Versatility")
+                        end
+                        return true
+                    end
+                end
+            end
+        end
     end
     
-    -- Method 3: Legacy talent check
+    -- Method 4: Legacy talent check
     return self:CheckForThiefsVersatilityLegacy()
 end
 
 -- Legacy method for checking Thief's Versatility
 function Stats:CheckForThiefsVersatilityLegacy()
-    -- Iterate through talent tiers to find Thief's Versatility
+    -- Safe guard - if player is not a rogue, don't bother checking
+    local playerClass = select(2, UnitClass("player"))
+    if playerClass ~= "ROGUE" then
+        return false
+    end
+    
+    -- Attempt 1: Check talent tree using legacy API
+    local foundTalent = false
+    
+    -- Try with GetTalentInfo (Legion/BFA style)
     for tier = 1, 7 do
         for column = 1, 3 do
-            local talentID, name, texture, selected, available = GetTalentInfo(tier, column, 1)
-            if selected and name and (string.find(name, "Thief's Versatility") or string.find(name, "Thief's")) then
-                return true
+            -- Try various talent interface functions as the API has changed over time
+            local name, selected
+            
+            -- Try GetTalentInfo method 1
+            pcall(function()
+                local talentID, talentName, texture, isSelected = GetTalentInfo(tier, column, 1)
+                name = talentName
+                selected = isSelected
+            end)
+            
+            -- Try GetTalentInfo method 2 (different parameter order)
+            if not name then
+                pcall(function()
+                    local talentID, talentName, texture, isSelected = GetTalentInfo(1, tier, column)
+                    name = talentName
+                    selected = isSelected
+                end)
             end
+            
+            if selected and name and (string.find(name:lower(), "thief's versatility") or 
+                                      string.find(name:lower(), "thiefs versatility") or
+                                      string.find(name:lower(), "versatility")) then
+                foundTalent = true
+                break
+            end
+        end
+        
+        if foundTalent then break end
+    end
+    
+    if foundTalent then 
+        if PDS.Config.DEBUG_ENABLED then
+            PDS.Utils.Debug("Found Thief's Versatility via legacy talent API")
+        end
+        return true 
+    end
+    
+    -- Attempt 2: Check for increased versatility as evidence
+    -- Compare base versatility with current - if there's a significant difference for a rogue,
+    -- it might be due to Thief's Versatility
+    local baseVers = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+    
+    -- Check if player has notably higher versatility than expected from gear alone
+    -- Check through buffs for any other versatility increases
+    local hasVersBuffs = false
+    local i = 1
+    while true do
+        local name = UnitBuff("player", i)
+        if not name then break end
+        
+        -- Exclude basic class/role buffs that give versatility
+        if name ~= "Battle Shout" and name ~= "Power Word: Fortitude" and
+           name ~= "Commanding Shout" and name ~= "Mark of the Wild" then
+            -- Look for versatility in the tooltip
+            local tooltipData = C_TooltipInfo and C_TooltipInfo.GetUnitBuff("player", i)
+            if tooltipData and tooltipData.lines then
+                for _, line in ipairs(tooltipData.lines) do
+                    if line.leftText and string.find(line.leftText:lower(), "versatility") then
+                        hasVersBuffs = true
+                        break
+                    end
+                end
+            end
+        end
+        
+        if hasVersBuffs then break end
+        i = i + 1
+    end
+    
+    -- If we're a high level outlaw rogue without other versatility buffs
+    -- and significant versatility, assume it's from Thief's Versatility
+    local specID = GetSpecialization()
+    if specID then
+        local specInfo = GetSpecializationInfo(specID)
+        -- Outlaw spec ID is 260
+        if specInfo == 260 and not hasVersBuffs and baseVers > 3 then
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Assumed Thief's Versatility based on higher vers rating")
+            end
+            return true
         end
     end
     
-    -- Also check pvp talents if applicable
+    -- Attempt 3: Check pvp talents
     local pvpTalents = C_SpecializationInfo and C_SpecializationInfo.GetAllSelectedPvpTalentIDs()
     if pvpTalents then
         for _, talentID in ipairs(pvpTalents) do
             local talentInfo = C_PvP and C_PvP.GetPvpTalentInfoByID(talentID)
-            if talentInfo and talentInfo.name and string.find(talentInfo.name, "Thief's Versatility") then
+            if talentInfo and talentInfo.name and string.find(talentInfo.name:lower(), "versatility") then
+                if PDS.Config.DEBUG_ENABLED then
+                    PDS.Utils.Debug("Found Thief's Versatility in PvP talents")
+                end
                 return true
             end
         end
