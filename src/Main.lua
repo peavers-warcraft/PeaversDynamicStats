@@ -59,6 +59,35 @@ PeaversCommons.SlashCommands:Register(addonName, "pds", {
         elseif PDS.Config and PDS.Config.OpenOptionsCommand then
             PDS.Config.OpenOptionsCommand()
         end
+    end,
+    debug = function()
+        -- Toggle debug mode
+        PDS.Config.DEBUG_ENABLED = not PDS.Config.DEBUG_ENABLED
+        if PDS.Utils and PDS.Utils.Print then
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Print("Debug mode ENABLED - Check for detailed messages")
+            else
+                PDS.Utils.Print("Debug mode DISABLED")
+            end
+        end
+        PDS.Config:Save()
+    end,
+    -- Special command for rogue versatility problems
+    fixrogue = function()
+        -- Toggle talent adjustments
+        PDS.Config.enableTalentAdjustments = not PDS.Config.enableTalentAdjustments
+        if PDS.Utils and PDS.Utils.Print then
+            if PDS.Config.enableTalentAdjustments then
+                PDS.Utils.Print("Talent adjustments (Thief's Versatility fix) ENABLED")
+            else
+                PDS.Utils.Print("Talent adjustments (Thief's Versatility fix) DISABLED")
+            end
+        end
+        -- Update bars
+        if PDS.BarManager then
+            PDS.BarManager:UpdateAllBars()
+        end
+        PDS.Config:Save()
     end
 })
 
