@@ -211,5 +211,5 @@ PeaversCommons.Events:Init(addonName, function()
         )
     end)
 end, {
-	announceMessage = "Use |cff3abdf7/pds config|r to get started"
+	suppressAnnouncement = true
 })
