@@ -3,7 +3,7 @@
 ## Notes: Displays secondary stats (haste, crit, mastery, versatility) in a movable frame
 ## IconTexture: Interface\AddOns\PeaversCommons\src\Media\Icon.tga
 ## Author: Peavers
-## Version: 1.0.56
+## Version: 1.0.57
 ## X-Curse-Project-ID: 1230220
 ## X-Website: https://peavers.io
 ## Dependencies: PeaversCommons
