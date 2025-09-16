@@ -491,9 +491,16 @@ function Stats:HasSpecificTalent(talentName)
     -- This is often the most reliable method since talents apply auras
     local i = 1
     while true do
-        local name, _, _, _, _, _, _, _, _, spellId = UnitAura("player", i, "HELPFUL")
-        if not name then break end
-        
+        local auraData
+        if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+            auraData = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        end
+
+        if not auraData then break end
+
+        local name = auraData.name
+        local spellId = auraData.spellId
+
         -- Check if the aura name contains our talent name
         if name and (string.find(name, talentName) or name == "Thief's Versatility") then
             if PDS.Config.DEBUG_ENABLED then
@@ -610,24 +617,25 @@ function Stats:CheckForThiefsVersatilityLegacy()
     local hasVersBuffs = false
     local i = 1
     while true do
-        local name = UnitBuff("player", i)
-        if not name then break end
-        
+        local auraData
+        if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+            auraData = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        end
+
+        if not auraData then break end
+
+        local name = auraData.name
+
         -- Exclude basic class/role buffs that give versatility
         if name ~= "Battle Shout" and name ~= "Power Word: Fortitude" and
            name ~= "Commanding Shout" and name ~= "Mark of the Wild" then
-            -- Look for versatility in the tooltip
-            local tooltipData = C_TooltipInfo and C_TooltipInfo.GetUnitBuff("player", i)
-            if tooltipData and tooltipData.lines then
-                for _, line in ipairs(tooltipData.lines) do
-                    if line.leftText and string.find(line.leftText:lower(), "versatility") then
-                        hasVersBuffs = true
-                        break
-                    end
-                end
+            -- Look for versatility in the aura description
+            if auraData.description and string.find(auraData.description:lower(), "versatility") then
+                hasVersBuffs = true
+                break
             end
         end
-        
+
         if hasVersBuffs then break end
         i = i + 1
     end
