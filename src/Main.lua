@@ -93,6 +93,11 @@ PeaversCommons.SlashCommands:Register(addonName, "pds", {
 
 -- Initialize addon using the PeaversCommons Events module
 PeaversCommons.Events:Init(addonName, function()
+    -- Initialize localization (stat names)
+    if PDS.Stats and PDS.Stats.InitializeStatNames then
+        PDS.Stats:InitializeStatNames()
+    end
+    
     -- Make sure Stats is initialized if possible
     if PDS.Stats.Initialize then
         PDS.Stats:Initialize()
