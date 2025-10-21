@@ -13,6 +13,9 @@
 # Main
 src\Main.lua
 
+# Localization (load early)
+src\Localization.lua
+
 # UI first (since Config depends on it)
 src\UI\UI.lua
 

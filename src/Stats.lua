@@ -67,32 +67,8 @@ Stats.STAT_TYPES = {
     ARMOR_PENETRATION = "ARMOR_PENETRATION"
 }
 
--- Stat display names
-Stats.STAT_NAMES = {
-    -- Primary stats
-    [Stats.STAT_TYPES.STRENGTH] = "Strength",
-    [Stats.STAT_TYPES.AGILITY] = "Agility",
-    [Stats.STAT_TYPES.INTELLECT] = "Intellect",
-    [Stats.STAT_TYPES.STAMINA] = "Stamina",
-
-    -- Secondary stats
-    [Stats.STAT_TYPES.HASTE] = "Haste",
-    [Stats.STAT_TYPES.CRIT] = "Critical Strike",
-    [Stats.STAT_TYPES.MASTERY] = "Mastery",
-    [Stats.STAT_TYPES.VERSATILITY] = "Versatility",
-    [Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE] = "Versatility (Damage)",
-    [Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION] = "Versatility (Defense)",
-    [Stats.STAT_TYPES.SPEED] = "Speed",
-    [Stats.STAT_TYPES.LEECH] = "Leech",
-    [Stats.STAT_TYPES.AVOIDANCE] = "Avoidance",
-
-    -- Combat ratings
-    [Stats.STAT_TYPES.DEFENSE] = "Defense",
-    [Stats.STAT_TYPES.DODGE] = "Dodge",
-    [Stats.STAT_TYPES.PARRY] = "Parry",
-    [Stats.STAT_TYPES.BLOCK] = "Block",
-    [Stats.STAT_TYPES.ARMOR_PENETRATION] = "Armor Penetration"
-}
+-- Stat display names (will be populated from localization)
+Stats.STAT_NAMES = {}
 
 -- Stat colors for UI purposes
 Stats.STAT_COLORS = {
@@ -678,6 +654,37 @@ function Stats:GetColor(statType)
     else
         return 0.8, 0.8, 0.8 -- Default to white/grey
     end
+end
+
+-- Initialize stat names from localization
+function Stats:InitializeStatNames()
+    if not PDS.L then return end
+    
+    Stats.STAT_NAMES = {
+        -- Primary stats
+        [Stats.STAT_TYPES.STRENGTH] = PDS.L["STAT_STRENGTH"],
+        [Stats.STAT_TYPES.AGILITY] = PDS.L["STAT_AGILITY"],
+        [Stats.STAT_TYPES.INTELLECT] = PDS.L["STAT_INTELLECT"],
+        [Stats.STAT_TYPES.STAMINA] = PDS.L["STAT_STAMINA"],
+
+        -- Secondary stats
+        [Stats.STAT_TYPES.HASTE] = PDS.L["STAT_HASTE"],
+        [Stats.STAT_TYPES.CRIT] = PDS.L["STAT_CRIT"],
+        [Stats.STAT_TYPES.MASTERY] = PDS.L["STAT_MASTERY"],
+        [Stats.STAT_TYPES.VERSATILITY] = PDS.L["STAT_VERSATILITY"],
+        [Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE] = PDS.L["STAT_VERSATILITY_DAMAGE"],
+        [Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION] = PDS.L["STAT_VERSATILITY_DEFENSE"],
+        [Stats.STAT_TYPES.SPEED] = PDS.L["STAT_SPEED"],
+        [Stats.STAT_TYPES.LEECH] = PDS.L["STAT_LEECH"],
+        [Stats.STAT_TYPES.AVOIDANCE] = PDS.L["STAT_AVOIDANCE"],
+
+        -- Combat ratings
+        [Stats.STAT_TYPES.DEFENSE] = PDS.L["STAT_DEFENSE"],
+        [Stats.STAT_TYPES.DODGE] = PDS.L["STAT_DODGE"],
+        [Stats.STAT_TYPES.PARRY] = PDS.L["STAT_PARRY"],
+        [Stats.STAT_TYPES.BLOCK] = PDS.L["STAT_BLOCK"],
+        [Stats.STAT_TYPES.ARMOR_PENETRATION] = PDS.L["STAT_ARMOR_PENETRATION"]
+    }
 end
 
 -- Returns the display name for a specific stat type

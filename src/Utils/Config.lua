@@ -16,8 +16,8 @@ PDS.Config = {
     barSpacing = 2,
     barBgAlpha = 0.7,
 
-    -- Visual settings
-    fontFace = "Fonts\\FRIZQT__.TTF",
+    -- Visual settings (font will be set based on locale in Initialize)
+    fontFace = nil,  -- Will be set based on client locale
     fontSize = 9,
     fontOutline = "OUTLINE",
     fontShadow = false,
@@ -76,6 +76,49 @@ end
 
 function Config:GetCharacterKey()
     return self:GetPlayerName() .. "-" .. self:GetRealmName()
+end
+
+-- Get the appropriate default font based on client locale
+function Config:GetDefaultFont()
+    local locale = GetLocale()
+    
+    -- Fonts that support Chinese, Korean, and other Asian languages
+    if locale == "zhCN" then
+        -- Simplified Chinese - use ARKai font
+        return "Fonts\\ARKai_T.ttf"
+    elseif locale == "zhTW" then
+        -- Traditional Chinese - use bLEI font
+        return "Fonts\\bLEI00D.ttf"
+    elseif locale == "koKR" then
+        -- Korean clients - use Korean font
+        return "Fonts\\2002.TTF"
+    else
+        -- Western clients - use default font
+        return "Fonts\\FRIZQT__.TTF"
+    end
+end
+
+-- Check if the current font is appropriate for the client locale
+function Config:IsFontCompatibleWithLocale(fontPath)
+    local locale = GetLocale()
+    
+    -- For Chinese/Korean locales, check if font supports the language
+    if locale == "zhCN" or locale == "zhTW" or locale == "koKR" then
+        -- List of fonts that don't support Asian characters
+        local incompatibleFonts = {
+            ["Fonts\\FRIZQT__.TTF"] = true,
+            ["Fonts\\ARIALN.TTF"] = true,
+            ["Fonts\\MORPHEUS.TTF"] = true,
+            ["Fonts\\SKURRI.TTF"] = true,
+        }
+        
+        -- If using an incompatible font, it needs to be changed
+        if incompatibleFonts[fontPath] then
+            return false
+        end
+    end
+    
+    return true
 end
 
 function Config:GetFullProfileKey()
@@ -265,6 +308,26 @@ function Config:Load()
     -- Load settings from the profile, using defaults if not found
     if profile.fontFace then
         self.fontFace = profile.fontFace
+        
+        -- Check if the saved font is compatible with current locale
+        if not self:IsFontCompatibleWithLocale(self.fontFace) then
+            -- Font is incompatible (e.g., Western font on Chinese client)
+            -- Automatically switch to locale-appropriate font
+            local oldFont = self.fontFace
+            self.fontFace = self:GetDefaultFont()
+            
+            -- Log the change for debugging
+            if PDS.Utils and PDS.Utils.Print then
+                PDS.Utils.Print(string.format("Font auto-corrected from %s to %s for locale compatibility", 
+                    oldFont or "nil", self.fontFace))
+            end
+            
+            -- Save the corrected font immediately
+            profile.fontFace = self.fontFace
+        end
+    else
+        -- If no font is saved, use locale-appropriate default
+        self.fontFace = self:GetDefaultFont()
     end
     if profile.fontSize then
         self.fontSize = profile.fontSize
@@ -449,7 +512,10 @@ function Config:GetFonts()
         ["Fonts\\ARIALN.TTF"] = "Arial Narrow",
         ["Fonts\\FRIZQT__.TTF"] = "Default",
         ["Fonts\\MORPHEUS.TTF"] = "Morpheus",
-        ["Fonts\\SKURRI.TTF"] = "Skurri"
+        ["Fonts\\SKURRI.TTF"] = "Skurri",
+        ["Fonts\\ARKai_T.ttf"] = "ARKai (Simplified Chinese)",
+        ["Fonts\\bLEI00D.ttf"] = "bLEI (Traditional Chinese)",
+        ["Fonts\\2002.TTF"] = "2002 (Korean)"
     }
 
     if LibStub and LibStub:GetLibrary("LibSharedMedia-3.0", true) then
@@ -527,6 +593,23 @@ function Config:Initialize()
     
     -- Load settings for the current character and spec
     self:Load()
+    
+    -- Ensure font is set and compatible with locale
+    if not self.fontFace then
+        self.fontFace = self:GetDefaultFont()
+    else
+        -- Check if current font is compatible with locale
+        if not self:IsFontCompatibleWithLocale(self.fontFace) then
+            local oldFont = self.fontFace
+            self.fontFace = self:GetDefaultFont()
+            
+            -- Log the change
+            if PDS.Utils and PDS.Utils.Print then
+                PDS.Utils.Print(string.format("Font auto-corrected from %s to %s for locale compatibility", 
+                    oldFont or "nil", self.fontFace))
+            end
+        end
+    end
 
     -- Initialize default values if they're not set
     if not next(self.showStats) then
