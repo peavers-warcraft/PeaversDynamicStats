@@ -1,36 +1,34 @@
-## Interface: 110205
+## Interface: 120000
+
 ## Title: |cff3abdf7Peavers|rDynamicStats
 ## Notes: Displays secondary stats (haste, crit, mastery, versatility) in a movable frame
-## IconTexture: Interface\AddOns\PeaversCommons\src\Media\Icon.tga
 ## Author: Peavers
 ## Version: 1.0.60
-## X-Curse-Project-ID: 1230220
-## X-Website: https://peavers.io
-## Dependencies: PeaversCommons
-## SavedVariables: PeaversDynamicStatsDB
+
+## IconTexture: Interface\AddOns\PeaversCommons\src\Media\Icon.tga
 ## Category-enUS: Peavers
 
-# Main
+## X-Website: https://peavers.io
+## X-Source-Code: https://github.com/peavers-warcraft/PeaversDynamicStats
+## X-Curse-Project-ID: 1230220
+
+## Dependencies: PeaversCommons
+## SavedVariables: PeaversDynamicStatsDB
+
 src\Main.lua
 
-# Localization (load early)
 src\Localization.lua
 
-# UI first (since Config depends on it)
 src\UI\UI.lua
 
-# Stats
 src\Stats.lua
 
-# Utils
 src\Utils\Utils.lua
 src\Utils\Config.lua
 src\Utils\ConfigUI.lua
 
-# UI components needed by Core
 src\UI\StatBar.lua
 src\UI\TitleBar.lua
 src\UI\BarManager.lua
 
-# Core
 src\Core\Core.lua
