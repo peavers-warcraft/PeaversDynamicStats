@@ -35,6 +35,52 @@ PDS.version = getAddOnMetadata(addonName, "Version") or "1.0.5"
 PDS.addonName = addonName
 PDS.name = addonName
 
+--------------------------------------------------------------------------------
+-- WoW 12.0 API Diagnostics
+-- Logs API availability at startup for debugging compatibility issues
+--------------------------------------------------------------------------------
+
+local function LogAPIAvailability()
+    if not PDS.Config.DEBUG_ENABLED then return end
+
+    local apis = {
+        -- Core stat APIs
+        { name = "GetHaste", func = GetHaste },
+        { name = "GetCritChance", func = GetCritChance },
+        { name = "GetSpellCritChance", func = GetSpellCritChance },
+        { name = "GetMasteryEffect", func = GetMasteryEffect },
+        { name = "GetMastery", func = GetMastery },
+        { name = "GetCombatRating", func = GetCombatRating },
+        { name = "GetCombatRatingBonus", func = GetCombatRatingBonus },
+        { name = "GetSpeed", func = GetSpeed },
+        { name = "GetLifesteal", func = GetLifesteal },
+        { name = "GetAvoidance", func = GetAvoidance },
+        { name = "GetDodgeChance", func = GetDodgeChance },
+        { name = "GetParryChance", func = GetParryChance },
+        { name = "GetBlockChance", func = GetBlockChance },
+        { name = "UnitStat", func = UnitStat },
+        -- 12.0 Secret Value API
+        { name = "issecretvalue", func = issecretvalue },
+        -- Aura APIs (may be restricted in 12.0 combat)
+        { name = "C_UnitAuras", func = C_UnitAuras },
+        { name = "C_UnitAuras.GetAuraDataByIndex", func = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex },
+        -- New stat APIs (may be added in future)
+        { name = "C_Attributes", func = C_Attributes },
+        { name = "C_Stats", func = C_Stats },
+    }
+
+    PDS.Utils.Debug("=== WoW 12.0 API Availability Check ===")
+    for _, api in ipairs(apis) do
+        local available = api.func ~= nil
+        local status = available and "|cff00ff00available|r" or "|cffff0000MISSING|r"
+        PDS.Utils.Debug(api.name .. ": " .. status)
+    end
+    PDS.Utils.Debug("=== End API Check ===")
+end
+
+-- Expose for manual testing via /pds debug
+PDS.LogAPIAvailability = LogAPIAvailability
+
 -- Function to toggle the stats display
 function ToggleStatsDisplay()
     if PDS.Core.frame:IsShown() then
@@ -151,6 +197,9 @@ PeaversCommons.Events:Init(addonName, function()
     -- Initialize core components
     PDS.Core:Initialize()
 
+    -- Log API availability for 12.0 compatibility debugging
+    LogAPIAvailability()
+
     -- Register event handlers
     PeaversCommons.Events:RegisterEvent("UNIT_STATS", function()
         PDS.BarManager:UpdateAllBars()
@@ -191,6 +240,15 @@ PeaversCommons.Events:Init(addonName, function()
         end
         -- Save settings when combat ends
         PDS.Config:Save()
+
+        -- WoW 12.0: Refresh talent cache after combat ends (aura APIs now accessible)
+        if PDS.Stats and PDS.Stats.combatCache then
+            PDS.Stats.combatCache.talentAdjustments = {}
+            PDS.Stats.combatCache.lastUpdateTime = 0
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Combat ended - cleared talent adjustment cache for refresh")
+            end
+        end
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_LOGOUT", function()
