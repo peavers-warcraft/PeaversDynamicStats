@@ -4,6 +4,152 @@ local _, PDS = ...
 PDS.Stats = PDS.Stats or {}
 local Stats = PDS.Stats
 
+--------------------------------------------------------------------------------
+-- 12.0 API Compatibility Layer
+-- WoW 12.0 (Midnight) introduces "Secret Values" that restrict certain combat
+-- data. Player stats are "fully non-secret" but we add defensive wrappers
+-- for graceful degradation if APIs change or fail.
+--------------------------------------------------------------------------------
+
+-- Check if a value is a "secret value" (12.0+ feature)
+local function IsSecretValue(value)
+    -- issecretvalue is a new 12.0 API that returns true for restricted values
+    if issecretvalue then
+        return issecretvalue(value)
+    end
+    return false
+end
+
+-- Safely call an API function with error handling and secret value detection
+local function SafeGetValue(apiFunc, ...)
+    if not apiFunc then return nil end
+
+    local success, result = pcall(apiFunc, ...)
+    if not success then
+        -- API call failed (may happen if API is removed/changed)
+        return nil
+    end
+
+    -- Check if result is a secret value (would return true for restricted combat data)
+    if IsSecretValue(result) then
+        return nil
+    end
+
+    return result
+end
+
+-- Safely call an API function that returns multiple values
+local function SafeGetMultiValue(apiFunc, ...)
+    if not apiFunc then return nil end
+
+    local results = {pcall(apiFunc, ...)}
+    local success = table.remove(results, 1)
+
+    if not success then
+        return nil
+    end
+
+    -- Check first result for secret value
+    if #results > 0 and IsSecretValue(results[1]) then
+        return nil
+    end
+
+    return unpack(results)
+end
+
+--------------------------------------------------------------------------------
+-- StatAPI Wrapper Layer
+-- Provides safe, fallback-enabled access to all stat APIs
+--------------------------------------------------------------------------------
+
+local StatAPI = {}
+
+-- Primary stat wrappers (using UnitStat)
+function StatAPI.GetUnitStat(statIndex)
+    local base, stat, posBuff, negBuff = SafeGetMultiValue(UnitStat, "player", statIndex)
+    if base == nil then
+        return 0, 0, 0, 0
+    end
+    return base, stat or base, posBuff or 0, negBuff or 0
+end
+
+-- Secondary stat wrappers
+function StatAPI.GetHaste()
+    return SafeGetValue(GetHaste) or 0
+end
+
+function StatAPI.GetCritChance()
+    -- Try spell crit first (most accurate for casters), then generic crit
+    return SafeGetValue(GetSpellCritChance, 2) or SafeGetValue(GetCritChance) or 0
+end
+
+function StatAPI.GetMastery()
+    return SafeGetValue(GetMasteryEffect) or SafeGetValue(GetMastery) or 0
+end
+
+function StatAPI.GetSpeed()
+    return SafeGetValue(GetSpeed) or 0
+end
+
+function StatAPI.GetLifesteal()
+    return SafeGetValue(GetLifesteal) or 0
+end
+
+function StatAPI.GetAvoidance()
+    return SafeGetValue(GetAvoidance) or 0
+end
+
+function StatAPI.GetDodgeChance()
+    return SafeGetValue(GetDodgeChance) or 0
+end
+
+function StatAPI.GetParryChance()
+    return SafeGetValue(GetParryChance) or 0
+end
+
+function StatAPI.GetBlockChance()
+    return SafeGetValue(GetBlockChance) or 0
+end
+
+-- Combat rating wrappers
+function StatAPI.GetCombatRating(ratingIndex)
+    return SafeGetValue(GetCombatRating, ratingIndex) or 0
+end
+
+function StatAPI.GetCombatRatingBonus(ratingIndex)
+    return SafeGetValue(GetCombatRatingBonus, ratingIndex) or 0
+end
+
+-- Expose StatAPI for other modules and testing
+Stats.StatAPI = StatAPI
+
+--------------------------------------------------------------------------------
+-- Combat State Caching
+-- Cache values that may become unavailable during combat (like aura data)
+--------------------------------------------------------------------------------
+
+local combatCache = {
+    talentAdjustments = {},
+    lastUpdateTime = 0,
+    CACHE_DURATION = 1.0, -- seconds
+}
+
+-- Update cache if stale and not in combat
+local function UpdateCacheIfNeeded()
+    local now = GetTime()
+    if (now - combatCache.lastUpdateTime) > combatCache.CACHE_DURATION then
+        if not InCombatLockdown() then
+            combatCache.lastUpdateTime = now
+            return true -- Cache should be updated
+        end
+    end
+    return false
+end
+
+-- Expose cache functions
+Stats.combatCache = combatCache
+Stats.UpdateCacheIfNeeded = UpdateCacheIfNeeded
+
 -- Combat Rating constants - updated for 11.0.0+
 Stats.COMBAT_RATINGS = {
     CR_WEAPON_SKILL = 1,         -- Removed in patch 6.0.2
@@ -140,10 +286,11 @@ Stats.RATING_MAP = {
 
 -- Initialize base values for primary stats
 function Stats:InitializeBaseValues()
-    local baseStr, _, _, _ = UnitStat("player", 1)
-    local baseAgi, _, _, _ = UnitStat("player", 2)
-    local baseInt, _, _, _ = UnitStat("player", 4)
-    local baseSta, _, _, _ = UnitStat("player", 3)
+    -- Use StatAPI wrappers for 12.0 compatibility
+    local baseStr = StatAPI.GetUnitStat(1)
+    local baseAgi = StatAPI.GetUnitStat(2)
+    local baseInt = StatAPI.GetUnitStat(4)
+    local baseSta = StatAPI.GetUnitStat(3)
 
     Stats.BASE_VALUES[Stats.STAT_TYPES.STRENGTH] = baseStr
     Stats.BASE_VALUES[Stats.STAT_TYPES.AGILITY] = baseAgi
@@ -155,17 +302,18 @@ end
 function Stats:GetBuffValue(statType)
     local buffValue = 0
 
+    -- Use StatAPI wrappers for 12.0 compatibility
     if statType == Stats.STAT_TYPES.STRENGTH then
-        local _, _, posBuff, negBuff = UnitStat("player", 1)
+        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
         buffValue = posBuff + negBuff
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        local _, _, posBuff, negBuff = UnitStat("player", 2)
+        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(2)
         buffValue = posBuff + negBuff
     elseif statType == Stats.STAT_TYPES.STAMINA then
-        local _, _, posBuff, negBuff = UnitStat("player", 3)
+        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(3)
         buffValue = posBuff + negBuff
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        local _, _, posBuff, negBuff = UnitStat("player", 4)
+        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(4)
         buffValue = posBuff + negBuff
     end
 
@@ -176,23 +324,24 @@ end
 function Stats:GetBuffPercentage(statType)
     local buffPercentage = 0
 
+    -- Use StatAPI wrappers for 12.0 compatibility
     if statType == Stats.STAT_TYPES.STRENGTH then
-        local base, _, posBuff, negBuff = UnitStat("player", 1)
+        local base, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
         if base > 0 then
             buffPercentage = ((posBuff + negBuff) / base) * 100
         end
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        local base, _, posBuff, negBuff = UnitStat("player", 2)
+        local base, _, posBuff, negBuff = StatAPI.GetUnitStat(2)
         if base > 0 then
             buffPercentage = ((posBuff + negBuff) / base) * 100
         end
     elseif statType == Stats.STAT_TYPES.STAMINA then
-        local base, _, posBuff, negBuff = UnitStat("player", 3)
+        local base, _, posBuff, negBuff = StatAPI.GetUnitStat(3)
         if base > 0 then
             buffPercentage = ((posBuff + negBuff) / base) * 100
         end
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        local base, _, posBuff, negBuff = UnitStat("player", 4)
+        local base, _, posBuff, negBuff = StatAPI.GetUnitStat(4)
         if base > 0 then
             buffPercentage = ((posBuff + negBuff) / base) * 100
         end
@@ -202,192 +351,200 @@ function Stats:GetBuffPercentage(statType)
 end
 
 -- Returns the current value of the specified stat using the latest APIs
+-- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetValue(statType)
     local value = 0
 
-    -- Primary stats
+    -- Primary stats - use StatAPI wrapper with fallback chain
     if statType == Stats.STAT_TYPES.STRENGTH then
-        -- Try to use C_Attributes if available, otherwise fall back to C_Stats, then UnitStat
+        -- Try to use C_Attributes if available, otherwise fall back to C_Stats, then StatAPI
         if C_Attributes then
-            value = C_Attributes.GetAttribute("player", "Strength") or 0
+            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Strength") or 0
         elseif C_Stats then
-            value = C_Stats.GetStatByID(1) or 0
-        else
-            -- Fallback to UnitStat which is more widely available
-            local base, _, posBuff, negBuff = UnitStat("player", 1)
+            value = SafeGetValue(C_Stats.GetStatByID, 1) or 0
+        end
+        -- Fallback to StatAPI wrapper (uses UnitStat with safety)
+        if value == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
             value = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.AGILITY then
         if C_Attributes then
-            value = C_Attributes.GetAttribute("player", "Agility") or 0
+            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Agility") or 0
         elseif C_Stats then
-            value = C_Stats.GetStatByID(2) or 0
-        else
-            local base, _, posBuff, negBuff = UnitStat("player", 2)
+            value = SafeGetValue(C_Stats.GetStatByID, 2) or 0
+        end
+        if value == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(2)
             value = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.INTELLECT then
         if C_Attributes then
-            value = C_Attributes.GetAttribute("player", "Intellect") or 0
+            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Intellect") or 0
         elseif C_Stats then
-            value = C_Stats.GetStatByID(4) or 0
-        else
-            local base, _, posBuff, negBuff = UnitStat("player", 4)
+            value = SafeGetValue(C_Stats.GetStatByID, 4) or 0
+        end
+        if value == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(4)
             value = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.STAMINA then
         if C_Attributes then
-            value = C_Attributes.GetAttribute("player", "Stamina") or 0
+            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Stamina") or 0
         elseif C_Stats then
-            value = C_Stats.GetStatByID(3) or 0
-        else
-            local base, _, posBuff, negBuff = UnitStat("player", 3)
+            value = SafeGetValue(C_Stats.GetStatByID, 3) or 0
+        end
+        if value == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(3)
             value = base + posBuff + negBuff
         end
-        -- Secondary stats - Using direct API calls for better performance
+
+    -- Secondary stats - Using StatAPI wrappers for 12.0 compatibility
     elseif statType == Stats.STAT_TYPES.HASTE then
-        value = GetHaste()
+        value = StatAPI.GetHaste()
     elseif statType == Stats.STAT_TYPES.CRIT then
-        -- Using GetSpellCritChance for more accurate spell-specific crit values
-        -- Using spell school 2 (Fire) for consistent values
-        value = GetSpellCritChance(2)
+        value = StatAPI.GetCritChance()
     elseif statType == Stats.STAT_TYPES.MASTERY then
-        value = GetMasteryEffect()
+        value = StatAPI.GetMastery()
     elseif statType == Stats.STAT_TYPES.VERSATILITY then
-        -- Get base value first
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        
+        -- Get base value using StatAPI wrapper
+        value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+
         -- Only apply talent adjustments if value is valid (non-zero)
         local adjustment = self:GetTalentAdjustment(statType)
-        
+
         -- Debug output
         if PDS.Config.DEBUG_ENABLED then
             PDS.Utils.Debug("Versatility calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
         end
-        
+
         if value > 0 or adjustment > 0 then
             value = value + adjustment
-            
+
             -- Debug output
             if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
                 PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
             end
         end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
-        -- Get base value first
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        
+        -- Get base value using StatAPI wrapper
+        value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+
         -- Only apply talent adjustments if value is valid (non-zero)
         local adjustment = self:GetTalentAdjustment(statType)
-        
+
         -- Debug output
         if PDS.Config.DEBUG_ENABLED then
             PDS.Utils.Debug("Versatility Damage calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
         end
-        
+
         if value > 0 or adjustment > 0 then
             value = value + adjustment
-            
+
             -- Debug output
             if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
                 PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
             end
         end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
-        -- Get base value first
-        value = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
-        
+        -- Get base value using StatAPI wrapper
+        value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+
         -- Only apply talent adjustments if value is valid (non-zero)
         local adjustment = self:GetTalentAdjustment(statType)
-        
+
         -- Debug output
         if PDS.Config.DEBUG_ENABLED then
             PDS.Utils.Debug("Versatility Damage Reduction calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
         end
-        
+
         if value > 0 or adjustment > 0 then
             value = value + adjustment
-            
+
             -- Debug output
             if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
                 PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
             end
         end
     elseif statType == Stats.STAT_TYPES.SPEED then
-        value = GetSpeed()
+        value = StatAPI.GetSpeed()
     elseif statType == Stats.STAT_TYPES.LEECH then
-        value = GetLifesteal()
+        value = StatAPI.GetLifesteal()
     elseif statType == Stats.STAT_TYPES.AVOIDANCE then
-        value = GetAvoidance()
+        value = StatAPI.GetAvoidance()
     elseif statType == Stats.STAT_TYPES.DODGE then
-        value = GetDodgeChance()
+        value = StatAPI.GetDodgeChance()
     elseif statType == Stats.STAT_TYPES.PARRY then
-        value = GetParryChance()
+        value = StatAPI.GetParryChance()
     elseif statType == Stats.STAT_TYPES.BLOCK then
-        value = GetBlockChance()
+        value = StatAPI.GetBlockChance()
     end
-
 
     return value
 end
 
 -- Gets the raw rating value for the specified stat type
+-- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetRating(statType)
     local rating = 0
 
-    -- Primary stats - return the total stat value
+    -- Primary stats - return the total stat value using StatAPI wrappers
     if statType == Stats.STAT_TYPES.STRENGTH then
         if C_Stats then
-            rating = C_Stats.GetStatByID(1) or 0
-        else
-            -- Fallback to UnitStat which is more widely available
-            local base, _, posBuff, negBuff = UnitStat("player", 1)
+            rating = SafeGetValue(C_Stats.GetStatByID, 1) or 0
+        end
+        if rating == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
             rating = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.AGILITY then
         if C_Stats then
-            rating = C_Stats.GetStatByID(2) or 0
-        else
-            local base, _, posBuff, negBuff = UnitStat("player", 2)
+            rating = SafeGetValue(C_Stats.GetStatByID, 2) or 0
+        end
+        if rating == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(2)
             rating = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.INTELLECT then
         if C_Stats then
-            rating = C_Stats.GetStatByID(4) or 0
-        else
-            local base, _, posBuff, negBuff = UnitStat("player", 4)
+            rating = SafeGetValue(C_Stats.GetStatByID, 4) or 0
+        end
+        if rating == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(4)
             rating = base + posBuff + negBuff
         end
     elseif statType == Stats.STAT_TYPES.STAMINA then
         if C_Stats then
-            rating = C_Stats.GetStatByID(3) or 0
-        else
-            local base, _, posBuff, negBuff = UnitStat("player", 3)
+            rating = SafeGetValue(C_Stats.GetStatByID, 3) or 0
+        end
+        if rating == 0 then
+            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(3)
             rating = base + posBuff + negBuff
         end
-        -- Secondary stats - return the combat rating using direct API calls
+
+    -- Secondary stats - return the combat rating using StatAPI wrappers
     elseif statType == Stats.STAT_TYPES.HASTE then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
     elseif statType == Stats.STAT_TYPES.CRIT then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
     elseif statType == Stats.STAT_TYPES.MASTERY then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
     elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
     elseif statType == Stats.STAT_TYPES.SPEED then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
     elseif statType == Stats.STAT_TYPES.LEECH then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
     elseif statType == Stats.STAT_TYPES.AVOIDANCE then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_AVOIDANCE)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_AVOIDANCE)
     elseif statType == Stats.STAT_TYPES.DODGE then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
     elseif statType == Stats.STAT_TYPES.PARRY then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
     elseif statType == Stats.STAT_TYPES.BLOCK then
-        rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_BLOCK)
+        rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_BLOCK)
     end
 
     return rating
@@ -396,25 +553,35 @@ end
 -- Handles talent-specific adjustments for stats
 -- This addresses the issue where Rogue's "Thief's Versatility" talent
 -- provides bonus versatility that isn't reflected in the combat rating API
+-- Updated for WoW 12.0: Uses combat caching since aura APIs may be restricted in combat
 function Stats:GetTalentAdjustment(statType)
     local adjustment = 0
-    
+
     -- Check if talent adjustments are enabled
     if not PDS.Config.enableTalentAdjustments then
         return adjustment
     end
-    
+
+    -- WoW 12.0 Combat Caching:
+    -- If we're in combat and have a cached value, use it (aura APIs may be restricted)
+    if InCombatLockdown() and combatCache.talentAdjustments[statType] ~= nil then
+        if PDS.Config.DEBUG_ENABLED then
+            PDS.Utils.Debug("Using cached talent adjustment for " .. statType .. ": " .. combatCache.talentAdjustments[statType])
+        end
+        return combatCache.talentAdjustments[statType]
+    end
+
     -- Check for Rogue's Thief's Versatility talent
     -- This talent provides a flat percentage bonus that the game doesn't report
     -- through the standard GetCombatRatingBonus API
-    if statType == Stats.STAT_TYPES.VERSATILITY or 
-       statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE or 
+    if statType == Stats.STAT_TYPES.VERSATILITY or
+       statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE or
        statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
         local playerClass = select(2, UnitClass("player"))
         if playerClass == "ROGUE" then
             -- For The War Within, use the new talent API if available
             local hasTalent = false
-            
+
             -- Try new talent API first (TWW+)
             if C_ClassTalents and C_ClassTalents.GetActiveConfigID then
                 local configID = C_ClassTalents.GetActiveConfigID()
@@ -435,17 +602,17 @@ function Stats:GetTalentAdjustment(statType)
                     end
                 end
             end
-            
+
             if hasTalent then
                 -- Apply the talent bonus
                 -- Thief's Versatility in TWW gives 4% Versatility to all abilities
                 adjustment = 4
-                
+
                 -- If it's damage reduction, the bonus might be halved (typical WoW behavior)
                 if statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
                     adjustment = adjustment / 2
                 end
-                
+
                 -- Debug output if enabled
                 if PDS.Config.DEBUG_ENABLED then
                     PDS.Utils.Debug("Thief's Versatility detected, applying +" .. adjustment .. "% to " .. statType)
@@ -455,40 +622,53 @@ function Stats:GetTalentAdjustment(statType)
             end
         end
     end
-    
+
+    -- Cache the result for use during combat (12.0 compatibility)
+    combatCache.talentAdjustments[statType] = adjustment
+
     return adjustment
 end
 
 -- Helper function to check for specific talent by name
+-- Updated for WoW 12.0: Aura scanning may be restricted during combat
 function Stats:HasSpecificTalent(talentName)
     -- Try multiple approaches to find the talent
-    
-    -- Method 1: Using spell aura to find the buff
-    -- This is often the most reliable method since talents apply auras
-    local i = 1
-    while true do
-        local auraData
-        if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-            auraData = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-        end
 
-        if not auraData then break end
+    -- Method 1: Using spell aura to find the buff (may be restricted in 12.0 combat)
+    -- Only try aura scanning when NOT in combat lockdown
+    if not InCombatLockdown() then
+        local i = 1
+        while true do
+            local auraData
+            -- Wrap in pcall for 12.0 safety - aura APIs may fail
+            local success, result = pcall(function()
+                if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+                    return C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+                end
+                return nil
+            end)
 
-        local name = auraData.name
-        local spellId = auraData.spellId
+            if not success or not result then break end
+            auraData = result
 
-        -- Check if the aura name contains our talent name
-        if name and (string.find(name, talentName) or name == "Thief's Versatility") then
-            if PDS.Config.DEBUG_ENABLED then
-                PDS.Utils.Debug("Found Thief's Versatility aura: " .. name .. " (ID: " .. (spellId or "unknown") .. ")")
+            local name = auraData.name
+            local spellId = auraData.spellId
+
+            -- Check if the aura name contains our talent name
+            if name and (string.find(name, talentName) or name == "Thief's Versatility") then
+                if PDS.Config.DEBUG_ENABLED then
+                    PDS.Utils.Debug("Found Thief's Versatility aura: " .. name .. " (ID: " .. (spellId or "unknown") .. ")")
+                end
+                return true
             end
-            return true
+            i = i + 1
         end
-        i = i + 1
+    elseif PDS.Config.DEBUG_ENABLED then
+        PDS.Utils.Debug("Skipping aura scan in combat (12.0 compatibility)")
     end
-    
+
     -- Method 2: Check using IsPlayerSpell for known Thief's Versatility spell IDs
-    -- Multiple IDs for different expansions
+    -- This should always work even in combat (player's own spell knowledge)
     local thiefsVersatilitySpellIDs = {
         381990,  -- TWW potential ID
         382090,  -- DF potential ID
@@ -496,28 +676,32 @@ function Stats:HasSpecificTalent(talentName)
         196924,  -- Legion potential ID
         79096,   -- Another potential ID
     }
-    
+
     for _, spellID in ipairs(thiefsVersatilitySpellIDs) do
-        if IsPlayerSpell(spellID) then
+        local hasSpell = SafeGetValue(IsPlayerSpell, spellID)
+        if hasSpell then
             if PDS.Config.DEBUG_ENABLED then
                 PDS.Utils.Debug("Found Thief's Versatility spell ID: " .. spellID)
             end
             return true
         end
     end
-    
+
     -- Method 3: For Outlaw Rogues, assume they have the talent if they're over level 50
     local playerClass = select(2, UnitClass("player"))
     if playerClass == "ROGUE" then
-        local specID = GetSpecialization()
+        local specID = SafeGetValue(GetSpecialization)
         if specID then
-            local specInfo = GetSpecializationInfo(specID)
+            local specInfo = SafeGetValue(GetSpecializationInfo, specID)
             -- Outlaw spec ID is 260
             if specInfo == 260 then
-                local level = UnitLevel("player")
+                local level = SafeGetValue(UnitLevel, "player") or 0
                 if level >= 50 then
                     -- Check for a specific Outlaw-only spell as an indirect way to verify spec
-                    if IsSpellKnown(13877) or IsSpellKnown(315508) or IsSpellKnown(385616) then  -- Blade Flurry
+                    local hasBladeFlurry = SafeGetValue(IsSpellKnown, 13877) or
+                                          SafeGetValue(IsSpellKnown, 315508) or
+                                          SafeGetValue(IsSpellKnown, 385616)
+                    if hasBladeFlurry then
                         if PDS.Config.DEBUG_ENABLED then
                             PDS.Utils.Debug("Detected high-level Outlaw Rogue, assuming Thief's Versatility")
                         end
@@ -527,35 +711,40 @@ function Stats:HasSpecificTalent(talentName)
             end
         end
     end
-    
-    -- Method 4: Legacy talent check
-    return self:CheckForThiefsVersatilityLegacy()
+
+    -- Method 4: Legacy talent check (only when not in combat)
+    if not InCombatLockdown() then
+        return self:CheckForThiefsVersatilityLegacy()
+    end
+
+    return false
 end
 
 -- Legacy method for checking Thief's Versatility
+-- Updated for WoW 12.0: Uses safe API wrappers and pcall for aura scanning
 function Stats:CheckForThiefsVersatilityLegacy()
     -- Safe guard - if player is not a rogue, don't bother checking
     local playerClass = select(2, UnitClass("player"))
     if playerClass ~= "ROGUE" then
         return false
     end
-    
+
     -- Attempt 1: Check talent tree using legacy API
     local foundTalent = false
-    
+
     -- Try with GetTalentInfo (Legion/BFA style)
     for tier = 1, 7 do
         for column = 1, 3 do
             -- Try various talent interface functions as the API has changed over time
             local name, selected
-            
+
             -- Try GetTalentInfo method 1
             pcall(function()
                 local talentID, talentName, texture, isSelected = GetTalentInfo(tier, column, 1)
                 name = talentName
                 selected = isSelected
             end)
-            
+
             -- Try GetTalentInfo method 2 (different parameter order)
             if not name then
                 pcall(function()
@@ -564,41 +753,46 @@ function Stats:CheckForThiefsVersatilityLegacy()
                     selected = isSelected
                 end)
             end
-            
-            if selected and name and (string.find(name:lower(), "thief's versatility") or 
+
+            if selected and name and (string.find(name:lower(), "thief's versatility") or
                                       string.find(name:lower(), "thiefs versatility") or
                                       string.find(name:lower(), "versatility")) then
                 foundTalent = true
                 break
             end
         end
-        
+
         if foundTalent then break end
     end
-    
-    if foundTalent then 
+
+    if foundTalent then
         if PDS.Config.DEBUG_ENABLED then
             PDS.Utils.Debug("Found Thief's Versatility via legacy talent API")
         end
-        return true 
+        return true
     end
-    
+
     -- Attempt 2: Check for increased versatility as evidence
     -- Compare base versatility with current - if there's a significant difference for a rogue,
     -- it might be due to Thief's Versatility
-    local baseVers = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-    
+    local baseVers = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+
     -- Check if player has notably higher versatility than expected from gear alone
-    -- Check through buffs for any other versatility increases
+    -- Check through buffs for any other versatility increases (using safe aura scanning)
     local hasVersBuffs = false
     local i = 1
     while true do
         local auraData
-        if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-            auraData = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
-        end
+        -- Wrap in pcall for 12.0 safety
+        local success, result = pcall(function()
+            if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
+                return C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+            end
+            return nil
+        end)
 
-        if not auraData then break end
+        if not success or not result then break end
+        auraData = result
 
         local name = auraData.name
 
@@ -615,12 +809,12 @@ function Stats:CheckForThiefsVersatilityLegacy()
         if hasVersBuffs then break end
         i = i + 1
     end
-    
+
     -- If we're a high level outlaw rogue without other versatility buffs
     -- and significant versatility, assume it's from Thief's Versatility
-    local specID = GetSpecialization()
+    local specID = SafeGetValue(GetSpecialization)
     if specID then
-        local specInfo = GetSpecializationInfo(specID)
+        local specInfo = SafeGetValue(GetSpecializationInfo, specID)
         -- Outlaw spec ID is 260
         if specInfo == 260 and not hasVersBuffs and baseVers > 3 then
             if PDS.Config.DEBUG_ENABLED then
@@ -693,31 +887,31 @@ function Stats:GetName(statType)
 end
 
 
--- Gets the rating needed for 1% of a stat using the API directly
+-- Gets the rating needed for 1% of a stat using StatAPI wrappers
 function Stats:GetRatingPer1Percent(statType)
     local ratingPer1Percent = 0
 
     if statType == Stats.STAT_TYPES.HASTE then
-        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
-        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
         if rating > 0 then
             ratingPer1Percent = bonus / rating
         end
     elseif statType == Stats.STAT_TYPES.CRIT then
-        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
-        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
         if rating > 0 then
             ratingPer1Percent = bonus / rating
         end
     elseif statType == Stats.STAT_TYPES.MASTERY then
-        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_MASTERY)
-        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
+        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_MASTERY)
+        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
         if rating > 0 then
             ratingPer1Percent = bonus / rating
         end
     elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
-        local bonus = GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        local rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
         if rating > 0 then
             ratingPer1Percent = bonus / rating
         end
@@ -757,6 +951,7 @@ function Stats:CalculateBarValues(value)
 end
 
 -- Gets the formatted display value for a stat
+-- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetDisplayValue(statType, value, showRating)
     local displayValue = PDS.Utils:FormatPercent(value)
 
@@ -767,7 +962,7 @@ function Stats:GetDisplayValue(statType, value, showRating)
 
     -- If showRatings is enabled, get the rating and add it to the display value
     if showRating then
-        -- Get raw rating value directly using GetCombatRating or GetRating for primary stats
+        -- Get raw rating value using StatAPI wrappers or GetRating for primary stats
         local rating = nil
 
         -- Map stat types to combat ratings or get primary stat values
@@ -780,27 +975,27 @@ function Stats:GetDisplayValue(statType, value, showRating)
         elseif statType == Stats.STAT_TYPES.STAMINA then
             rating = self:GetRating(statType)
         elseif statType == Stats.STAT_TYPES.DODGE then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
         elseif statType == Stats.STAT_TYPES.PARRY then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
         elseif statType == Stats.STAT_TYPES.BLOCK then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_BLOCK)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_BLOCK)
         elseif statType == Stats.STAT_TYPES.HASTE then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
         elseif statType == Stats.STAT_TYPES.CRIT then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
         elseif statType == Stats.STAT_TYPES.MASTERY then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
         elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
         elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
         elseif statType == Stats.STAT_TYPES.SPEED then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
         elseif statType == Stats.STAT_TYPES.LEECH then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
         elseif statType == Stats.STAT_TYPES.AVOIDANCE then
-            rating = GetCombatRating(Stats.COMBAT_RATINGS.CR_AVOIDANCE)
+            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_AVOIDANCE)
         else
             -- Fallback to using GetRating method
             rating = self:GetRating(statType)
