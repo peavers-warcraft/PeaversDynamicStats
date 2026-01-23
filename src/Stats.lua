@@ -261,6 +261,7 @@ Stats.STAT_ORDER = {
     Stats.STAT_TYPES.HASTE,
     Stats.STAT_TYPES.MASTERY,
     Stats.STAT_TYPES.VERSATILITY,
+    Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION, -- Shows damage reduction % (half of damage %)
     Stats.STAT_TYPES.SPEED,
     Stats.STAT_TYPES.LEECH,
     Stats.STAT_TYPES.AVOIDANCE,
