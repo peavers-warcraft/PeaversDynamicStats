@@ -165,8 +165,17 @@ function ConfigUI:InitializeOptions()
     -- Update content height based on the last element position
     panel:UpdateContentHeight(yPos)
 
-    -- Let PeaversCommons handle category registration
-    -- The panel will be added as the first subcategory automatically
+    -- Register with the Settings API ourselves so we can store the category ID
+    -- This allows /pds config to open directly to our settings
+    if Settings and Settings.RegisterCanvasLayoutCategory then
+        local category = Settings.RegisterCanvasLayoutCategory(panel, "Peavers Dynamic Stats")
+        if category then
+            Settings.RegisterAddOnCategory(category)
+            -- Store the category ID for OpenOptions to use
+            -- Note: There's a known bug where you may need categoryID - 1
+            PDS.settingsCategoryID = category:GetID()
+        end
+    end
 
     return panel
 end
@@ -853,13 +862,30 @@ end
 function ConfigUI:OpenOptions()
     -- Ensure settings are saved before opening
     PDS.Config:Save()
-    
-    -- Use the direct registration category and subcategory names
-    if PDS.directCategory and PDS.directSettingsCategory then
-        Settings.OpenToCategory(PDS.directSettingsCategory)
-    else
-        -- Fallback: try to open directly using the name
-        Settings.OpenToCategory("PeaversDynamicStats")
+
+    -- Use the stored category ID from registration
+    -- Known bug: may need to subtract 1 from the category ID
+    -- See: https://warcraft.wiki.gg/wiki/API_Settings.OpenToCategory
+    if PDS.settingsCategoryID and Settings and Settings.OpenToCategory then
+        -- Try with the ID as-is first
+        local success = pcall(Settings.OpenToCategory, PDS.settingsCategoryID)
+        if success then return end
+
+        -- Try with ID - 1 (known workaround for API bug)
+        success = pcall(Settings.OpenToCategory, PDS.settingsCategoryID - 1)
+        if success then return end
+    end
+
+    -- Fallback: just open the Settings panel
+    if SettingsPanel then
+        ShowUIPanel(SettingsPanel)
+        return
+    end
+
+    -- Legacy fallback for older clients
+    if InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
+        InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
     end
 end
 
