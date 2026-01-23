@@ -650,25 +650,33 @@ end
 function Config:InitializeStatSettings()
     -- Initialize showStats if it's not already defined
     self.showStats = self.showStats or {}
-    
+
+    -- Stats that should default to hidden (opt-in rather than opt-out)
+    local defaultHiddenStats = {
+        ["VERSATILITY_DAMAGE_REDUCTION"] = true, -- Hidden by default, useful for tanks/Disc Priests
+    }
+
     -- Make sure Stats module is loaded and has STAT_ORDER defined
     if PDS.Stats and PDS.Stats.STAT_ORDER then
         for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
             if self.showStats[statType] == nil then
-                self.showStats[statType] = true
+                -- Check if this stat should default to hidden
+                self.showStats[statType] = not defaultHiddenStats[statType]
             end
         end
     else
         -- Fallback if Stats.STAT_ORDER is not available
         local defaultStats = {
             "STRENGTH", "AGILITY", "INTELLECT", "STAMINA",
-            "CRIT", "HASTE", "MASTERY", "VERSATILITY", 
+            "CRIT", "HASTE", "MASTERY", "VERSATILITY",
+            "VERSATILITY_DAMAGE_REDUCTION",
             "DODGE", "PARRY", "BLOCK", "LEECH", "AVOIDANCE", "SPEED"
         }
-        
+
         for _, statType in ipairs(defaultStats) do
             if self.showStats[statType] == nil then
-                self.showStats[statType] = true
+                -- Check if this stat should default to hidden
+                self.showStats[statType] = not defaultHiddenStats[statType]
             end
         end
     end

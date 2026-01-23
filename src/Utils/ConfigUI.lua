@@ -165,17 +165,8 @@ function ConfigUI:InitializeOptions()
     -- Update content height based on the last element position
     panel:UpdateContentHeight(yPos)
 
-    -- Register with the Settings API ourselves so we can store the category ID
-    -- This allows /pds config to open directly to our settings
-    if Settings and Settings.RegisterCanvasLayoutCategory then
-        local category = Settings.RegisterCanvasLayoutCategory(panel, "Peavers Dynamic Stats")
-        if category then
-            Settings.RegisterAddOnCategory(category)
-            -- Store the category ID for OpenOptions to use
-            -- Note: There's a known bug where you may need categoryID - 1
-            PDS.settingsCategoryID = category:GetID()
-        end
-    end
+    -- Note: Settings registration is handled by PeaversCommons.SettingsUI:CreateSettingsPages
+    -- in Main.lua to avoid duplicate panels
 
     return panel
 end
@@ -433,6 +424,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     -- Define secondary stats in the order they appear on WoW character screen
     local secondaryStats = {
         "CRIT", "HASTE", "MASTERY", "VERSATILITY",
+        "VERSATILITY_DAMAGE_REDUCTION", -- Damage reduction % (useful for tanks, Disc Priests)
         "DODGE", "PARRY",
         "BLOCK", "LEECH", "AVOIDANCE", "SPEED"
     }
@@ -863,20 +855,48 @@ function ConfigUI:OpenOptions()
     -- Ensure settings are saved before opening
     PDS.Config:Save()
 
-    -- Use the stored category ID from registration
-    -- Known bug: may need to subtract 1 from the category ID
-    -- See: https://warcraft.wiki.gg/wiki/API_Settings.OpenToCategory
-    if PDS.settingsCategoryID and Settings and Settings.OpenToCategory then
-        -- Try with the ID as-is first
-        local success = pcall(Settings.OpenToCategory, PDS.settingsCategoryID)
-        if success then return end
+    -- Debug: show what categories are available
+    print("PDS OpenOptions - directSettingsCategoryID:", PDS.directSettingsCategoryID)
+    print("PDS OpenOptions - directCategoryID:", PDS.directCategoryID)
+    print("PDS OpenOptions - directSettingsCategory:", PDS.directSettingsCategory)
+    print("PDS OpenOptions - directCategory:", PDS.directCategory)
 
-        -- Try with ID - 1 (known workaround for API bug)
-        success = pcall(Settings.OpenToCategory, PDS.settingsCategoryID - 1)
-        if success then return end
+    if Settings and Settings.OpenToCategory then
+        -- Try using the category ID stored by PeaversCommons.SettingsUI
+        -- Prefer opening to the settings subcategory if available
+        if PDS.directSettingsCategoryID then
+            print("Trying directSettingsCategoryID...")
+            local success, err = pcall(Settings.OpenToCategory, PDS.directSettingsCategoryID)
+            print("Result:", success, err)
+            if success then return end
+        end
+
+        -- Fallback to main category ID
+        if PDS.directCategoryID then
+            print("Trying directCategoryID...")
+            local success, err = pcall(Settings.OpenToCategory, PDS.directCategoryID)
+            print("Result:", success, err)
+            if success then return end
+        end
+
+        -- Try with category objects as fallback
+        if PDS.directSettingsCategory then
+            print("Trying directSettingsCategory object...")
+            local success, err = pcall(Settings.OpenToCategory, PDS.directSettingsCategory)
+            print("Result:", success, err)
+            if success then return end
+        end
+
+        if PDS.directCategory then
+            print("Trying directCategory object...")
+            local success, err = pcall(Settings.OpenToCategory, PDS.directCategory)
+            print("Result:", success, err)
+            if success then return end
+        end
     end
 
     -- Fallback: just open the Settings panel
+    print("Using fallback: ShowUIPanel")
     if SettingsPanel then
         ShowUIPanel(SettingsPanel)
         return
