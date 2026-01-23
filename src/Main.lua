@@ -260,8 +260,6 @@ PeaversCommons.Events:Init(addonName, function()
     -- Removed redundant ADDON_LOADED handler as it's now handled by SaveGuard
 
     -- Use the centralized SettingsUI system from PeaversCommons
-    -- Note: We register our own Settings category in ConfigUI:InitializeOptions()
-    -- so that /pds config can open directly to our settings panel
     C_Timer.After(0.5, function()
         PeaversCommons.SettingsUI:CreateSettingsPages(
             PDS,                      -- Addon reference
