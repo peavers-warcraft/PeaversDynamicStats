@@ -15,6 +15,7 @@ PDS.Config = {
     barHeight = 20,
     barSpacing = 2,
     barBgAlpha = 0.7,
+    barAlpha = 1.0, -- Bar fill opacity (0 = text only, 1 = full bars)
 
     -- Visual settings (font will be set based on locale in Initialize)
     fontFace = nil,  -- Will be set based on client locale
@@ -217,6 +218,7 @@ function Config:Save()
     profile.barHeight = self.barHeight
     profile.barTexture = self.barTexture
     profile.barBgAlpha = self.barBgAlpha
+    profile.barAlpha = self.barAlpha
     profile.bgAlpha = self.bgAlpha
     profile.bgColor = self.bgColor
     profile.showStats = self.showStats
@@ -361,6 +363,9 @@ function Config:Load()
     end
     if profile.barBgAlpha then
         self.barBgAlpha = profile.barBgAlpha
+    end
+    if profile.barAlpha then
+        self.barAlpha = profile.barAlpha
     end
     if profile.bgAlpha then
         self.bgAlpha = profile.bgAlpha

@@ -373,15 +373,20 @@ function StatBar:UpdateColor()
 	g = g or 0.8
 	b = b or 0.8
 
+	-- Get bar opacity from config (allows text-only mode when set to 0)
+	local barAlpha = PDS.Config.barAlpha or 1.0
+
 	-- Apply the color to the status bar - set color directly without recreating texture
 	if self.frame and self.frame.bar then
-		self.frame.bar:SetStatusBarColor(r, g, b, 1)
+		self.frame.bar:SetStatusBarColor(r, g, b, barAlpha)
 	end
 
 	-- Apply contrasting color to the overflow bar with transparency
 	if self.frame and self.frame.overflowBar then
 		local or_r, or_g, or_b = self:GetOverflowColor(r, g, b)
-		self.frame.overflowBar:SetStatusBarColor(or_r, or_g, or_b, 0.7) -- Use 0.7 alpha for better visibility while still being distinct
+		-- Scale overflow alpha relative to main bar alpha (0.7 ratio)
+		local overflowAlpha = barAlpha * 0.7
+		self.frame.overflowBar:SetStatusBarColor(or_r, or_g, or_b, overflowAlpha)
 	end
 end
 

@@ -524,6 +524,22 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     bgOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
     yPos = yPos - 65
 
+    -- Bar fill opacity slider (allows text-only mode when set to 0)
+    local barOpacityContainer, barOpacitySlider = Utils:CreateSlider(
+        content, "PeaversBarAlphaSlider",
+        PDS.L["CONFIG_BAR_OPACITY"], 0, 1, 0.05,
+        Config.barAlpha or 1.0, sliderWidth,
+        function(value)
+            Config.barAlpha = value
+            Config:Save()
+            if PDS.BarManager then
+                PDS.BarManager:UpdateAllBars()
+            end
+        end
+    )
+    barOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    yPos = yPos - 65
+
     -- Add a thin separator
     local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
     yPos = newY - 15
