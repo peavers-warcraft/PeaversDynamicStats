@@ -155,7 +155,14 @@ function ConfigUI:InitializeOptions()
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
 
-    -- 4. TEXT SETTINGS SECTION
+    -- 4. TEMPLATE MANAGEMENT SECTION
+    yPos = self:CreateTemplateManagementSection(content, yPos, baseSpacing, sectionSpacing)
+
+    -- Add a separator between major sections
+    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
+    yPos = newY - baseSpacing
+
+    -- 5. TEXT SETTINGS SECTION
     yPos = self:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
 
     -- Add a separator between major sections
@@ -751,6 +758,15 @@ function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
     return yPos
 end
 
+-- 4. TEMPLATE MANAGEMENT - Delegates to TemplateUI module
+function ConfigUI:CreateTemplateManagementSection(content, yPos, baseSpacing, sectionSpacing)
+    if PDS.TemplateUI and PDS.TemplateUI.CreateTemplateManagementUI then
+        return PDS.TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, sectionSpacing)
+    end
+    return yPos
+end
+
+-- 5. TEXT SETTINGS - Font and text appearance settings
 function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     baseSpacing = baseSpacing or 25
     sectionSpacing = sectionSpacing or 40

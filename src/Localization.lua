@@ -102,6 +102,41 @@ Locales["enUS"] = {
     ["MSG_SHOWN"] = "PeaversDynamicStats shown.",
     ["MSG_HIDDEN"] = "PeaversDynamicStats hidden.",
     
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "Template Management",
+    ["CONFIG_TEMPLATE_DESC"] = "Save your current settings as named templates (e.g., 'DPS Setup', 'Tank Setup') that can be applied to any character or spec. Templates are shared across all characters.",
+    ["CONFIG_CREATE_TEMPLATE"] = "Create New Template:",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "Save Current Settings as Template",
+    ["CONFIG_MANAGE_TEMPLATES"] = "Available Templates:",
+    ["CONFIG_NO_TEMPLATES"] = "No templates created yet. Create one from your current settings!",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "Enter a name for the new template:",
+    ["TEMPLATE_APPLY_CONFIRM"] = "Apply template '%s' to your current settings? This will overwrite your current configuration.",
+    ["TEMPLATE_DELETE_CONFIRM"] = "Delete template '%s'? This cannot be undone.",
+    ["TEMPLATE_RENAME_PROMPT"] = "Enter a new name for template '%s':",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "Template '%s' created successfully!",
+    ["TEMPLATE_APPLIED"] = "Template '%s' applied successfully!",
+    ["TEMPLATE_DELETED"] = "Template '%s' deleted.",
+    ["TEMPLATE_RENAMED"] = "Template renamed from '%s' to '%s'.",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "Template name cannot be empty.",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "A template with this name already exists.",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "Template not found.",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "No active profile to create template from.",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "Invalid profile data.",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "Template data is corrupted.",
+
+    -- Common Buttons
+    ["CREATE"] = "Create",
+    ["APPLY"] = "Apply",
+    ["DELETE"] = "Delete",
+    ["RENAME"] = "Rename",
+    ["CANCEL"] = "Cancel",
+
     -- Misc
     ["NEW_BADGE"] = "NEW!",
 }
@@ -195,6 +230,41 @@ Locales["zhCN"] = {
     ["MSG_SHOWN"] = "PeaversDynamicStats 已显示。",
     ["MSG_HIDDEN"] = "PeaversDynamicStats 已隐藏。",
     
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "模板管理",
+    ["CONFIG_TEMPLATE_DESC"] = "将当前设置保存为命名模板（例如"输出配置"、"坦克配置"），可应用于任何角色或专精。模板在所有角色间共享。",
+    ["CONFIG_CREATE_TEMPLATE"] = "创建新模板：",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "将当前设置保存为模板",
+    ["CONFIG_MANAGE_TEMPLATES"] = "可用模板：",
+    ["CONFIG_NO_TEMPLATES"] = "尚未创建模板。从当前设置创建一个吧！",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "请输入新模板的名称：",
+    ["TEMPLATE_APPLY_CONFIRM"] = "将模板'%s'应用到当前设置？这将覆盖你的当前配置。",
+    ["TEMPLATE_DELETE_CONFIRM"] = "删除模板'%s'？此操作无法撤销。",
+    ["TEMPLATE_RENAME_PROMPT"] = "请输入模板'%s'的新名称：",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "模板'%s'创建成功！",
+    ["TEMPLATE_APPLIED"] = "模板'%s'应用成功！",
+    ["TEMPLATE_DELETED"] = "模板'%s'已删除。",
+    ["TEMPLATE_RENAMED"] = "模板已从'%s'重命名为'%s'。",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "模板名称不能为空。",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "已存在同名模板。",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "未找到模板。",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "没有可用的配置文件来创建模板。",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "配置文件数据无效。",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "模板数据已损坏。",
+
+    -- Common Buttons
+    ["CREATE"] = "创建",
+    ["APPLY"] = "应用",
+    ["DELETE"] = "删除",
+    ["RENAME"] = "重命名",
+    ["CANCEL"] = "取消",
+
     -- Misc
     ["NEW_BADGE"] = "新功能！",
 }
@@ -288,6 +358,41 @@ Locales["zhTW"] = {
     ["MSG_SHOWN"] = "PeaversDynamicStats 已顯示。",
     ["MSG_HIDDEN"] = "PeaversDynamicStats 已隱藏。",
     
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "範本管理",
+    ["CONFIG_TEMPLATE_DESC"] = "將當前設定儲存為命名範本（例如「輸出配置」、「坦克配置」），可套用於任何角色或專精。範本在所有角色間共享。",
+    ["CONFIG_CREATE_TEMPLATE"] = "建立新範本：",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "將當前設定儲存為範本",
+    ["CONFIG_MANAGE_TEMPLATES"] = "可用範本：",
+    ["CONFIG_NO_TEMPLATES"] = "尚未建立範本。從當前設定建立一個吧！",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "請輸入新範本的名稱：",
+    ["TEMPLATE_APPLY_CONFIRM"] = "將範本'%s'套用到當前設定？這將覆蓋你的當前配置。",
+    ["TEMPLATE_DELETE_CONFIRM"] = "刪除範本'%s'？此操作無法復原。",
+    ["TEMPLATE_RENAME_PROMPT"] = "請輸入範本'%s'的新名稱：",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "範本'%s'建立成功！",
+    ["TEMPLATE_APPLIED"] = "範本'%s'套用成功！",
+    ["TEMPLATE_DELETED"] = "範本'%s'已刪除。",
+    ["TEMPLATE_RENAMED"] = "範本已從'%s'重新命名為'%s'。",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "範本名稱不能為空。",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "已存在同名範本。",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "未找到範本。",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "沒有可用的設定檔來建立範本。",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "設定檔資料無效。",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "範本資料已損壞。",
+
+    -- Common Buttons
+    ["CREATE"] = "建立",
+    ["APPLY"] = "套用",
+    ["DELETE"] = "刪除",
+    ["RENAME"] = "重新命名",
+    ["CANCEL"] = "取消",
+
     -- Misc
     ["NEW_BADGE"] = "新功能！",
 }
@@ -381,6 +486,41 @@ Locales["koKR"] = {
     ["MSG_SHOWN"] = "PeaversDynamicStats가 표시되었습니다.",
     ["MSG_HIDDEN"] = "PeaversDynamicStats가 숨겨졌습니다.",
     
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "템플릿 관리",
+    ["CONFIG_TEMPLATE_DESC"] = "현재 설정을 명명된 템플릿(예: 'DPS 설정', '탱커 설정')으로 저장하여 모든 캐릭터나 전문화에 적용할 수 있습니다. 템플릿은 모든 캐릭터 간에 공유됩니다.",
+    ["CONFIG_CREATE_TEMPLATE"] = "새 템플릿 만들기:",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "현재 설정을 템플릿으로 저장",
+    ["CONFIG_MANAGE_TEMPLATES"] = "사용 가능한 템플릿:",
+    ["CONFIG_NO_TEMPLATES"] = "아직 생성된 템플릿이 없습니다. 현재 설정에서 하나 만들어 보세요!",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "새 템플릿의 이름을 입력하세요:",
+    ["TEMPLATE_APPLY_CONFIRM"] = "템플릿 '%s'을(를) 현재 설정에 적용하시겠습니까? 현재 설정이 덮어쓰기됩니다.",
+    ["TEMPLATE_DELETE_CONFIRM"] = "템플릿 '%s'을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+    ["TEMPLATE_RENAME_PROMPT"] = "템플릿 '%s'의 새 이름을 입력하세요:",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "템플릿 '%s'이(가) 성공적으로 생성되었습니다!",
+    ["TEMPLATE_APPLIED"] = "템플릿 '%s'이(가) 성공적으로 적용되었습니다!",
+    ["TEMPLATE_DELETED"] = "템플릿 '%s'이(가) 삭제되었습니다.",
+    ["TEMPLATE_RENAMED"] = "템플릿 이름이 '%s'에서 '%s'(으)로 변경되었습니다.",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "템플릿 이름을 입력해 주세요.",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "같은 이름의 템플릿이 이미 있습니다.",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "템플릿을 찾을 수 없습니다.",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "템플릿을 만들 활성 프로필이 없습니다.",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "프로필 데이터가 잘못되었습니다.",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "템플릿 데이터가 손상되었습니다.",
+
+    -- Common Buttons
+    ["CREATE"] = "만들기",
+    ["APPLY"] = "적용",
+    ["DELETE"] = "삭제",
+    ["RENAME"] = "이름 변경",
+    ["CANCEL"] = "취소",
+
     -- Misc
     ["NEW_BADGE"] = "새로운 기능!",
 }
