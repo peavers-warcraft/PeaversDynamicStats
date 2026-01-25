@@ -229,10 +229,14 @@ PeaversCommons.Events:Init(addonName, function()
         PDS.Config:Save()
 
         -- Update identifiers for new spec (fixes stale currentSpec)
-        PDS.Config:UpdateCurrentIdentifiers()
+        if PDS.Config.UpdateCurrentIdentifiers then
+            PDS.Config:UpdateCurrentIdentifiers()
+        end
 
         -- Load the new spec's settings
-        PDS.Config:Load()
+        if PDS.Config.Load then
+            PDS.Config:Load()
+        end
 
         -- Update all bars with the new spec's settings
         if PDS.BarManager and PDS.BarManager.UpdateAllBars then

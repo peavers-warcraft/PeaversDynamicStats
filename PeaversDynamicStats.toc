@@ -25,7 +25,6 @@ src\Stats.lua
 
 src\Utils\Utils.lua
 src\Utils\Config.lua
-src\Utils\ProfileManager.lua
 src\Utils\TemplateUI.lua
 src\Utils\ConfigUI.lua
 
