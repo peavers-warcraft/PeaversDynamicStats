@@ -485,7 +485,13 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
             return
         end
 
-        local specName = select(2, GetSpecializationInfo(specID)) or "Unknown"
+        -- Use PeaversCommons to get spec name reliably
+        local specName = "Unknown"
+        if PeaversCommons and PeaversCommons.Utils and PeaversCommons.Utils.GetPlayerInfo then
+            local playerInfo = PeaversCommons.Utils.GetPlayerInfo()
+            specName = playerInfo.specName or "Unknown"
+        end
+
         local assignedTemplate = PDS.Config:GetSpecTemplate()
 
         if assignedTemplate then
@@ -524,7 +530,12 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
         local specID = PDS.Config:GetSpecialization()
         if not specID then return end
 
-        local specName = select(2, GetSpecializationInfo(specID)) or "Unknown"
+        -- Use PeaversCommons to get spec name reliably
+        local specName = "Unknown"
+        if PeaversCommons and PeaversCommons.Utils and PeaversCommons.Utils.GetPlayerInfo then
+            local playerInfo = PeaversCommons.Utils.GetPlayerInfo()
+            specName = playerInfo.specName or "Unknown"
+        end
 
         StaticPopupDialogs["PDS_ASSIGN_TEMPLATE_TO_SPEC"] = {
             text = string.format(L("TEMPLATE_ASSIGN_CONFIRM"), selectedTemplate, specName),
@@ -552,7 +563,12 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
         local specID = PDS.Config:GetSpecialization()
         if not specID then return end
 
-        local specName = select(2, GetSpecializationInfo(specID)) or "Unknown"
+        -- Use PeaversCommons to get spec name reliably
+        local specName = "Unknown"
+        if PeaversCommons and PeaversCommons.Utils and PeaversCommons.Utils.GetPlayerInfo then
+            local playerInfo = PeaversCommons.Utils.GetPlayerInfo()
+            specName = playerInfo.specName or "Unknown"
+        end
         local assignedTemplate = PDS.Config:GetSpecTemplate()
 
         if not assignedTemplate then
