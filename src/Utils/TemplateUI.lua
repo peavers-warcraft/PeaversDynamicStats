@@ -456,6 +456,134 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
     -- Initial population
     RefreshDropdown()
 
+    yPos = yPos - 40
+
+    -- Spec template assignment section
+    local specAssignHeader = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    specAssignHeader:SetPoint("TOPLEFT", controlIndent, yPos)
+    specAssignHeader:SetText(L("CONFIG_SPEC_TEMPLATE_ASSIGNMENT"))
+    yPos = yPos - 20
+
+    -- Description
+    local specAssignDesc = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    specAssignDesc:SetPoint("TOPLEFT", controlIndent, yPos)
+    specAssignDesc:SetWidth(400)
+    specAssignDesc:SetJustifyH("LEFT")
+    specAssignDesc:SetText(L("CONFIG_SPEC_TEMPLATE_DESC"))
+    yPos = yPos - 35
+
+    -- Current spec assignment label
+    local currentAssignmentLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    currentAssignmentLabel:SetPoint("TOPLEFT", controlIndent, yPos)
+    currentAssignmentLabel:SetWidth(400)
+
+    -- Function to update the assignment label
+    local function UpdateAssignmentLabel()
+        local specID = PDS.Config:GetSpecialization()
+        if not specID then
+            currentAssignmentLabel:SetText(L("CONFIG_NO_SPEC_AVAILABLE"))
+            return
+        end
+
+        local specName = select(2, GetSpecializationInfo(specID)) or "Unknown"
+        local assignedTemplate = PDS.Config:GetSpecTemplate()
+
+        if assignedTemplate then
+            currentAssignmentLabel:SetText(string.format(L("CONFIG_CURRENT_SPEC_ASSIGNMENT"), specName, assignedTemplate))
+        else
+            currentAssignmentLabel:SetText(string.format(L("CONFIG_CURRENT_SPEC_NO_ASSIGNMENT"), specName))
+        end
+    end
+
+    UpdateAssignmentLabel()
+    yPos = yPos - 25
+
+    -- Button container for assign/clear
+    local assignButtonContainer = CreateFrame("Frame", nil, content)
+    assignButtonContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    assignButtonContainer:SetSize(400, 25)
+
+    -- Assign to spec button
+    local assignToSpecBtn = CreateFrame("Button", nil, assignButtonContainer, "UIPanelButtonTemplate")
+    assignToSpecBtn:SetSize(180, 22)
+    assignToSpecBtn:SetPoint("LEFT", 0, 0)
+    assignToSpecBtn:SetText(L("CONFIG_ASSIGN_SELECTED_TO_SPEC"))
+
+    -- Update button state based on selection
+    local function UpdateAssignButton()
+        if selectedTemplate then
+            assignToSpecBtn:Enable()
+        else
+            assignToSpecBtn:Disable()
+        end
+    end
+
+    assignToSpecBtn:SetScript("OnClick", function()
+        if not selectedTemplate then return end
+
+        local specID = PDS.Config:GetSpecialization()
+        if not specID then return end
+
+        local specName = select(2, GetSpecializationInfo(specID)) or "Unknown"
+
+        StaticPopupDialogs["PDS_ASSIGN_TEMPLATE_TO_SPEC"] = {
+            text = string.format(L("TEMPLATE_ASSIGN_CONFIRM"), selectedTemplate, specName),
+            button1 = L("APPLY"),
+            button2 = L("CANCEL"),
+            OnAccept = function()
+                PDS.Config:SetSpecTemplate(selectedTemplate)
+                PDS.Utils.Print(string.format(L("TEMPLATE_ASSIGNED_TO_SPEC"), selectedTemplate, specName))
+                UpdateAssignmentLabel()
+            end,
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true,
+        }
+        StaticPopup_Show("PDS_ASSIGN_TEMPLATE_TO_SPEC")
+    end)
+
+    -- Clear assignment button
+    local clearAssignBtn = CreateFrame("Button", nil, assignButtonContainer, "UIPanelButtonTemplate")
+    clearAssignBtn:SetSize(120, 22)
+    clearAssignBtn:SetPoint("LEFT", assignToSpecBtn, "RIGHT", 10, 0)
+    clearAssignBtn:SetText(L("CONFIG_CLEAR_ASSIGNMENT"))
+
+    clearAssignBtn:SetScript("OnClick", function()
+        local specID = PDS.Config:GetSpecialization()
+        if not specID then return end
+
+        local specName = select(2, GetSpecializationInfo(specID)) or "Unknown"
+        local assignedTemplate = PDS.Config:GetSpecTemplate()
+
+        if not assignedTemplate then
+            PDS.Utils.Print(L("TEMPLATE_NO_SPEC_ASSIGNMENT"))
+            return
+        end
+
+        StaticPopupDialogs["PDS_CLEAR_SPEC_TEMPLATE"] = {
+            text = string.format(L("TEMPLATE_CLEAR_CONFIRM"), specName),
+            button1 = L("APPLY"),
+            button2 = L("CANCEL"),
+            OnAccept = function()
+                PDS.Config:SetSpecTemplate(nil)
+                PDS.Utils.Print(string.format(L("TEMPLATE_CLEARED_FROM_SPEC"), specName))
+                UpdateAssignmentLabel()
+            end,
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true,
+        }
+        StaticPopup_Show("PDS_CLEAR_SPEC_TEMPLATE")
+    end)
+
+    -- Hook into dropdown selection to update assign button
+    local originalRefreshDropdown = RefreshDropdown
+    RefreshDropdown = function()
+        originalRefreshDropdown()
+        UpdateAssignButton()
+    end
+
+    UpdateAssignButton()
     yPos = yPos - 30
 
     return yPos

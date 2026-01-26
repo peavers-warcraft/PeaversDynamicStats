@@ -138,6 +138,60 @@ function Config:UpdateCurrentIdentifiers()
     self.currentSpec = self:GetSpecialization()
 end
 
+-- Gets the template assigned to the current spec for auto-apply
+function Config:GetSpecTemplate()
+    local charKey = self:GetCharacterKey()
+    local specID = self:GetSpecialization()
+
+    if not specID or not PeaversDynamicStatsDB or not PeaversDynamicStatsDB.characters then
+        return nil
+    end
+
+    local charData = PeaversDynamicStatsDB.characters[charKey]
+    if not charData or not charData.specTemplates then
+        return nil
+    end
+
+    return charData.specTemplates[tostring(specID)]
+end
+
+-- Assigns a template to the current spec for auto-apply
+function Config:SetSpecTemplate(templateName)
+    local charKey = self:GetCharacterKey()
+    local specID = self:GetSpecialization()
+
+    if not specID then
+        return false
+    end
+
+    -- Initialize database structure if needed
+    if not PeaversDynamicStatsDB then
+        PeaversDynamicStatsDB = { profiles = {}, characters = {}, global = {} }
+    end
+    if not PeaversDynamicStatsDB.characters then
+        PeaversDynamicStatsDB.characters = {}
+    end
+    if not PeaversDynamicStatsDB.characters[charKey] then
+        PeaversDynamicStatsDB.characters[charKey] = {
+            lastSpec = specID,
+            specs = {},
+            specTemplates = {}
+        }
+    end
+    if not PeaversDynamicStatsDB.characters[charKey].specTemplates then
+        PeaversDynamicStatsDB.characters[charKey].specTemplates = {}
+    end
+
+    -- Set or clear the template mapping
+    if templateName and templateName ~= "" then
+        PeaversDynamicStatsDB.characters[charKey].specTemplates[tostring(specID)] = templateName
+    else
+        PeaversDynamicStatsDB.characters[charKey].specTemplates[tostring(specID)] = nil
+    end
+
+    return true
+end
+
 -- Saves all configuration values to the SavedVariables database
 function Config:Save()
     -- Initialize database structure if it doesn't exist
