@@ -23,6 +23,14 @@ if not ConfigUIUtils then
     return
 end
 
+-- Localization helper - uses PDS.L:Get() from Localization.lua
+local function L(key, ...)
+    if PDS.L and PDS.L.Get then
+        return PDS.L:Get(key, ...)
+    end
+    return key
+end
+
 -- Utility functions to reduce code duplication (now using PeaversCommons.ConfigUIUtils)
 local Utils = {}
 
@@ -66,7 +74,7 @@ function Utils:CreateStatColorPicker(parent, statType, y, indent)
     local colorContainer, colorPicker, resetButton, newY = ConfigUIUtils.CreateColorPicker(
         parent,
         "PeaversStat" .. statType .. "ColorPicker",
-        PDS.L["CONFIG_BAR_COLOR"],
+        L("CONFIG_BAR_COLOR"),
         indent,
         y,
         {r = r, g = g, b = b},
@@ -148,14 +156,14 @@ function ConfigUI:InitializeOptions()
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
 
-    -- 3.5. SPEC SETTINGS SECTION
-    yPos = self:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
+    -- 4. TEMPLATE MANAGEMENT SECTION
+    yPos = self:CreateTemplateManagementSection(content, yPos, baseSpacing, sectionSpacing)
 
     -- Add a separator between major sections
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
 
-    -- 4. TEXT SETTINGS SECTION
+    -- 5. TEXT SETTINGS SECTION
     yPos = self:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
 
     -- Add a separator between major sections
@@ -180,17 +188,17 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     local sliderWidth = 400
 
     -- Display Settings section header
-    local header, newY = Utils:CreateSectionHeader(content, PDS.L["CONFIG_DISPLAY_SETTINGS"], baseSpacing, yPos)
+    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_DISPLAY_SETTINGS"), baseSpacing, yPos)
     yPos = newY - 10
 
     -- Frame dimensions subsection
-    local dimensionsLabel, newY = Utils:CreateSubsectionLabel(content, PDS.L["CONFIG_FRAME_DIMENSIONS"], controlIndent, yPos)
+    local dimensionsLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_FRAME_DIMENSIONS"), controlIndent, yPos)
     yPos = newY - 8
 
     -- Frame width slider
     local widthContainer, widthSlider = Utils:CreateSlider(
         content, "PeaversWidthSlider",
-        PDS.L["CONFIG_FRAME_WIDTH"], 50, 400, 10,
+        L("CONFIG_FRAME_WIDTH"), 50, 400, 10,
         Config.frameWidth or 300, sliderWidth,
         function(value)
             Config.frameWidth = value
@@ -210,7 +218,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     -- Background opacity slider
     local opacityContainer, opacitySlider = Utils:CreateSlider(
         content, "PeaversOpacitySlider",
-        PDS.L["CONFIG_BG_OPACITY"], 0, 1, 0.05,
+        L("CONFIG_BG_OPACITY"), 0, 1, 0.05,
         Config.bgAlpha or 0.5, sliderWidth,
         function(value)
             Config.bgAlpha = value
@@ -243,13 +251,13 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     yPos = newY - 15
 
     -- Visibility options subsection
-    local visibilityLabel, newY = Utils:CreateSubsectionLabel(content, PDS.L["CONFIG_VISIBILITY_OPTIONS"], controlIndent, yPos)
+    local visibilityLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_VISIBILITY_OPTIONS"), controlIndent, yPos)
     yPos = newY - 8
 
     -- Show title bar checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversTitleBarCheckbox",
-        PDS.L["CONFIG_SHOW_TITLE_BAR"], controlIndent, yPos,
+        L("CONFIG_SHOW_TITLE_BAR"), controlIndent, yPos,
         Config.showTitleBar or true,
         function(checked)
             Config.showTitleBar = checked
@@ -264,7 +272,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     -- Lock position checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversLockPositionCheckbox",
-        PDS.L["CONFIG_LOCK_POSITION"], controlIndent, yPos,
+        L("CONFIG_LOCK_POSITION"), controlIndent, yPos,
         Config.lockPosition or false,
         function(checked)
             Config.lockPosition = checked
@@ -279,7 +287,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     -- Hide out of combat checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversHideOutOfCombatCheckbox",
-        PDS.L["CONFIG_HIDE_OUT_OF_COMBAT"], controlIndent, yPos,
+        L("CONFIG_HIDE_OUT_OF_COMBAT"), controlIndent, yPos,
         Config.hideOutOfCombat or false,
         function(checked)
             Config.hideOutOfCombat = checked
@@ -299,16 +307,16 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
 
     -- Display mode dropdown
     local displayModeOptions = {
-        ["ALWAYS"] = PDS.L["CONFIG_DISPLAY_MODE_ALWAYS"],
-        ["PARTY_ONLY"] = PDS.L["CONFIG_DISPLAY_MODE_PARTY"],
-        ["RAID_ONLY"] = PDS.L["CONFIG_DISPLAY_MODE_RAID"]
+        ["ALWAYS"] = L("CONFIG_DISPLAY_MODE_ALWAYS"),
+        ["PARTY_ONLY"] = L("CONFIG_DISPLAY_MODE_PARTY"),
+        ["RAID_ONLY"] = L("CONFIG_DISPLAY_MODE_RAID")
     }
 
-    local currentDisplayMode = displayModeOptions[Config.displayMode] or PDS.L["CONFIG_DISPLAY_MODE_ALWAYS"]
+    local currentDisplayMode = displayModeOptions[Config.displayMode] or L("CONFIG_DISPLAY_MODE_ALWAYS")
 
     local displayModeContainer, displayModeDropdown = Utils:CreateDropdown(
         content, "PeaversDisplayModeDropdown",
-        PDS.L["CONFIG_DISPLAY_MODE"], displayModeOptions,
+        L("CONFIG_DISPLAY_MODE"), displayModeOptions,
         currentDisplayMode, sliderWidth,
         function(value)
             Config.displayMode = value
@@ -333,7 +341,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     local subControlIndent = controlIndent + 15
 
     -- Main section header
-    local header, newY = Utils:CreateSectionHeader(content, PDS.L["CONFIG_STAT_OPTIONS"], baseSpacing, yPos)
+    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_STAT_OPTIONS"), baseSpacing, yPos)
     yPos = newY - 10
 
     -- Function to create a show/hide checkbox for a stat
@@ -355,7 +363,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
         local _, newY = Utils:CreateCheckbox(
             content,
             "PeaversStat" .. statType .. "Checkbox",
-            PDS.L:Get("CONFIG_SHOW_STAT", PDS.Stats:GetName(statType)),
+            L("CONFIG_SHOW_STAT", PDS.Stats:GetName(statType)),
             indent, y,                           -- Pass x and y positions explicitly
             Config.showStats[statType] ~= false, -- Default to true
             onClick
@@ -364,7 +372,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     end
 
     -- PRIMARY STATS SECTION
-    local primaryStatsHeader, newY = Utils:CreateSectionHeader(content, PDS.L["CONFIG_PRIMARY_STATS"], baseSpacing + 10, yPos, 16)
+    local primaryStatsHeader, newY = Utils:CreateSectionHeader(content, L("CONFIG_PRIMARY_STATS"), baseSpacing + 10, yPos, 16)
     yPos = newY - 5
 
     -- Add explanation about primary stats
@@ -372,7 +380,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     primaryStatsExplanation:SetPoint("TOPLEFT", baseSpacing + 15, yPos)
     primaryStatsExplanation:SetWidth(400)
     primaryStatsExplanation:SetJustifyH("LEFT")
-    primaryStatsExplanation:SetText(PDS.L["CONFIG_PRIMARY_STATS_DESC"])
+    primaryStatsExplanation:SetText(L("CONFIG_PRIMARY_STATS_DESC"))
 
     -- Calculate the height of the explanation text
     local explanationHeight = 40
@@ -407,7 +415,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     yPos = newY - 15
 
     -- SECONDARY STATS SECTION
-    local secondaryStatsHeader, newY = Utils:CreateSectionHeader(content, PDS.L["CONFIG_SECONDARY_STATS"], baseSpacing + 10, yPos, 16)
+    local secondaryStatsHeader, newY = Utils:CreateSectionHeader(content, L("CONFIG_SECONDARY_STATS"), baseSpacing + 10, yPos, 16)
     yPos = newY - 5
 
     -- Add explanation about secondary stats
@@ -415,7 +423,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     secondaryStatsExplanation:SetPoint("TOPLEFT", baseSpacing + 15, yPos)
     secondaryStatsExplanation:SetWidth(400)
     secondaryStatsExplanation:SetJustifyH("LEFT")
-    secondaryStatsExplanation:SetText(PDS.L["CONFIG_SECONDARY_STATS_DESC"])
+    secondaryStatsExplanation:SetText(L("CONFIG_SECONDARY_STATS_DESC"))
 
     -- Calculate the height of the explanation text
     local explanationHeight = 40
@@ -462,11 +470,11 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     local sliderWidth = 400
 
     -- Bar Appearance section header
-    local header, newY = Utils:CreateSectionHeader(content, PDS.L["CONFIG_BAR_APPEARANCE"], baseSpacing, yPos)
+    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_BAR_APPEARANCE"), baseSpacing, yPos)
     yPos = newY - 10
 
     -- Bar dimensions subsection
-    local dimensionsLabel, newY = Utils:CreateSubsectionLabel(content, PDS.L["CONFIG_BAR_DIMENSIONS"], controlIndent, yPos)
+    local dimensionsLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_BAR_DIMENSIONS"), controlIndent, yPos)
     yPos = newY - 8
 
     -- Initialize values with defaults if they don't exist
@@ -478,7 +486,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Bar height slider
     local heightContainer, heightSlider = Utils:CreateSlider(
         content, "PeaversHeightSlider",
-        PDS.L["CONFIG_BAR_HEIGHT"], 10, 40, 1,
+        L("CONFIG_BAR_HEIGHT"), 10, 40, 1,
         Config.barHeight, sliderWidth,
         function(value)
             Config.barHeight = value
@@ -495,7 +503,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Bar spacing slider
     local spacingContainer, spacingSlider = Utils:CreateSlider(
         content, "PeaversSpacingSlider",
-        PDS.L["CONFIG_BAR_SPACING"], -5, 10, 1,
+        L("CONFIG_BAR_SPACING"), -5, 10, 1,
         Config.barSpacing, sliderWidth,
         function(value)
             Config.barSpacing = value
@@ -512,7 +520,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Bar background opacity slider
     local bgOpacityContainer, bgOpacitySlider = Utils:CreateSlider(
         content, "PeaversBarBgAlphaSlider",
-        PDS.L["CONFIG_BAR_BG_OPACITY"], 0, 1, 0.05,
+        L("CONFIG_BAR_BG_OPACITY"), 0, 1, 0.05,
         Config.barBgAlpha, sliderWidth,
         function(value)
             Config.barBgAlpha = value
@@ -528,13 +536,16 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Bar fill opacity slider (allows text-only mode when set to 0)
     local barOpacityContainer, barOpacitySlider = Utils:CreateSlider(
         content, "PeaversBarAlphaSlider",
-        PDS.L["CONFIG_BAR_OPACITY"], 0, 1, 0.05,
+        L("CONFIG_BAR_OPACITY"), 0, 1, 0.05,
         Config.barAlpha or 1.0, sliderWidth,
         function(value)
             Config.barAlpha = value
             Config:Save()
-            if PDS.BarManager then
-                PDS.BarManager:UpdateAllBars()
+            -- Update all bar colors to apply the new opacity
+            if PDS.BarManager and PDS.BarManager.bars then
+                for _, bar in ipairs(PDS.BarManager.bars) do
+                    bar:UpdateColor()
+                end
             end
         end
     )
@@ -546,7 +557,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     yPos = newY - 15
 
     -- Bar style subsection
-    local styleLabel, newY = Utils:CreateSubsectionLabel(content, PDS.L["CONFIG_BAR_STYLE"], controlIndent, yPos)
+    local styleLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_BAR_STYLE"), controlIndent, yPos)
     yPos = newY - 8
 
     -- Texture dropdown container
@@ -555,7 +566,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
 
     local textureContainer, textureDropdown = Utils:CreateDropdown(
         content, "PeaversTextureDropdown",
-        PDS.L["CONFIG_BAR_TEXTURE"], textures,
+        L("CONFIG_BAR_TEXTURE"), textures,
         currentTexture, sliderWidth,
         function(value)
             Config.barTexture = value
@@ -573,7 +584,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     yPos = newY - 15
     
     -- Additional Bar Options
-    local additionalLabel, newY = Utils:CreateSubsectionLabel(content, PDS.L["CONFIG_ADDITIONAL_BAR_OPTIONS"], controlIndent, yPos)
+    local additionalLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_ADDITIONAL_BAR_OPTIONS"), controlIndent, yPos)
     yPos = newY - 8
 
     -- Initialize values with defaults if they don't exist
@@ -584,7 +595,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Show stat changes checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversShowStatChangesCheckbox",
-        PDS.L["CONFIG_SHOW_STAT_CHANGES"], controlIndent, yPos,
+        L("CONFIG_SHOW_STAT_CHANGES"), controlIndent, yPos,
         Config.showStatChanges,
         function(checked)
             Config.showStatChanges = checked
@@ -600,7 +611,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Show ratings checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversShowRatingsCheckbox",
-        PDS.L["CONFIG_SHOW_RATINGS"], controlIndent, yPos,
+        L("CONFIG_SHOW_RATINGS"), controlIndent, yPos,
         Config.showRatings,
         function(checked)
             Config.showRatings = checked
@@ -616,7 +627,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Show overflow bars checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversShowOverflowBarsCheckbox",
-        PDS.L["CONFIG_SHOW_OVERFLOW_BARS"], controlIndent, yPos,
+        L("CONFIG_SHOW_OVERFLOW_BARS"), controlIndent, yPos,
         Config.showOverflowBars,
         function(checked)
             Config.showOverflowBars = checked
@@ -632,7 +643,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     -- Enable talent adjustments checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversEnableTalentAdjustmentsCheckbox",
-        PDS.L["CONFIG_ENABLE_TALENT_ADJUSTMENTS"], controlIndent, yPos,
+        L("CONFIG_ENABLE_TALENT_ADJUSTMENTS"), controlIndent, yPos,
         Config.enableTalentAdjustments,
         function(checked)
             Config.enableTalentAdjustments = checked
@@ -647,110 +658,15 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     return yPos
 end
 
--- 4. TEXT SETTINGS - Font and text appearance settings
--- 3.5 SPECIALIZATION OPTIONS - Settings for per-spec configuration
-function ConfigUI:CreateSpecOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
-    local controlIndent = baseSpacing + 15
-    local subControlIndent = controlIndent + 15
-
-    -- Specialization Settings section header
-    local header, newY = Utils:CreateSectionHeader(content, PDS.L["CONFIG_SPEC_SETTINGS"], baseSpacing, yPos)
-    yPos = newY - 10
-
-    -- Add "NEW" badge
-    local newBadge = content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    newBadge:SetPoint("LEFT", header, "RIGHT", 10, 0)
-    newBadge:SetText(PDS.L["NEW_BADGE"])
-    newBadge:SetTextColor(0, 1, 0)
-
-    -- Create a colored glow around the NEW badge
-    local newBadgeGlow = content:CreateTexture(nil, "BACKGROUND")
-    newBadgeGlow:SetPoint("CENTER", newBadge, "CENTER", 0, 0)
-    newBadgeGlow:SetSize(50, 25)
-    newBadgeGlow:SetTexture("Interface\\SpellActivationOverlay\\IconAlert")
-    newBadgeGlow:SetBlendMode("ADD")
-    newBadgeGlow:SetAlpha(0.7)
-
-    -- Animate the glow
-    local animGroup = newBadgeGlow:CreateAnimationGroup()
-    animGroup:SetLooping("REPEAT")
-
-    local fadeOut = animGroup:CreateAnimation("Alpha")
-    fadeOut:SetFromAlpha(0.7)
-    fadeOut:SetToAlpha(0.3)
-    fadeOut:SetDuration(1)
-    fadeOut:SetOrder(1)
-
-    local fadeIn = animGroup:CreateAnimation("Alpha")
-    fadeIn:SetFromAlpha(0.3)
-    fadeIn:SetToAlpha(0.7)
-    fadeIn:SetDuration(1)
-    fadeIn:SetOrder(2)
-
-    animGroup:Play()
-
-    -- Add explanation about specialization settings
-    local specExplanation = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    specExplanation:SetPoint("TOPLEFT", baseSpacing + 15, yPos)
-    specExplanation:SetWidth(400)
-    specExplanation:SetJustifyH("LEFT")
-    specExplanation:SetText(PDS.L["CONFIG_SPEC_DESC"])
-
-    -- Calculate the height of the explanation text
-    local explanationHeight = 40
-    yPos = yPos - explanationHeight - 10
-
-    -- Use shared spec settings checkbox
-    local _, newY = Utils:CreateCheckbox(
-        content, "PeaversUseSharedSpecCheckbox",
-        PDS.L["CONFIG_USE_SHARED_SPEC"], controlIndent, yPos,
-        Config.useSharedSpec,
-        function(checked)
-            Config.useSharedSpec = checked
-            Config:Save()
-
-            -- If checked, copy current settings to the shared profile
-            if checked then
-                local charKey = Config:GetCharacterKey()
-                local currentProfileKey = charKey .. "-" .. tostring(Config.currentSpec)
-                local sharedProfileKey = charKey .. "-shared"
-
-                -- Make sure SavedVariables DB exists
-                if PeaversDynamicStatsDB and PeaversDynamicStatsDB.profiles then
-                    -- Copy current spec settings to shared profile if it exists
-                    if PeaversDynamicStatsDB.profiles[currentProfileKey] then
-                        PeaversDynamicStatsDB.profiles[sharedProfileKey] = Config:CopyTable(PeaversDynamicStatsDB.profiles[currentProfileKey])
-                    end
-                end
-            end
-
-            -- Show a message to the user
-            if checked then
-                PDS.Utils.Print(PDS.L["CONFIG_SPEC_SHARED_MSG"])
-            else
-                PDS.Utils.Print(PDS.L["CONFIG_SPEC_SEPARATE_MSG"])
-            end
-        end
-    )
-    yPos = newY - 8
-
-    -- Add extra info text
-    local extraInfo = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    extraInfo:SetPoint("TOPLEFT", subControlIndent, yPos)
-    extraInfo:SetWidth(380)
-    extraInfo:SetJustifyH("LEFT")
-    extraInfo:SetTextColor(0.8, 0.8, 1)
-    extraInfo:SetText(PDS.L["CONFIG_SPEC_INFO"])
-
-    -- Calculate height based on the text
-    local infoHeight = 50
-    yPos = yPos - infoHeight - 10
-
+-- 4. TEMPLATE MANAGEMENT - Delegates to TemplateUI module
+function ConfigUI:CreateTemplateManagementSection(content, yPos, baseSpacing, sectionSpacing)
+    if PDS.TemplateUI and PDS.TemplateUI.CreateTemplateManagementUI then
+        return PDS.TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, sectionSpacing)
+    end
     return yPos
 end
 
+-- 5. TEXT SETTINGS - Font and text appearance settings
 function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     baseSpacing = baseSpacing or 25
     sectionSpacing = sectionSpacing or 40
@@ -759,11 +675,11 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     local sliderWidth = 400
 
     -- Text Settings section header
-    local header, newY = Utils:CreateSectionHeader(content, PDS.L["CONFIG_TEXT_SETTINGS"], baseSpacing, yPos)
+    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_TEXT_SETTINGS"), baseSpacing, yPos)
     yPos = newY - 10
 
     -- Font selection subsection
-    local fontSelectLabel, newY = Utils:CreateSubsectionLabel(content, PDS.L["CONFIG_FONT_SELECTION"], controlIndent, yPos)
+    local fontSelectLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_FONT_SELECTION"), controlIndent, yPos)
     yPos = newY - 8
 
     -- Initialize values with defaults if they don't exist
@@ -780,7 +696,7 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
 
     local fontContainer, fontDropdown = Utils:CreateDropdown(
         content, "PeaversFontDropdown",
-        PDS.L["CONFIG_FONT"], fonts,
+        L("CONFIG_FONT"), fonts,
         currentFont, sliderWidth,
         function(value)
             Config.fontFace = value
@@ -797,7 +713,7 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     -- Font size slider
     local fontSizeContainer, fontSizeSlider = Utils:CreateSlider(
         content, "PeaversFontSizeSlider",
-        PDS.L["CONFIG_FONT_SIZE"], 6, 18, 1,
+        L("CONFIG_FONT_SIZE"), 6, 18, 1,
         Config.fontSize, sliderWidth,
         function(value)
             Config.fontSize = value
@@ -812,13 +728,13 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     yPos = yPos - 55
 
     -- Font style options
-    local fontStyleLabel, newY = Utils:CreateSubsectionLabel(content, PDS.L["CONFIG_FONT_STYLE"], controlIndent, yPos)
+    local fontStyleLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_FONT_STYLE"), controlIndent, yPos)
     yPos = newY - 8
 
     -- Font outline checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversFontOutlineCheckbox",
-        PDS.L["CONFIG_FONT_OUTLINE"], controlIndent, yPos,
+        L("CONFIG_FONT_OUTLINE"), controlIndent, yPos,
         Config.fontOutline == "OUTLINE",
         function(checked)
             Config.fontOutline = checked and "OUTLINE" or ""
@@ -834,7 +750,7 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     -- Font shadow checkbox
     local _, newY = Utils:CreateCheckbox(
         content, "PeaversFontShadowCheckbox",
-        PDS.L["CONFIG_FONT_SHADOW"], controlIndent, yPos,
+        L("CONFIG_FONT_SHADOW"), controlIndent, yPos,
         Config.fontShadow,
         function(checked)
             Config.fontShadow = checked
@@ -855,48 +771,33 @@ function ConfigUI:OpenOptions()
     -- Ensure settings are saved before opening
     PDS.Config:Save()
 
-    -- Debug: show what categories are available
-    print("PDS OpenOptions - directSettingsCategoryID:", PDS.directSettingsCategoryID)
-    print("PDS OpenOptions - directCategoryID:", PDS.directCategoryID)
-    print("PDS OpenOptions - directSettingsCategory:", PDS.directSettingsCategory)
-    print("PDS OpenOptions - directCategory:", PDS.directCategory)
-
     if Settings and Settings.OpenToCategory then
         -- Try using the category ID stored by PeaversCommons.SettingsUI
         -- Prefer opening to the settings subcategory if available
         if PDS.directSettingsCategoryID then
-            print("Trying directSettingsCategoryID...")
-            local success, err = pcall(Settings.OpenToCategory, PDS.directSettingsCategoryID)
-            print("Result:", success, err)
+            local success = pcall(Settings.OpenToCategory, PDS.directSettingsCategoryID)
             if success then return end
         end
 
         -- Fallback to main category ID
         if PDS.directCategoryID then
-            print("Trying directCategoryID...")
-            local success, err = pcall(Settings.OpenToCategory, PDS.directCategoryID)
-            print("Result:", success, err)
+            local success = pcall(Settings.OpenToCategory, PDS.directCategoryID)
             if success then return end
         end
 
         -- Try with category objects as fallback
         if PDS.directSettingsCategory then
-            print("Trying directSettingsCategory object...")
-            local success, err = pcall(Settings.OpenToCategory, PDS.directSettingsCategory)
-            print("Result:", success, err)
+            local success = pcall(Settings.OpenToCategory, PDS.directSettingsCategory)
             if success then return end
         end
 
         if PDS.directCategory then
-            print("Trying directCategory object...")
-            local success, err = pcall(Settings.OpenToCategory, PDS.directCategory)
-            print("Result:", success, err)
+            local success = pcall(Settings.OpenToCategory, PDS.directCategory)
             if success then return end
         end
     end
 
     -- Fallback: just open the Settings panel
-    print("Using fallback: ShowUIPanel")
     if SettingsPanel then
         ShowUIPanel(SettingsPanel)
         return

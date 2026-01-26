@@ -26,6 +26,7 @@ Locales["enUS"] = {
     ["STAT_VERSATILITY"] = "Versatility",
     ["STAT_VERSATILITY_DAMAGE"] = "Versatility (Damage)",
     ["STAT_VERSATILITY_DEFENSE"] = "Versatility (Defense)",
+    ["STAT_VERSATILITY_DAMAGE_REDUCTION"] = "Vers. Damage Reduction",
     ["STAT_SPEED"] = "Speed",
     ["STAT_LEECH"] = "Leech",
     ["STAT_AVOIDANCE"] = "Avoidance",
@@ -44,7 +45,6 @@ Locales["enUS"] = {
     ["CONFIG_DISPLAY_SETTINGS"] = "Display Settings",
     ["CONFIG_STAT_OPTIONS"] = "Stat Options",
     ["CONFIG_BAR_APPEARANCE"] = "Bar Appearance",
-    ["CONFIG_SPEC_SETTINGS"] = "Specialization Settings",
     ["CONFIG_TEXT_SETTINGS"] = "Text Settings",
     
     -- Config UI - Display Settings
@@ -81,14 +81,7 @@ Locales["enUS"] = {
     ["CONFIG_SHOW_RATINGS"] = "Show Rating Values",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "Show Overflow Bars",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "Enable Talent Adjustments (Rogue: Thief's Versatility)",
-    
-    -- Config UI - Spec Settings
-    ["CONFIG_SPEC_DESC"] = "Control whether your addon settings should be shared between all specializations or customized per spec.",
-    ["CONFIG_USE_SHARED_SPEC"] = "Use same settings for all specializations",
-    ["CONFIG_SPEC_INFO"] = "When enabled, your stat visibility, bar appearance, and other settings will be the same for all specs. When disabled, each spec can have unique settings.",
-    ["CONFIG_SPEC_SHARED_MSG"] = "Settings will now be shared across all specializations",
-    ["CONFIG_SPEC_SEPARATE_MSG"] = "Each specialization will now use its own settings",
-    
+
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "Font Selection:",
     ["CONFIG_FONT"] = "Font",
@@ -101,9 +94,41 @@ Locales["enUS"] = {
     ["MSG_ADDON_LOADED"] = "PeaversDynamicStats loaded. Type /pds for commands.",
     ["MSG_SHOWN"] = "PeaversDynamicStats shown.",
     ["MSG_HIDDEN"] = "PeaversDynamicStats hidden.",
-    
-    -- Misc
-    ["NEW_BADGE"] = "NEW!",
+
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "Template Management",
+    ["CONFIG_TEMPLATE_DESC"] = "Save your current settings as named templates (e.g., 'DPS Setup', 'Tank Setup') that can be applied to any character or spec. Templates are shared across all characters.",
+    ["CONFIG_CREATE_TEMPLATE"] = "Create New Template:",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "Save",
+    ["CONFIG_MANAGE_TEMPLATES"] = "Available Templates:",
+    ["CONFIG_NO_TEMPLATES"] = "No templates created yet. Create one from your current settings!",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "Enter a name for the new template:",
+    ["TEMPLATE_APPLY_CONFIRM"] = "Apply template '%s' to your current settings? This will overwrite your current configuration.",
+    ["TEMPLATE_DELETE_CONFIRM"] = "Delete template '%s'? This cannot be undone.",
+    ["TEMPLATE_RENAME_PROMPT"] = "Enter a new name for template '%s':",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "Template '%s' created successfully!",
+    ["TEMPLATE_APPLIED"] = "Template '%s' applied successfully!",
+    ["TEMPLATE_DELETED"] = "Template '%s' deleted.",
+    ["TEMPLATE_RENAMED"] = "Template renamed from '%s' to '%s'.",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "Template name cannot be empty.",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "A template with this name already exists.",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "Template not found.",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "No active profile to create template from.",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "Invalid profile data.",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "Template data is corrupted.",
+
+    -- Common Buttons
+    ["CREATE"] = "Create",
+    ["APPLY"] = "Apply",
+    ["DELETE"] = "Delete",
+    ["RENAME"] = "Rename",
+    ["CANCEL"] = "Cancel",
 }
 
 -- Simplified Chinese (简体中文)
@@ -119,6 +144,7 @@ Locales["zhCN"] = {
     ["STAT_VERSATILITY"] = "全能",
     ["STAT_VERSATILITY_DAMAGE"] = "全能（伤害）",
     ["STAT_VERSATILITY_DEFENSE"] = "全能（防御）",
+    ["STAT_VERSATILITY_DAMAGE_REDUCTION"] = "全能减伤",
     ["STAT_SPEED"] = "速度",
     ["STAT_LEECH"] = "吸血",
     ["STAT_AVOIDANCE"] = "闪避",
@@ -137,7 +163,6 @@ Locales["zhCN"] = {
     ["CONFIG_DISPLAY_SETTINGS"] = "显示设置",
     ["CONFIG_STAT_OPTIONS"] = "属性选项",
     ["CONFIG_BAR_APPEARANCE"] = "进度条外观",
-    ["CONFIG_SPEC_SETTINGS"] = "专精设置",
     ["CONFIG_TEXT_SETTINGS"] = "文字设置",
     
     -- Config UI - Display Settings
@@ -174,14 +199,7 @@ Locales["zhCN"] = {
     ["CONFIG_SHOW_RATINGS"] = "显示等级值",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "显示溢出条",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "启用天赋调整（盗贼：盗贼的全能）",
-    
-    -- Config UI - Spec Settings
-    ["CONFIG_SPEC_DESC"] = "控制插件设置是在所有专精之间共享还是为每个专精单独定制。",
-    ["CONFIG_USE_SHARED_SPEC"] = "所有专精使用相同设置",
-    ["CONFIG_SPEC_INFO"] = "启用时，你的属性可见性、进度条外观和其他设置将在所有专精中保持一致。禁用时，每个专精可以有独特的设置。",
-    ["CONFIG_SPEC_SHARED_MSG"] = "设置现在将在所有专精之间共享",
-    ["CONFIG_SPEC_SEPARATE_MSG"] = "每个专精现在将使用自己的设置",
-    
+
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "字体选择：",
     ["CONFIG_FONT"] = "字体",
@@ -194,9 +212,41 @@ Locales["zhCN"] = {
     ["MSG_ADDON_LOADED"] = "PeaversDynamicStats 已加载。输入 /pds 查看命令。",
     ["MSG_SHOWN"] = "PeaversDynamicStats 已显示。",
     ["MSG_HIDDEN"] = "PeaversDynamicStats 已隐藏。",
-    
-    -- Misc
-    ["NEW_BADGE"] = "新功能！",
+
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "模板管理",
+    ["CONFIG_TEMPLATE_DESC"] = "将当前设置保存为命名模板（例如「输出配置」、「坦克配置」），可应用于任何角色或专精。模板在所有角色间共享。",
+    ["CONFIG_CREATE_TEMPLATE"] = "创建新模板：",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "保存",
+    ["CONFIG_MANAGE_TEMPLATES"] = "可用模板：",
+    ["CONFIG_NO_TEMPLATES"] = "尚未创建模板。从当前设置创建一个吧！",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "请输入新模板的名称：",
+    ["TEMPLATE_APPLY_CONFIRM"] = "将模板'%s'应用到当前设置？这将覆盖你的当前配置。",
+    ["TEMPLATE_DELETE_CONFIRM"] = "删除模板'%s'？此操作无法撤销。",
+    ["TEMPLATE_RENAME_PROMPT"] = "请输入模板'%s'的新名称：",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "模板'%s'创建成功！",
+    ["TEMPLATE_APPLIED"] = "模板'%s'应用成功！",
+    ["TEMPLATE_DELETED"] = "模板'%s'已删除。",
+    ["TEMPLATE_RENAMED"] = "模板已从'%s'重命名为'%s'。",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "模板名称不能为空。",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "已存在同名模板。",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "未找到模板。",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "没有可用的配置文件来创建模板。",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "配置文件数据无效。",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "模板数据已损坏。",
+
+    -- Common Buttons
+    ["CREATE"] = "创建",
+    ["APPLY"] = "应用",
+    ["DELETE"] = "删除",
+    ["RENAME"] = "重命名",
+    ["CANCEL"] = "取消",
 }
 
 -- Traditional Chinese (繁體中文)
@@ -212,6 +262,7 @@ Locales["zhTW"] = {
     ["STAT_VERSATILITY"] = "臨機應變",
     ["STAT_VERSATILITY_DAMAGE"] = "臨機應變（傷害）",
     ["STAT_VERSATILITY_DEFENSE"] = "臨機應變（防禦）",
+    ["STAT_VERSATILITY_DAMAGE_REDUCTION"] = "臨機減傷",
     ["STAT_SPEED"] = "速度",
     ["STAT_LEECH"] = "汲取",
     ["STAT_AVOIDANCE"] = "迴避",
@@ -230,7 +281,6 @@ Locales["zhTW"] = {
     ["CONFIG_DISPLAY_SETTINGS"] = "顯示設定",
     ["CONFIG_STAT_OPTIONS"] = "屬性選項",
     ["CONFIG_BAR_APPEARANCE"] = "進度條外觀",
-    ["CONFIG_SPEC_SETTINGS"] = "專精設定",
     ["CONFIG_TEXT_SETTINGS"] = "文字設定",
     
     -- Config UI - Display Settings
@@ -267,14 +317,7 @@ Locales["zhTW"] = {
     ["CONFIG_SHOW_RATINGS"] = "顯示等級值",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "顯示溢出條",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "啟用天賦調整（盜賊：盜賊的臨機應變）",
-    
-    -- Config UI - Spec Settings
-    ["CONFIG_SPEC_DESC"] = "控制插件設定是在所有專精之間共享還是為每個專精單獨定製。",
-    ["CONFIG_USE_SHARED_SPEC"] = "所有專精使用相同設定",
-    ["CONFIG_SPEC_INFO"] = "啟用時，你的屬性可見性、進度條外觀和其他設定將在所有專精中保持一致。停用時，每個專精可以有獨特的設定。",
-    ["CONFIG_SPEC_SHARED_MSG"] = "設定現在將在所有專精之間共享",
-    ["CONFIG_SPEC_SEPARATE_MSG"] = "每個專精現在將使用自己的設定",
-    
+
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "字型選擇：",
     ["CONFIG_FONT"] = "字型",
@@ -287,9 +330,41 @@ Locales["zhTW"] = {
     ["MSG_ADDON_LOADED"] = "PeaversDynamicStats 已載入。輸入 /pds 查看指令。",
     ["MSG_SHOWN"] = "PeaversDynamicStats 已顯示。",
     ["MSG_HIDDEN"] = "PeaversDynamicStats 已隱藏。",
-    
-    -- Misc
-    ["NEW_BADGE"] = "新功能！",
+
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "範本管理",
+    ["CONFIG_TEMPLATE_DESC"] = "將當前設定儲存為命名範本（例如「輸出配置」、「坦克配置」），可套用於任何角色或專精。範本在所有角色間共享。",
+    ["CONFIG_CREATE_TEMPLATE"] = "建立新範本：",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "儲存",
+    ["CONFIG_MANAGE_TEMPLATES"] = "可用範本：",
+    ["CONFIG_NO_TEMPLATES"] = "尚未建立範本。從當前設定建立一個吧！",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "請輸入新範本的名稱：",
+    ["TEMPLATE_APPLY_CONFIRM"] = "將範本'%s'套用到當前設定？這將覆蓋你的當前配置。",
+    ["TEMPLATE_DELETE_CONFIRM"] = "刪除範本'%s'？此操作無法復原。",
+    ["TEMPLATE_RENAME_PROMPT"] = "請輸入範本'%s'的新名稱：",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "範本'%s'建立成功！",
+    ["TEMPLATE_APPLIED"] = "範本'%s'套用成功！",
+    ["TEMPLATE_DELETED"] = "範本'%s'已刪除。",
+    ["TEMPLATE_RENAMED"] = "範本已從'%s'重新命名為'%s'。",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "範本名稱不能為空。",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "已存在同名範本。",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "未找到範本。",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "沒有可用的設定檔來建立範本。",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "設定檔資料無效。",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "範本資料已損壞。",
+
+    -- Common Buttons
+    ["CREATE"] = "建立",
+    ["APPLY"] = "套用",
+    ["DELETE"] = "刪除",
+    ["RENAME"] = "重新命名",
+    ["CANCEL"] = "取消",
 }
 
 -- Korean (한국어)
@@ -305,6 +380,7 @@ Locales["koKR"] = {
     ["STAT_VERSATILITY"] = "유연성",
     ["STAT_VERSATILITY_DAMAGE"] = "유연성 (공격력)",
     ["STAT_VERSATILITY_DEFENSE"] = "유연성 (방어력)",
+    ["STAT_VERSATILITY_DAMAGE_REDUCTION"] = "유연성 피해감소",
     ["STAT_SPEED"] = "이동 속도",
     ["STAT_LEECH"] = "생명력 흡수",
     ["STAT_AVOIDANCE"] = "회피",
@@ -323,7 +399,6 @@ Locales["koKR"] = {
     ["CONFIG_DISPLAY_SETTINGS"] = "표시 설정",
     ["CONFIG_STAT_OPTIONS"] = "능력치 옵션",
     ["CONFIG_BAR_APPEARANCE"] = "바 외형",
-    ["CONFIG_SPEC_SETTINGS"] = "전문화 설정",
     ["CONFIG_TEXT_SETTINGS"] = "텍스트 설정",
     
     -- Config UI - Display Settings
@@ -360,14 +435,7 @@ Locales["koKR"] = {
     ["CONFIG_SHOW_RATINGS"] = "평점 값 표시",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "오버플로우 바 표시",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "특성 조정 활성화 (도적: 도적의 유연성)",
-    
-    -- Config UI - Spec Settings
-    ["CONFIG_SPEC_DESC"] = "애드온 설정을 모든 전문화 간에 공유할지 또는 각 전문화별로 사용자 지정할지 제어합니다.",
-    ["CONFIG_USE_SHARED_SPEC"] = "모든 전문화에 동일한 설정 사용",
-    ["CONFIG_SPEC_INFO"] = "활성화하면 능력치 표시, 바 외형 및 기타 설정이 모든 전문화에서 동일하게 유지됩니다. 비활성화하면 각 전문화마다 고유한 설정을 가질 수 있습니다.",
-    ["CONFIG_SPEC_SHARED_MSG"] = "이제 설정이 모든 전문화 간에 공유됩니다",
-    ["CONFIG_SPEC_SEPARATE_MSG"] = "이제 각 전문화가 자체 설정을 사용합니다",
-    
+
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "글꼴 선택:",
     ["CONFIG_FONT"] = "글꼴",
@@ -380,33 +448,57 @@ Locales["koKR"] = {
     ["MSG_ADDON_LOADED"] = "PeaversDynamicStats가 로드되었습니다. /pds를 입력하여 명령어를 확인하세요.",
     ["MSG_SHOWN"] = "PeaversDynamicStats가 표시되었습니다.",
     ["MSG_HIDDEN"] = "PeaversDynamicStats가 숨겨졌습니다.",
-    
-    -- Misc
-    ["NEW_BADGE"] = "새로운 기능!",
+
+    -- Config UI - Template Settings
+    ["CONFIG_TEMPLATE_SETTINGS"] = "템플릿 관리",
+    ["CONFIG_TEMPLATE_DESC"] = "현재 설정을 명명된 템플릿(예: 'DPS 설정', '탱커 설정')으로 저장하여 모든 캐릭터나 전문화에 적용할 수 있습니다. 템플릿은 모든 캐릭터 간에 공유됩니다.",
+    ["CONFIG_CREATE_TEMPLATE"] = "새 템플릿 만들기:",
+    ["CONFIG_CREATE_TEMPLATE_BTN"] = "저장",
+    ["CONFIG_MANAGE_TEMPLATES"] = "사용 가능한 템플릿:",
+    ["CONFIG_NO_TEMPLATES"] = "아직 생성된 템플릿이 없습니다. 현재 설정에서 하나 만들어 보세요!",
+
+    -- Template Operations
+    ["TEMPLATE_CREATE_PROMPT"] = "새 템플릿의 이름을 입력하세요:",
+    ["TEMPLATE_APPLY_CONFIRM"] = "템플릿 '%s'을(를) 현재 설정에 적용하시겠습니까? 현재 설정이 덮어쓰기됩니다.",
+    ["TEMPLATE_DELETE_CONFIRM"] = "템플릿 '%s'을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+    ["TEMPLATE_RENAME_PROMPT"] = "템플릿 '%s'의 새 이름을 입력하세요:",
+
+    -- Template Messages
+    ["TEMPLATE_CREATED"] = "템플릿 '%s'이(가) 성공적으로 생성되었습니다!",
+    ["TEMPLATE_APPLIED"] = "템플릿 '%s'이(가) 성공적으로 적용되었습니다!",
+    ["TEMPLATE_DELETED"] = "템플릿 '%s'이(가) 삭제되었습니다.",
+    ["TEMPLATE_RENAMED"] = "템플릿 이름이 '%s'에서 '%s'(으)로 변경되었습니다.",
+
+    -- Template Errors
+    ["TEMPLATE_ERROR_EMPTY_NAME"] = "템플릿 이름을 입력해 주세요.",
+    ["TEMPLATE_ERROR_DUPLICATE"] = "같은 이름의 템플릿이 이미 있습니다.",
+    ["TEMPLATE_ERROR_NOT_FOUND"] = "템플릿을 찾을 수 없습니다.",
+    ["TEMPLATE_ERROR_NO_PROFILE"] = "템플릿을 만들 활성 프로필이 없습니다.",
+    ["TEMPLATE_ERROR_INVALID_DATA"] = "프로필 데이터가 잘못되었습니다.",
+    ["TEMPLATE_ERROR_CORRUPTED"] = "템플릿 데이터가 손상되었습니다.",
+
+    -- Common Buttons
+    ["CREATE"] = "만들기",
+    ["APPLY"] = "적용",
+    ["DELETE"] = "삭제",
+    ["RENAME"] = "이름 변경",
+    ["CANCEL"] = "취소",
 }
 
 -- Set the active locale table
 local activeLocale = Locales[locale] or Locales[defaultLocale]
 
--- Metatable for automatic fallback to English
-setmetatable(L, {
-    __index = function(table, key)
-        -- Try to get from active locale
-        local value = activeLocale[key]
-        if value then
-            return value
-        end
-        
-        -- Fallback to English
-        value = Locales[defaultLocale][key]
-        if value then
-            return value
-        end
-        
-        -- If still not found, return the key itself
-        return key
+-- First, copy all English strings as base
+for key, value in pairs(Locales[defaultLocale]) do
+    L[key] = value
+end
+
+-- Then override with active locale strings (if different from English)
+if activeLocale ~= Locales[defaultLocale] then
+    for key, value in pairs(activeLocale) do
+        L[key] = value
     end
-})
+end
 
 -- Function to get localized text with formatting
 function PDS.L:Get(key, ...)
