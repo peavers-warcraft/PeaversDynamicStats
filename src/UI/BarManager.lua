@@ -15,12 +15,15 @@ function BarManager:CreateBars(parent)
     end
     self.bars = {}
 
+    -- Get growth direction from config
+    local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
+
     local yOffset = 0
     for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
         if PDS.Config.showStats[statType] then
             local statName = PDS.Stats:GetName(statType)
             local bar = PDS.StatBar:New(parent, statName, statType)
-            bar:SetPosition(0, yOffset)
+            bar:SetPosition(0, yOffset, anchorPoint)
 
             local value = PDS.Stats:GetValue(statType)
             bar:Update(value)
@@ -30,12 +33,13 @@ function BarManager:CreateBars(parent)
 
             table.insert(self.bars, bar)
 
-            -- When barSpacing is 0, position bars exactly barHeight pixels apart
-            if PDS.Config.barSpacing == 0 then
-                yOffset = yOffset - PDS.Config.barHeight
-            else
-                yOffset = yOffset - (PDS.Config.barHeight + PDS.Config.barSpacing)
+            -- Calculate offset based on growth direction
+            -- yMult is -1 for growing down, 1 for growing up
+            local barStep = PDS.Config.barHeight
+            if PDS.Config.barSpacing > 0 then
+                barStep = barStep + PDS.Config.barSpacing
             end
+            yOffset = yOffset + (barStep * yMult)
         end
     end
 

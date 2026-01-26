@@ -447,11 +447,27 @@ function StatBar:UpdateColor()
 end
 
 -- Sets the position of the bar relative to its parent
-function StatBar:SetPosition(x, y)
+-- anchorPoint: The anchor point to use (e.g., "TOPLEFT", "BOTTOMLEFT", "TOP", etc.)
+function StatBar:SetPosition(x, y, anchorPoint)
 	self.yOffset = y
+	self.anchorPoint = anchorPoint or "TOPLEFT"
 	self.frame:ClearAllPoints()
-	self.frame:SetPoint("TOPLEFT", self.frame:GetParent(), "TOPLEFT", x, y)
-	self.frame:SetPoint("TOPRIGHT", self.frame:GetParent(), "TOPRIGHT", 0, y)
+
+	-- Determine if this is a bottom anchor (bars grow upward)
+	local isBottomAnchor = self.anchorPoint == "BOTTOMLEFT" or
+	                       self.anchorPoint == "BOTTOM" or
+	                       self.anchorPoint == "BOTTOMRIGHT"
+
+	-- Bars always stretch full width of the content frame
+	-- The anchor just determines if we anchor from top or bottom
+	if isBottomAnchor then
+		self.frame:SetPoint("BOTTOMLEFT", self.frame:GetParent(), "BOTTOMLEFT", x, y)
+		self.frame:SetPoint("BOTTOMRIGHT", self.frame:GetParent(), "BOTTOMRIGHT", 0, y)
+	else
+		-- Top anchors (TOPLEFT, TOP, TOPRIGHT, LEFT, CENTER, RIGHT)
+		self.frame:SetPoint("TOPLEFT", self.frame:GetParent(), "TOPLEFT", x, y)
+		self.frame:SetPoint("TOPRIGHT", self.frame:GetParent(), "TOPRIGHT", 0, y)
+	end
 end
 
 -- Sets the highlight/select state of the bar
@@ -529,9 +545,9 @@ end
 
 -- Updates the width of the bar
 function StatBar:UpdateWidth()
-	self.frame:ClearAllPoints()
-	self.frame:SetPoint("TOPLEFT", self.frame:GetParent(), "TOPLEFT", 0, self.yOffset)
-	self.frame:SetPoint("TOPRIGHT", self.frame:GetParent(), "TOPRIGHT", 0, self.yOffset)
+	-- Re-use SetPosition to apply the correct anchoring based on growth direction
+	local _, _, anchorPoint = PDS.Config:GetGrowthDirection()
+	self:SetPosition(0, self.yOffset, self.anchorPoint or anchorPoint)
 end
 
 -- Updates the background opacity of the bar
