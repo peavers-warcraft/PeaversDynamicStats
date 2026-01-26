@@ -39,6 +39,7 @@ PDS.Config = {
     hideOutOfCombat = false, -- Hide the addon when out of combat
     enableTalentAdjustments = true, -- Enable talent-specific stat adjustments
     DEBUG_ENABLED = false,  -- Enable debug logging
+    lastAppliedTemplate = nil, -- Track which template is currently active
 
     -- Character identification
     currentCharacter = nil,
@@ -220,6 +221,7 @@ function Config:Save()
     profile.hideOutOfCombat = self.hideOutOfCombat
     profile.enableTalentAdjustments = self.enableTalentAdjustments
     profile.DEBUG_ENABLED = self.DEBUG_ENABLED
+    profile.lastAppliedTemplate = self.lastAppliedTemplate
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -386,6 +388,11 @@ function Config:Load()
     end
     if profile.DEBUG_ENABLED ~= nil then
         self.DEBUG_ENABLED = profile.DEBUG_ENABLED
+    end
+    if profile.lastAppliedTemplate then
+        self.lastAppliedTemplate = profile.lastAppliedTemplate
+    else
+        self.lastAppliedTemplate = nil
     end
 end
 
