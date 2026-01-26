@@ -320,7 +320,7 @@ PeaversCommons.Events:Init(addonName, function()
 
     -- Use the centralized SettingsUI system from PeaversCommons
     C_Timer.After(0.5, function()
-        PeaversCommons.SettingsUI:CreateSettingsPages(
+        local mainPanel, settingsPanel = PeaversCommons.SettingsUI:CreateSettingsPages(
             PDS,                      -- Addon reference
             "PeaversDynamicStats",    -- Addon name
             "Peavers Dynamic Stats",  -- Display title
@@ -330,6 +330,15 @@ PeaversCommons.Events:Init(addonName, function()
                 "/pds config - Open settings"
             }
         )
+
+        -- Hook OnShow to refresh UI when settings panel is displayed
+        if settingsPanel then
+            settingsPanel:HookScript("OnShow", function()
+                if PDS.ConfigUI and PDS.ConfigUI.RefreshUI then
+                    PDS.ConfigUI:RefreshUI()
+                end
+            end)
+        end
     end)
 end, {
 	suppressAnnouncement = true
