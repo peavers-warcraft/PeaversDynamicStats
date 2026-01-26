@@ -238,6 +238,22 @@ PeaversCommons.Events:Init(addonName, function()
             PDS.Config:Load()
         end
 
+        -- Check if there's a template assigned to this spec for auto-apply
+        local templateName = PDS.Config:GetSpecTemplate()
+        if templateName and PDS.TemplateUI then
+            -- Verify template still exists
+            local templates = PeaversDynamicStatsDB and PeaversDynamicStatsDB.templates or {}
+            if templates[templateName] then
+                PDS.TemplateUI:ApplyTemplate(templateName)
+                if PDS.Utils then
+                    PDS.Utils.Print(string.format("Auto-applied template '%s' for this spec", templateName))
+                end
+            else
+                -- Template was deleted, clear the mapping
+                PDS.Config:SetSpecTemplate(nil)
+            end
+        end
+
         -- Reapply frame position from loaded profile
         if PDS.Core and PDS.Core.ApplyFramePosition then
             PDS.Core:ApplyFramePosition()
