@@ -247,6 +247,11 @@ PeaversCommons.Events:Init(addonName, function()
         if PDS.BarManager and PDS.BarManager.UpdateAllBars then
             PDS.BarManager:UpdateAllBars()
         end
+
+        -- Refresh Config UI to reflect new profile values
+        if PDS.ConfigUI and PDS.ConfigUI.RefreshUI then
+            PDS.ConfigUI:RefreshUI()
+        end
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_REGEN_DISABLED", function()

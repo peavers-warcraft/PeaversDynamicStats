@@ -6,6 +6,9 @@ local UI = PDS.UI
 local ConfigUI = {}
 PDS.ConfigUI = ConfigUI
 
+-- Storage for UI elements that need refreshing when profile changes
+ConfigUI.uiElements = {}
+
 -- Access PeaversCommons utilities
 local PeaversCommons = _G.PeaversCommons
 -- Ensure PeaversCommons is loaded
@@ -213,6 +216,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
         end
     )
     widthContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.widthSlider = widthSlider
     yPos = yPos - 55
 
     -- Background opacity slider
@@ -244,6 +248,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
         end
     )
     opacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.opacitySlider = opacitySlider
     yPos = yPos - 65
 
     -- Add a thin separator with more spacing
@@ -255,7 +260,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     yPos = newY - 8
 
     -- Show title bar checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local titleBarCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversTitleBarCheckbox",
         L("CONFIG_SHOW_TITLE_BAR"), controlIndent, yPos,
         Config.showTitleBar or true,
@@ -267,10 +272,11 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
             end
         end
     )
+    self.uiElements.titleBarCheckbox = titleBarCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
     -- Lock position checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local lockPositionCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversLockPositionCheckbox",
         L("CONFIG_LOCK_POSITION"), controlIndent, yPos,
         Config.lockPosition or false,
@@ -282,10 +288,11 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
             end
         end
     )
+    self.uiElements.lockPositionCheckbox = lockPositionCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
     -- Hide out of combat checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local hideOutOfCombatCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversHideOutOfCombatCheckbox",
         L("CONFIG_HIDE_OUT_OF_COMBAT"), controlIndent, yPos,
         Config.hideOutOfCombat or false,
@@ -303,6 +310,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
             end
         end
     )
+    self.uiElements.hideOutOfCombatCheckbox = hideOutOfCombatCheckbox
     yPos = newY - 12 -- Update yPos for the next element
 
     -- Display mode dropdown
@@ -344,6 +352,11 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
     local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_STAT_OPTIONS"), baseSpacing, yPos)
     yPos = newY - 10
 
+    -- Initialize stat checkboxes storage
+    if not self.uiElements.statCheckboxes then
+        self.uiElements.statCheckboxes = {}
+    end
+
     -- Function to create a show/hide checkbox for a stat
     local function CreateStatCheckbox(statType, y, indent)
         -- Initialize showStats table if it doesn't exist
@@ -360,7 +373,7 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
             end
         end
 
-        local _, newY = Utils:CreateCheckbox(
+        local checkbox, newY = Utils:CreateCheckbox(
             content,
             "PeaversStat" .. statType .. "Checkbox",
             L("CONFIG_SHOW_STAT", PDS.Stats:GetName(statType)),
@@ -368,6 +381,8 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
             Config.showStats[statType] ~= false, -- Default to true
             onClick
         )
+        -- Store reference for refresh
+        self.uiElements.statCheckboxes[statType] = checkbox
         return newY
     end
 
@@ -498,6 +513,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
         end
     )
     heightContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.heightSlider = heightSlider
     yPos = yPos - 55
 
     -- Bar spacing slider
@@ -515,8 +531,9 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
         end
     )
     spacingContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.spacingSlider = spacingSlider
     yPos = yPos - 65
-    
+
     -- Bar background opacity slider
     local bgOpacityContainer, bgOpacitySlider = Utils:CreateSlider(
         content, "PeaversBarBgAlphaSlider",
@@ -531,6 +548,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
         end
     )
     bgOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.bgOpacitySlider = bgOpacitySlider
     yPos = yPos - 65
 
     -- Bar fill opacity slider (allows text-only mode when set to 0)
@@ -550,6 +568,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
         end
     )
     barOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.barOpacitySlider = barOpacitySlider
     yPos = yPos - 65
 
     -- Add a thin separator
@@ -577,6 +596,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
         end
     )
     textureContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.textureDropdown = textureDropdown
     yPos = yPos - 65
 
     -- Add a thin separator
@@ -593,7 +613,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     if Config.showOverflowBars == nil then Config.showOverflowBars = true end
 
     -- Show stat changes checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local showStatChangesCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversShowStatChangesCheckbox",
         L("CONFIG_SHOW_STAT_CHANGES"), controlIndent, yPos,
         Config.showStatChanges,
@@ -606,10 +626,11 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
             end
         end
     )
+    self.uiElements.showStatChangesCheckbox = showStatChangesCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
     -- Show ratings checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local showRatingsCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversShowRatingsCheckbox",
         L("CONFIG_SHOW_RATINGS"), controlIndent, yPos,
         Config.showRatings,
@@ -622,10 +643,11 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
             end
         end
     )
+    self.uiElements.showRatingsCheckbox = showRatingsCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
     -- Show overflow bars checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local showOverflowBarsCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversShowOverflowBarsCheckbox",
         L("CONFIG_SHOW_OVERFLOW_BARS"), controlIndent, yPos,
         Config.showOverflowBars,
@@ -638,10 +660,11 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
             end
         end
     )
+    self.uiElements.showOverflowBarsCheckbox = showOverflowBarsCheckbox
     yPos = newY - 8 -- Update yPos for the next element
-    
+
     -- Enable talent adjustments checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local enableTalentAdjustmentsCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversEnableTalentAdjustmentsCheckbox",
         L("CONFIG_ENABLE_TALENT_ADJUSTMENTS"), controlIndent, yPos,
         Config.enableTalentAdjustments,
@@ -653,6 +676,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
             end
         end
     )
+    self.uiElements.enableTalentAdjustmentsCheckbox = enableTalentAdjustmentsCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
     return yPos
@@ -708,6 +732,7 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
         end
     )
     fontContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.fontDropdown = fontDropdown
     yPos = yPos - 65
 
     -- Font size slider
@@ -725,6 +750,7 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
         end
     )
     fontSizeContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.fontSizeSlider = fontSizeSlider
     yPos = yPos - 55
 
     -- Font style options
@@ -732,7 +758,7 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     yPos = newY - 8
 
     -- Font outline checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local fontOutlineCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversFontOutlineCheckbox",
         L("CONFIG_FONT_OUTLINE"), controlIndent, yPos,
         Config.fontOutline == "OUTLINE",
@@ -745,10 +771,11 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
             end
         end
     )
+    self.uiElements.fontOutlineCheckbox = fontOutlineCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
     -- Font shadow checkbox
-    local _, newY = Utils:CreateCheckbox(
+    local fontShadowCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversFontShadowCheckbox",
         L("CONFIG_FONT_SHADOW"), controlIndent, yPos,
         Config.fontShadow,
@@ -761,9 +788,104 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
             end
         end
     )
+    self.uiElements.fontShadowCheckbox = fontShadowCheckbox
     yPos = newY - 15 -- Update yPos for the next element
 
     return yPos
+end
+
+-- Refresh all UI elements to match current Config values
+-- Call this after profile changes (e.g., spec switch) to update the UI
+function ConfigUI:RefreshUI()
+    if not self.uiElements then return end
+
+    local Config = PDS.Config
+
+    -- Refresh sliders
+    if self.uiElements.widthSlider then
+        self.uiElements.widthSlider:SetValue(Config.frameWidth or 250)
+    end
+
+    if self.uiElements.opacitySlider then
+        self.uiElements.opacitySlider:SetValue(Config.bgAlpha or 0.8)
+    end
+
+    if self.uiElements.heightSlider then
+        self.uiElements.heightSlider:SetValue(Config.barHeight or 20)
+    end
+
+    if self.uiElements.spacingSlider then
+        self.uiElements.spacingSlider:SetValue(Config.barSpacing or 2)
+    end
+
+    if self.uiElements.bgOpacitySlider then
+        self.uiElements.bgOpacitySlider:SetValue(Config.barBgAlpha or 0.7)
+    end
+
+    if self.uiElements.barOpacitySlider then
+        self.uiElements.barOpacitySlider:SetValue(Config.barAlpha or 1.0)
+    end
+
+    if self.uiElements.fontSizeSlider then
+        self.uiElements.fontSizeSlider:SetValue(Config.fontSize or 9)
+    end
+
+    -- Refresh checkboxes
+    if self.uiElements.titleBarCheckbox then
+        self.uiElements.titleBarCheckbox:SetChecked(Config.showTitleBar)
+    end
+
+    if self.uiElements.lockPositionCheckbox then
+        self.uiElements.lockPositionCheckbox:SetChecked(Config.lockPosition)
+    end
+
+    if self.uiElements.hideOutOfCombatCheckbox then
+        self.uiElements.hideOutOfCombatCheckbox:SetChecked(Config.hideOutOfCombat)
+    end
+
+    if self.uiElements.showStatChangesCheckbox then
+        self.uiElements.showStatChangesCheckbox:SetChecked(Config.showStatChanges)
+    end
+
+    if self.uiElements.showRatingsCheckbox then
+        self.uiElements.showRatingsCheckbox:SetChecked(Config.showRatings)
+    end
+
+    if self.uiElements.showOverflowBarsCheckbox then
+        self.uiElements.showOverflowBarsCheckbox:SetChecked(Config.showOverflowBars)
+    end
+
+    if self.uiElements.enableTalentAdjustmentsCheckbox then
+        self.uiElements.enableTalentAdjustmentsCheckbox:SetChecked(Config.enableTalentAdjustments)
+    end
+
+    if self.uiElements.fontOutlineCheckbox then
+        self.uiElements.fontOutlineCheckbox:SetChecked(Config.fontOutline == "OUTLINE")
+    end
+
+    if self.uiElements.fontShadowCheckbox then
+        self.uiElements.fontShadowCheckbox:SetChecked(Config.fontShadow)
+    end
+
+    -- Refresh dropdowns
+    if self.uiElements.textureDropdown and Config.barTexture then
+        local textures = Config:GetBarTextures()
+        local currentTexture = textures[Config.barTexture] or "Default"
+        UIDropDownMenu_SetText(self.uiElements.textureDropdown, currentTexture)
+    end
+
+    if self.uiElements.fontDropdown and Config.fontFace then
+        local fonts = Config:GetFonts()
+        local currentFont = fonts[Config.fontFace] or "Default"
+        UIDropDownMenu_SetText(self.uiElements.fontDropdown, currentFont)
+    end
+
+    -- Refresh stat checkboxes
+    if self.uiElements.statCheckboxes then
+        for statType, checkbox in pairs(self.uiElements.statCheckboxes) do
+            checkbox:SetChecked(Config.showStats[statType] ~= false)
+        end
+    end
 end
 
 -- Opens the configuration panel
