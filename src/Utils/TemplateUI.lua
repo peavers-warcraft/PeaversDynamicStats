@@ -170,6 +170,16 @@ function TemplateUI:ApplyTemplate(name)
         if PDS.Core.AdjustFrameHeight then
             PDS.Core:AdjustFrameHeight()
         end
+
+        -- Update layout for growth anchor if it changed
+        if PDS.Core.UpdateLayoutForGrowthAnchor then
+            PDS.Core:UpdateLayoutForGrowthAnchor()
+        end
+    end
+
+    -- Refresh the Config UI to reflect new settings
+    if PDS.ConfigUI and PDS.ConfigUI.RefreshUI then
+        PDS.ConfigUI:RefreshUI()
     end
 
     PDS.Utils.Print(string.format(L("TEMPLATE_APPLIED"), name))
