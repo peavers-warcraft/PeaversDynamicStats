@@ -15,9 +15,9 @@
 ## Dependencies: PeaversCommons
 ## SavedVariables: PeaversDynamicStatsDB
 
-src\Main.lua
-
 src\Localization.lua
+
+src\Main.lua
 
 src\UI\UI.lua
 

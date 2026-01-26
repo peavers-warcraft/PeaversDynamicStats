@@ -215,7 +215,7 @@ Locales["zhCN"] = {
 
     -- Config UI - Template Settings
     ["CONFIG_TEMPLATE_SETTINGS"] = "模板管理",
-    ["CONFIG_TEMPLATE_DESC"] = "将当前设置保存为命名模板（例如"输出配置"、"坦克配置"），可应用于任何角色或专精。模板在所有角色间共享。",
+    ["CONFIG_TEMPLATE_DESC"] = "将当前设置保存为命名模板（例如「输出配置」、「坦克配置」），可应用于任何角色或专精。模板在所有角色间共享。",
     ["CONFIG_CREATE_TEMPLATE"] = "创建新模板：",
     ["CONFIG_CREATE_TEMPLATE_BTN"] = "保存",
     ["CONFIG_MANAGE_TEMPLATES"] = "可用模板：",

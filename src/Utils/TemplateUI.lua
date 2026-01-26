@@ -8,9 +8,14 @@ local TemplateUI = PDS.TemplateUI
 local PeaversCommons = _G.PeaversCommons
 local ConfigUIUtils = PeaversCommons and PeaversCommons.ConfigUIUtils
 
--- Localization helper - uses PDS.L from Localization.lua
-local function L(key)
-    return PDS.L and PDS.L[key] or key
+-- Localization helper - uses PDS.L:Get() from Localization.lua
+-- This is the official API for accessing localized strings
+local function L(key, ...)
+    if PDS.L and PDS.L.Get then
+        return PDS.L:Get(key, ...)
+    end
+    -- Fallback if localization not loaded yet
+    return key
 end
 
 --------------------------------------------------------------------------------

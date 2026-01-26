@@ -23,13 +23,12 @@ if not ConfigUIUtils then
     return
 end
 
--- Localization helper - uses PDS.L from Localization.lua
+-- Localization helper - uses PDS.L:Get() from Localization.lua
 local function L(key, ...)
-    local text = PDS.L and PDS.L[key] or key
-    if ... then
-        return string.format(text, ...)
+    if PDS.L and PDS.L.Get then
+        return PDS.L:Get(key, ...)
     end
-    return text
+    return key
 end
 
 -- Utility functions to reduce code duplication (now using PeaversCommons.ConfigUIUtils)
