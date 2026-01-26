@@ -130,6 +130,9 @@ function TemplateUI:ApplyTemplate(name)
         end
     end
 
+    -- Track which template was applied
+    config.lastAppliedTemplate = name
+
     -- Save the updated config
     config:Save()
 
@@ -354,10 +357,16 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
         -- Initialize the dropdown
         UIDropDownMenu_Initialize(dropdownFrame, function(self, level)
             local templates = TemplateUI:GetTemplateNames()
+            local activeTemplate = PDS.Config.lastAppliedTemplate
 
             for _, name in ipairs(templates) do
                 local info = UIDropDownMenu_CreateInfo()
-                info.text = name
+                -- Show active template with visual indicator
+                if name == activeTemplate then
+                    info.text = "|cff00ff00" .. name .. " (Active)|r"
+                else
+                    info.text = name
+                end
                 info.value = name
                 info.func = function(self)
                     selectedTemplate = self.value
@@ -371,7 +380,10 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
             end
         end)
 
-        -- Set the selected value
+        -- Set the selected value - default to active template if none selected
+        if not selectedTemplate and PDS.Config.lastAppliedTemplate then
+            selectedTemplate = PDS.Config.lastAppliedTemplate
+        end
         if selectedTemplate then
             UIDropDownMenu_SetSelectedValue(dropdownFrame, selectedTemplate)
             UIDropDownMenu_SetText(dropdownFrame, selectedTemplate)
@@ -389,6 +401,8 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
                 button2 = L("CANCEL"),
                 OnAccept = function()
                     TemplateUI:ApplyTemplate(selectedTemplate)
+                    -- Refresh dropdown to show new active template indicator
+                    RefreshDropdown()
                 end,
                 timeout = 0,
                 whileDead = true,
