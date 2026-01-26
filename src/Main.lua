@@ -259,9 +259,15 @@ PeaversCommons.Events:Init(addonName, function()
             PDS.Core:ApplyFramePosition()
         end
 
-        -- Update all bars with the new spec's settings
-        if PDS.BarManager and PDS.BarManager.UpdateAllBars then
-            PDS.BarManager:UpdateAllBars()
+        -- Update layout for growth anchor (title bar and content frame positioning)
+        if PDS.Core and PDS.Core.UpdateLayoutForGrowthAnchor then
+            PDS.Core:UpdateLayoutForGrowthAnchor()
+        end
+
+        -- Recreate bars with new profile's settings (including growth anchor)
+        if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+            PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+            PDS.Core:AdjustFrameHeight()
         end
 
         -- Refresh Config UI to reflect new profile values

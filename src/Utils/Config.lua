@@ -8,6 +8,7 @@ PDS.Config = {
     framePoint = "RIGHT",
     frameX = -20,
     frameY = 0,
+    growthAnchor = "TOPLEFT", -- Controls anchor point and bar growth direction
     lockPosition = false,
 
     -- Bar settings
@@ -192,6 +193,30 @@ function Config:SetSpecTemplate(templateName)
     return true
 end
 
+-- Returns the growth direction multiplier and anchor point based on growthAnchor setting
+-- Returns: yMultiplier (-1 for down, 1 for up), xMultiplier (-1 for left, 1 for right), anchorPoint
+function Config:GetGrowthDirection()
+    local anchor = self.growthAnchor or "TOPLEFT"
+
+    -- Define growth directions for each anchor
+    -- yMult: -1 = grow down, 1 = grow up
+    -- xMult: -1 = grow left, 1 = grow right (for horizontal layouts, future use)
+    local directions = {
+        TOPLEFT     = { yMult = -1, xMult = 1,  anchor = "TOPLEFT" },
+        TOP         = { yMult = -1, xMult = 0,  anchor = "TOP" },
+        TOPRIGHT    = { yMult = -1, xMult = -1, anchor = "TOPRIGHT" },
+        LEFT        = { yMult = -1, xMult = 1,  anchor = "TOPLEFT" },     -- Grow down from top-left
+        CENTER      = { yMult = -1, xMult = 0,  anchor = "TOP" },         -- Grow down from top-center
+        RIGHT       = { yMult = -1, xMult = -1, anchor = "TOPRIGHT" },    -- Grow down from top-right
+        BOTTOMLEFT  = { yMult = 1,  xMult = 1,  anchor = "BOTTOMLEFT" },
+        BOTTOM      = { yMult = 1,  xMult = 0,  anchor = "BOTTOM" },
+        BOTTOMRIGHT = { yMult = 1,  xMult = -1, anchor = "BOTTOMRIGHT" },
+    }
+
+    local dir = directions[anchor] or directions.TOPLEFT
+    return dir.yMult, dir.xMult, dir.anchor
+end
+
 -- Saves all configuration values to the SavedVariables database
 function Config:Save()
     -- Initialize database structure if it doesn't exist
@@ -276,6 +301,7 @@ function Config:Save()
     profile.enableTalentAdjustments = self.enableTalentAdjustments
     profile.DEBUG_ENABLED = self.DEBUG_ENABLED
     profile.lastAppliedTemplate = self.lastAppliedTemplate
+    profile.growthAnchor = self.growthAnchor
 end
 
 -- Loads configuration values from the SavedVariables database
@@ -447,6 +473,9 @@ function Config:Load()
         self.lastAppliedTemplate = profile.lastAppliedTemplate
     else
         self.lastAppliedTemplate = nil
+    end
+    if profile.growthAnchor then
+        self.growthAnchor = profile.growthAnchor
     end
 end
 

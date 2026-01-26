@@ -338,6 +338,74 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     displayModeContainer:SetPoint("TOPLEFT", subControlIndent, yPos)
     yPos = yPos - 65 -- Update yPos for the next element
 
+    -- Add a thin separator
+    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
+    yPos = newY - 15
+
+    -- Growth anchor subsection
+    local growthAnchorLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_GROWTH_ANCHOR"), controlIndent, yPos)
+    yPos = newY - 8
+
+    -- Growth direction dropdown - controls whether bars grow down or up
+    -- Custom dropdown implementation to properly track current selection
+    local growthAnchorOptions = {
+        { key = "TOPLEFT", text = L("CONFIG_GROWTH_DOWN") },
+        { key = "BOTTOMLEFT", text = L("CONFIG_GROWTH_UP") },
+    }
+
+    -- Helper to get display text from key
+    local function getGrowthAnchorText(key)
+        -- Map any top-style anchor to "grow down", any bottom-style to "grow up"
+        local isBottom = key == "BOTTOMLEFT" or key == "BOTTOM" or key == "BOTTOMRIGHT"
+        return isBottom and L("CONFIG_GROWTH_UP") or L("CONFIG_GROWTH_DOWN")
+    end
+
+    local growthAnchorContainer = CreateFrame("Frame", nil, content)
+    growthAnchorContainer:SetSize(sliderWidth, 60)
+
+    local growthAnchorLabel = growthAnchorContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    growthAnchorLabel:SetPoint("TOPLEFT", 0, 0)
+    growthAnchorLabel:SetText(L("CONFIG_GROWTH_ANCHOR_LABEL"))
+
+    local growthAnchorDropdown = CreateFrame("Frame", "PeaversGrowthAnchorDropdown", growthAnchorContainer, "UIDropDownMenuTemplate")
+    growthAnchorDropdown:SetPoint("TOPLEFT", 0, -20)
+    UIDropDownMenu_SetWidth(growthAnchorDropdown, sliderWidth - 55)
+    UIDropDownMenu_SetText(growthAnchorDropdown, getGrowthAnchorText(Config.growthAnchor))
+
+    UIDropDownMenu_Initialize(growthAnchorDropdown, function(self, level)
+        local info = UIDropDownMenu_CreateInfo()
+        -- Check if current anchor is a bottom type (for backwards compatibility with old 9-anchor values)
+        local currentIsBottom = Config.growthAnchor == "BOTTOMLEFT" or
+                                Config.growthAnchor == "BOTTOM" or
+                                Config.growthAnchor == "BOTTOMRIGHT"
+        for _, opt in ipairs(growthAnchorOptions) do
+            info.text = opt.text
+            -- Match based on growth direction, not exact key
+            local optIsBottom = opt.key == "BOTTOMLEFT"
+            info.checked = (currentIsBottom == optIsBottom)
+            info.func = function()
+                Config.growthAnchor = opt.key
+                UIDropDownMenu_SetText(growthAnchorDropdown, opt.text)
+                Config:Save()
+                -- Update layout and recreate bars with new anchor point
+                if PDS.Core then
+                    if PDS.Core.UpdateLayoutForGrowthAnchor then
+                        PDS.Core:UpdateLayoutForGrowthAnchor()
+                    end
+                    if PDS.BarManager and PDS.Core.contentFrame then
+                        PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                        PDS.Core:AdjustFrameHeight()
+                    end
+                end
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+
+    growthAnchorContainer:SetPoint("TOPLEFT", subControlIndent, yPos)
+    self.uiElements.growthAnchorDropdown = growthAnchorDropdown
+    yPos = yPos - 65 -- Update yPos for the next element
+
     return yPos
 end
 
@@ -878,6 +946,15 @@ function ConfigUI:RefreshUI()
         local fonts = Config:GetFonts()
         local currentFont = fonts[Config.fontFace] or "Default"
         UIDropDownMenu_SetText(self.uiElements.fontDropdown, currentFont)
+    end
+
+    if self.uiElements.growthAnchorDropdown and Config.growthAnchor then
+        -- Map any bottom anchor to "grow up", all others to "grow down"
+        local isBottom = Config.growthAnchor == "BOTTOMLEFT" or
+                         Config.growthAnchor == "BOTTOM" or
+                         Config.growthAnchor == "BOTTOMRIGHT"
+        local displayText = isBottom and L("CONFIG_GROWTH_UP") or L("CONFIG_GROWTH_DOWN")
+        UIDropDownMenu_SetText(self.uiElements.growthAnchorDropdown, displayText)
     end
 
     -- Refresh stat checkboxes
