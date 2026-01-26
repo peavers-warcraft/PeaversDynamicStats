@@ -59,6 +59,12 @@ Locales["enUS"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "Always Show",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "Show in Party Only",
     ["CONFIG_DISPLAY_MODE_RAID"] = "Show in Raid Only",
+
+    -- Growth Direction Options
+    ["CONFIG_GROWTH_ANCHOR"] = "Bar Growth Direction:",
+    ["CONFIG_GROWTH_ANCHOR_LABEL"] = "Growth Direction",
+    ["CONFIG_GROWTH_DOWN"] = "Down (title bar at top)",
+    ["CONFIG_GROWTH_UP"] = "Up (title bar at bottom)",
     
     -- Config UI - Stat Options
     ["CONFIG_PRIMARY_STATS"] = "Primary Stats",
@@ -191,6 +197,12 @@ Locales["zhCN"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "始终显示",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "仅在小队中显示",
     ["CONFIG_DISPLAY_MODE_RAID"] = "仅在团队中显示",
+
+    -- Growth Direction Options
+    ["CONFIG_GROWTH_ANCHOR"] = "进度条增长方向：",
+    ["CONFIG_GROWTH_ANCHOR_LABEL"] = "增长方向",
+    ["CONFIG_GROWTH_DOWN"] = "向下（标题栏在顶部）",
+    ["CONFIG_GROWTH_UP"] = "向上（标题栏在底部）",
     
     -- Config UI - Stat Options
     ["CONFIG_PRIMARY_STATS"] = "主要属性",
@@ -309,6 +321,12 @@ Locales["zhTW"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "總是顯示",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "僅在隊伍中顯示",
     ["CONFIG_DISPLAY_MODE_RAID"] = "僅在團隊中顯示",
+
+    -- Growth Direction Options
+    ["CONFIG_GROWTH_ANCHOR"] = "進度條增長方向：",
+    ["CONFIG_GROWTH_ANCHOR_LABEL"] = "增長方向",
+    ["CONFIG_GROWTH_DOWN"] = "向下（標題列在頂部）",
+    ["CONFIG_GROWTH_UP"] = "向上（標題列在底部）",
     
     -- Config UI - Stat Options
     ["CONFIG_PRIMARY_STATS"] = "主要屬性",
@@ -427,6 +445,12 @@ Locales["koKR"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "항상 표시",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "파티에서만 표시",
     ["CONFIG_DISPLAY_MODE_RAID"] = "공격대에서만 표시",
+
+    -- Growth Direction Options
+    ["CONFIG_GROWTH_ANCHOR"] = "바 성장 방향:",
+    ["CONFIG_GROWTH_ANCHOR_LABEL"] = "성장 방향",
+    ["CONFIG_GROWTH_DOWN"] = "아래로 (제목 표시줄 위)",
+    ["CONFIG_GROWTH_UP"] = "위로 (제목 표시줄 아래)",
     
     -- Config UI - Stat Options
     ["CONFIG_PRIMARY_STATS"] = "주 능력치",

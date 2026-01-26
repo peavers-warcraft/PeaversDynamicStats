@@ -59,9 +59,12 @@ function Core:Initialize()
 	self.titleBar = titleBar
 
 	self.contentFrame = CreateFrame("Frame", nil, self.frame)
+	-- Initial anchors will be set by UpdateLayoutForGrowthAnchor
 	self.contentFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -20)
 	self.contentFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, 0)
 
+	-- Update layout based on growth anchor setting (repositions title bar and content)
+	self:UpdateLayoutForGrowthAnchor()
 	self:UpdateTitleBarVisibility()
 
 	PDS.BarManager:CreateBars(self.contentFrame)
@@ -141,14 +144,46 @@ function Core:UpdateTitleBarVisibility()
 	if self.titleBar then
 		if PDS.Config.showTitleBar then
 			self.titleBar:Show()
-			self.contentFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -20)
 		else
 			self.titleBar:Hide()
-			self.contentFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
 		end
 
+		-- Update layout based on growth anchor
+		self:UpdateLayoutForGrowthAnchor()
 		self:AdjustFrameHeight()
 		self:UpdateFrameLock()
+	end
+end
+
+-- Updates the layout of title bar and content frame based on growth anchor
+-- For bottom anchors, title bar goes at bottom and content grows upward
+function Core:UpdateLayoutForGrowthAnchor()
+	local growthAnchor = PDS.Config.growthAnchor or "TOPLEFT"
+	local isBottomAnchor = growthAnchor == "BOTTOMLEFT" or growthAnchor == "BOTTOM" or growthAnchor == "BOTTOMRIGHT"
+	local titleBarHeight = PDS.Config.showTitleBar and 20 or 0
+
+	-- Clear existing anchor points
+	self.contentFrame:ClearAllPoints()
+	if self.titleBar then
+		self.titleBar:ClearAllPoints()
+	end
+
+	if isBottomAnchor then
+		-- Title bar at bottom, content above it
+		if self.titleBar and PDS.Config.showTitleBar then
+			self.titleBar:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", 0, 0)
+			self.titleBar:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, 0)
+		end
+		self.contentFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
+		self.contentFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, titleBarHeight)
+	else
+		-- Title bar at top (default), content below it
+		if self.titleBar and PDS.Config.showTitleBar then
+			self.titleBar:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
+			self.titleBar:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", 0, 0)
+		end
+		self.contentFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -titleBarHeight)
+		self.contentFrame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", 0, 0)
 	end
 end
 
