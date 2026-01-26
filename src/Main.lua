@@ -238,6 +238,11 @@ PeaversCommons.Events:Init(addonName, function()
             PDS.Config:Load()
         end
 
+        -- Reapply frame position from loaded profile
+        if PDS.Core and PDS.Core.ApplyFramePosition then
+            PDS.Core:ApplyFramePosition()
+        end
+
         -- Update all bars with the new spec's settings
         if PDS.BarManager and PDS.BarManager.UpdateAllBars then
             PDS.BarManager:UpdateAllBars()

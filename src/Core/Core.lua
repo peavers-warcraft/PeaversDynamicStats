@@ -152,4 +152,17 @@ function Core:UpdateTitleBarVisibility()
 	end
 end
 
+-- Applies frame position from current Config values
+-- Call this after loading a profile to update the physical frame position
+function Core:ApplyFramePosition()
+	if self.frame and PDS.Config then
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint(
+			PDS.Config.framePoint or "CENTER",
+			PDS.Config.frameX or 0,
+			PDS.Config.frameY or 0
+		)
+	end
+end
+
 return Core
