@@ -278,17 +278,17 @@ PeaversCommons.Events:Init(addonName, function()
 
     PeaversCommons.Events:RegisterEvent("PLAYER_REGEN_DISABLED", function()
         PDS.Core.inCombat = true
-        -- Always show the frame when entering combat if hideOutOfCombat is enabled
-        if PDS.Config.hideOutOfCombat then
-            PDS.Core.frame:Show()
+        -- Update visibility based on display mode and combat status
+        if PDS.Core.UpdateFrameVisibility then
+            PDS.Core:UpdateFrameVisibility()
         end
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_REGEN_ENABLED", function()
         PDS.Core.inCombat = false
-        -- Hide the frame when leaving combat if hideOutOfCombat is enabled
-        if PDS.Config.hideOutOfCombat then
-            PDS.Core.frame:Hide()
+        -- Update visibility based on display mode and combat status
+        if PDS.Core.UpdateFrameVisibility then
+            PDS.Core:UpdateFrameVisibility()
         end
         -- Save settings when combat ends
         PDS.Config:Save()
@@ -306,7 +306,14 @@ PeaversCommons.Events:Init(addonName, function()
     PeaversCommons.Events:RegisterEvent("PLAYER_LOGOUT", function()
         PDS.Config:Save()
     end)
-    
+
+    -- Update visibility when group composition changes (for PARTY_ONLY / RAID_ONLY modes)
+    PeaversCommons.Events:RegisterEvent("GROUP_ROSTER_UPDATE", function()
+        if PDS.Core and PDS.Core.UpdateFrameVisibility then
+            PDS.Core:UpdateFrameVisibility()
+        end
+    end)
+
     -- Removed redundant PLAYER_ENTERING_WORLD handler as it's now handled by SaveGuard
     
     -- Removed redundant ADDON_LOADED handler as it's now handled by SaveGuard

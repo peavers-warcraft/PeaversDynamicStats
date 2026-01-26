@@ -38,6 +38,7 @@ PDS.Config = {
     showStatChanges = true, -- Show stat value changes
     showRatings = true,    -- Show rating values
     hideOutOfCombat = false, -- Hide the addon when out of combat
+    displayMode = "ALWAYS", -- Display mode: ALWAYS, PARTY_ONLY, RAID_ONLY
     enableTalentAdjustments = true, -- Enable talent-specific stat adjustments
     DEBUG_ENABLED = false,  -- Enable debug logging
     lastAppliedTemplate = nil, -- Track which template is currently active
@@ -298,6 +299,7 @@ function Config:Save()
     profile.showStatChanges = self.showStatChanges
     profile.showRatings = self.showRatings
     profile.hideOutOfCombat = self.hideOutOfCombat
+    profile.displayMode = self.displayMode
     profile.enableTalentAdjustments = self.enableTalentAdjustments
     profile.DEBUG_ENABLED = self.DEBUG_ENABLED
     profile.lastAppliedTemplate = self.lastAppliedTemplate
@@ -462,6 +464,9 @@ function Config:Load()
     end
     if profile.hideOutOfCombat ~= nil then
         self.hideOutOfCombat = profile.hideOutOfCombat
+    end
+    if profile.displayMode then
+        self.displayMode = profile.displayMode
     end
     if profile.enableTalentAdjustments ~= nil then
         self.enableTalentAdjustments = profile.enableTalentAdjustments

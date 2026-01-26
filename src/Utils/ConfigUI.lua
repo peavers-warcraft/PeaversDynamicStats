@@ -313,29 +313,52 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     self.uiElements.hideOutOfCombatCheckbox = hideOutOfCombatCheckbox
     yPos = newY - 12 -- Update yPos for the next element
 
-    -- Display mode dropdown
+    -- Display mode dropdown - custom implementation to properly track selection
     local displayModeOptions = {
-        ["ALWAYS"] = L("CONFIG_DISPLAY_MODE_ALWAYS"),
-        ["PARTY_ONLY"] = L("CONFIG_DISPLAY_MODE_PARTY"),
-        ["RAID_ONLY"] = L("CONFIG_DISPLAY_MODE_RAID")
+        { key = "ALWAYS", text = L("CONFIG_DISPLAY_MODE_ALWAYS") },
+        { key = "PARTY_ONLY", text = L("CONFIG_DISPLAY_MODE_PARTY") },
+        { key = "RAID_ONLY", text = L("CONFIG_DISPLAY_MODE_RAID") },
     }
 
-    local currentDisplayMode = displayModeOptions[Config.displayMode] or L("CONFIG_DISPLAY_MODE_ALWAYS")
-
-    local displayModeContainer, displayModeDropdown = Utils:CreateDropdown(
-        content, "PeaversDisplayModeDropdown",
-        L("CONFIG_DISPLAY_MODE"), displayModeOptions,
-        currentDisplayMode, sliderWidth,
-        function(value)
-            Config.displayMode = value
-            Config:Save()
-            -- Apply the change immediately
-            if PDS.Core and PDS.Core.frame then
-                PDS.Core:UpdateFrameVisibility()
-            end
+    local function getDisplayModeText(key)
+        for _, opt in ipairs(displayModeOptions) do
+            if opt.key == key then return opt.text end
         end
-    )
+        return L("CONFIG_DISPLAY_MODE_ALWAYS")
+    end
+
+    local displayModeContainer = CreateFrame("Frame", nil, content)
+    displayModeContainer:SetSize(sliderWidth, 60)
+
+    local displayModeLabel = displayModeContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    displayModeLabel:SetPoint("TOPLEFT", 0, 0)
+    displayModeLabel:SetText(L("CONFIG_DISPLAY_MODE"))
+
+    local displayModeDropdown = CreateFrame("Frame", "PeaversDisplayModeDropdown", displayModeContainer, "UIDropDownMenuTemplate")
+    displayModeDropdown:SetPoint("TOPLEFT", 0, -20)
+    UIDropDownMenu_SetWidth(displayModeDropdown, sliderWidth - 55)
+    UIDropDownMenu_SetText(displayModeDropdown, getDisplayModeText(Config.displayMode))
+
+    UIDropDownMenu_Initialize(displayModeDropdown, function(self, level)
+        local info = UIDropDownMenu_CreateInfo()
+        for _, opt in ipairs(displayModeOptions) do
+            info.text = opt.text
+            info.checked = (Config.displayMode == opt.key)
+            info.func = function()
+                Config.displayMode = opt.key
+                UIDropDownMenu_SetText(displayModeDropdown, opt.text)
+                Config:Save()
+                -- Apply the change immediately
+                if PDS.Core and PDS.Core.UpdateFrameVisibility then
+                    PDS.Core:UpdateFrameVisibility()
+                end
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+
     displayModeContainer:SetPoint("TOPLEFT", subControlIndent, yPos)
+    self.uiElements.displayModeDropdown = displayModeDropdown
     yPos = yPos - 65 -- Update yPos for the next element
 
     -- Add a thin separator
@@ -946,6 +969,16 @@ function ConfigUI:RefreshUI()
         local fonts = Config:GetFonts()
         local currentFont = fonts[Config.fontFace] or "Default"
         UIDropDownMenu_SetText(self.uiElements.fontDropdown, currentFont)
+    end
+
+    if self.uiElements.displayModeDropdown and Config.displayMode then
+        local displayModeTextMap = {
+            ["ALWAYS"] = L("CONFIG_DISPLAY_MODE_ALWAYS"),
+            ["PARTY_ONLY"] = L("CONFIG_DISPLAY_MODE_PARTY"),
+            ["RAID_ONLY"] = L("CONFIG_DISPLAY_MODE_RAID"),
+        }
+        local displayText = displayModeTextMap[Config.displayMode] or L("CONFIG_DISPLAY_MODE_ALWAYS")
+        UIDropDownMenu_SetText(self.uiElements.displayModeDropdown, displayText)
     end
 
     if self.uiElements.growthAnchorDropdown and Config.growthAnchor then
