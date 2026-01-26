@@ -511,6 +511,9 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
         end
     end
 
+    -- Store the function so it can be called from ConfigUI:RefreshUI()
+    TemplateUI.UpdateAssignmentLabel = UpdateAssignmentLabel
+
     UpdateAssignmentLabel()
     yPos = yPos - 25
 
