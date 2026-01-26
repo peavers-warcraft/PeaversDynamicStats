@@ -996,6 +996,11 @@ function ConfigUI:RefreshUI()
             checkbox:SetChecked(Config.showStats[statType] ~= false)
         end
     end
+
+    -- Refresh template spec assignment label
+    if PDS.TemplateUI and PDS.TemplateUI.UpdateAssignmentLabel then
+        PDS.TemplateUI.UpdateAssignmentLabel()
+    end
 end
 
 -- Opens the configuration panel
