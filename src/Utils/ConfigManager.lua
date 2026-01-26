@@ -41,9 +41,6 @@ local defaults = {
     showRatings = true,    -- Show rating values
     hideOutOfCombat = false, -- Hide the addon when out of combat,
     DEBUG_ENABLED = false,
-    
-    -- Per-spec settings
-    useSharedSpec = true, -- Use same settings for all specs (enabled by default)
 }
 
 -- Create a profile-based configuration manager for PDS
@@ -60,21 +57,14 @@ local ConfigManager = PeaversCommons.ConfigManager:NewProfileBased(
 -- Gets the character+spec-based profile key
 function ConfigManager:GetProfileKey()
     local charKey = PeaversCommons.Utils.GetCharacterKey()
-    
-    -- If using shared spec settings, use a shared profile
-    if self.useSharedSpec then
-        return charKey .. "-shared"
-    end
-    
-    -- Otherwise use per-spec settings
     local playerInfo = PeaversCommons.Utils.GetPlayerInfo()
     local specID = playerInfo.specID
-    
+
     if not specID then
-        -- Fall back to shared profile if spec not available
-        return charKey .. "-shared"
+        -- Fall back to character key if spec not available
+        return charKey
     end
-    
+
     return charKey .. "-" .. tostring(specID)
 end
 

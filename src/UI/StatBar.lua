@@ -4,6 +4,34 @@ local addonName, PDS = ...
 PDS.StatBar = {}
 local StatBar = PDS.StatBar
 
+-- Default font fallback
+local DEFAULT_FONT = "Fonts\\FRIZQT__.TTF"
+local DEFAULT_FONT_SIZE = 10
+local DEFAULT_FONT_OUTLINE = "OUTLINE"
+
+-- Helper to get safe font values with fallbacks
+local function GetFontSettings()
+    local fontFace = PDS.Config and PDS.Config.fontFace or DEFAULT_FONT
+    local fontSize = PDS.Config and PDS.Config.fontSize or DEFAULT_FONT_SIZE
+    local fontOutline = PDS.Config and PDS.Config.fontOutline and "OUTLINE" or ""
+    return fontFace, fontSize, fontOutline
+end
+
+-- Safely set font on a FontString with fallback to default font
+local function SafeSetFont(fontString, fontFace, fontSize, fontOutline)
+    if not fontString then return false end
+
+    -- Try the requested font first
+    local success = fontString:SetFont(fontFace, fontSize, fontOutline)
+
+    -- If that failed, fall back to the default font
+    if not success then
+        success = fontString:SetFont(DEFAULT_FONT, fontSize or DEFAULT_FONT_SIZE, fontOutline or DEFAULT_FONT_OUTLINE)
+    end
+
+    return success
+end
+
 -- Creates a new stat bar instance
 function StatBar:New(parent, name, statType)
 	local obj = {}
@@ -62,6 +90,12 @@ function StatBar:InitChangeTextFadeAnimation()
 	-- Hide the text when the animation completes to ensure it's not taking up space
 	-- and reset the alpha for the next time it needs to be displayed
 	self.changeTextAnimGroup:SetScript("OnFinished", function()
+		-- Ensure font is valid before calling SetText (can become invalid after profile change)
+		local fontFile = self.frame.changeText:GetFont()
+		if not fontFile then
+			local fontFace, fontSize, fontOutline = GetFontSettings()
+			SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
+		end
 		self.frame.changeText:SetText("")      -- Clear the text
 		self.frame.changeText:SetAlpha(1.0)    -- Reset alpha for next display
 	end)
@@ -137,7 +171,8 @@ function StatBar:CreateFrame(parent)
 
 	local valueText = textLayer:CreateFontString(nil, "OVERLAY")
 	valueText:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
-	valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+	local fontFace, fontSize, fontOutline = GetFontSettings()
+	SafeSetFont(valueText, fontFace, fontSize, fontOutline)
 	valueText:SetJustifyH("RIGHT")
 	valueText:SetText("0")
 	valueText:SetTextColor(1, 1, 1)
@@ -150,7 +185,8 @@ function StatBar:CreateFrame(parent)
 
 	local nameText = textLayer:CreateFontString(nil, "OVERLAY")
 	nameText:SetPoint("LEFT", bar, "LEFT", 4, 0)
-	nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+	fontFace, fontSize, fontOutline = GetFontSettings()
+	SafeSetFont(nameText, fontFace, fontSize, fontOutline)
 	nameText:SetJustifyH("LEFT")
 	nameText:SetText(self.name)
 	nameText:SetTextColor(1, 1, 1)
@@ -164,7 +200,8 @@ function StatBar:CreateFrame(parent)
 	-- Create change indicator text
 	local changeText = textLayer:CreateFontString(nil, "OVERLAY")
 	changeText:SetPoint("CENTER", bar, "CENTER", 0, 0)
-	changeText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+	fontFace, fontSize, fontOutline = GetFontSettings()
+	SafeSetFont(changeText, fontFace, fontSize, fontOutline)
 	changeText:SetJustifyH("CENTER")
 	changeText:SetText("")
 	changeText:SetTextColor(1, 1, 1)
@@ -226,6 +263,12 @@ function StatBar:Update(value, maxValue, change)
 
 		local currentText = self.frame.valueText:GetText()
 		if currentText ~= displayValue then
+			-- Ensure font is valid before calling SetText
+			local fontFile = self.frame.valueText:GetFont()
+			if not fontFile then
+				local fontFace, fontSize, fontOutline = GetFontSettings()
+				SafeSetFont(self.frame.valueText, fontFace, fontSize, fontOutline)
+			end
 			self.frame.valueText:SetText(displayValue)
 		end
 
@@ -240,6 +283,13 @@ function StatBar:Update(value, maxValue, change)
 			-- Reset alpha to full visibility for the new change display
 			self.frame.changeText:SetAlpha(1.0)
 
+			-- Ensure font is valid before calling SetText
+			local fontFile = self.frame.changeText:GetFont()
+			if not fontFile then
+				local fontFace, fontSize, fontOutline = GetFontSettings()
+				SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
+			end
+
 			-- Get the formatted change display value and color from Stats.lua
 			local changeDisplay, r, g, b = PDS.Stats:GetChangeDisplayValue(change)
 			self.frame.changeText:SetText(changeDisplay)
@@ -252,6 +302,12 @@ function StatBar:Update(value, maxValue, change)
 			end
 		else
 			-- If there's no change or changes are disabled, just clear the text
+			-- Ensure font is valid before calling SetText
+			local fontFile = self.frame.changeText:GetFont()
+			if not fontFile then
+				local fontFace, fontSize, fontOutline = GetFontSettings()
+				SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
+			end
 			self.frame.changeText:SetText("")
 		end
 
@@ -415,9 +471,10 @@ end
 
 -- Updates the font used for text elements
 function StatBar:UpdateFont()
-	self.frame.valueText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
-	self.frame.nameText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
-	self.frame.changeText:SetFont(PDS.Config.fontFace, PDS.Config.fontSize, PDS.Config.fontOutline)
+	local fontFace, fontSize, fontOutline = GetFontSettings()
+	SafeSetFont(self.frame.valueText, fontFace, fontSize, fontOutline)
+	SafeSetFont(self.frame.nameText, fontFace, fontSize, fontOutline)
+	SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
 
 	-- Apply shadow if enabled
 	if PDS.Config.fontShadow then

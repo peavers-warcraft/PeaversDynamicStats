@@ -45,9 +45,6 @@ PDS.Config = {
     currentRealm = nil,
     currentSpec = nil,
     specIDs = {},
-    
-    -- Per-spec settings
-    useSharedSpec = true, -- NEW: Use same settings for all specs (enabled by default)
 }
 
 -- Make sure the Stats module is loaded before accessing STAT_ORDER
@@ -124,19 +121,13 @@ end
 
 function Config:GetFullProfileKey()
     local charKey = self:GetCharacterKey()
-    
-    -- If using shared spec settings, just return the character key
-    if self.useSharedSpec then
-        return charKey .. "-shared"
-    end
-    
-    -- Otherwise use per-spec settings
     local specID = self:GetSpecialization()
+
     if not specID then
         -- Fall back to character-only key if spec not available
         return charKey
     end
-    
+
     return charKey .. "-" .. tostring(specID)
 end
 
@@ -198,10 +189,7 @@ function Config:Save()
     if not PeaversDynamicStatsDB.profiles[profileKey] then
         PeaversDynamicStatsDB.profiles[profileKey] = {}
     end
-    
-    -- Save global settings that are not specific to profiles
-    PeaversDynamicStatsDB.global.useSharedSpec = self.useSharedSpec
-    
+
     -- Save current settings to the profile
     local profile = PeaversDynamicStatsDB.profiles[profileKey]
     
@@ -263,14 +251,7 @@ function Config:Load()
     
     -- Update current identifiers
     self:UpdateCurrentIdentifiers()
-    
-    -- Load global settings
-    if PeaversDynamicStatsDB.global then
-        if PeaversDynamicStatsDB.global.useSharedSpec ~= nil then
-            self.useSharedSpec = PeaversDynamicStatsDB.global.useSharedSpec
-        end
-    end
-    
+
     -- Get character key (CharacterName-Realm)
     local charKey = self:GetCharacterKey()
     

@@ -179,6 +179,11 @@ PeaversCommons.Events:Init(addonName, function()
         end
     end
     
+    -- Initialize template management
+    if PDS.TemplateUI and PDS.TemplateUI.Initialize then
+        PDS.TemplateUI:Initialize()
+    end
+
     -- Initialize configuration UI
     if PDS.ConfigUI and PDS.ConfigUI.Initialize then
         PDS.ConfigUI:Initialize()
@@ -202,26 +207,41 @@ PeaversCommons.Events:Init(addonName, function()
 
     -- Register event handlers
     PeaversCommons.Events:RegisterEvent("UNIT_STATS", function()
-        PDS.BarManager:UpdateAllBars()
+        if PDS.BarManager and PDS.BarManager.UpdateAllBars then
+            PDS.BarManager:UpdateAllBars()
+        end
     end)
 
     PeaversCommons.Events:RegisterEvent("UNIT_AURA", function()
-        PDS.BarManager:UpdateAllBars()
+        if PDS.BarManager and PDS.BarManager.UpdateAllBars then
+            PDS.BarManager:UpdateAllBars()
+        end
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", function()
-        PDS.BarManager:UpdateAllBars()
+        if PDS.BarManager and PDS.BarManager.UpdateAllBars then
+            PDS.BarManager:UpdateAllBars()
+        end
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED", function()
         -- Save current settings for the previous spec
         PDS.Config:Save()
-        
-        -- For profile-based configs, we don't need to manually update identifiers or load
-        -- The ConfigManager handles that automatically on the next access
-        
+
+        -- Update identifiers for new spec (fixes stale currentSpec)
+        if PDS.Config.UpdateCurrentIdentifiers then
+            PDS.Config:UpdateCurrentIdentifiers()
+        end
+
+        -- Load the new spec's settings
+        if PDS.Config.Load then
+            PDS.Config:Load()
+        end
+
         -- Update all bars with the new spec's settings
-        PDS.BarManager:UpdateAllBars()
+        if PDS.BarManager and PDS.BarManager.UpdateAllBars then
+            PDS.BarManager:UpdateAllBars()
+        end
     end)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_REGEN_DISABLED", function()
