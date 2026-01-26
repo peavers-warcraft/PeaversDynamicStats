@@ -123,6 +123,20 @@ Locales["enUS"] = {
     ["TEMPLATE_ERROR_INVALID_DATA"] = "Invalid profile data.",
     ["TEMPLATE_ERROR_CORRUPTED"] = "Template data is corrupted.",
 
+    -- Spec Template Assignment
+    ["CONFIG_SPEC_TEMPLATE_ASSIGNMENT"] = "Auto-Apply Template for Spec:",
+    ["CONFIG_SPEC_TEMPLATE_DESC"] = "Assign a template to automatically apply when you switch to this specialization.",
+    ["CONFIG_NO_SPEC_AVAILABLE"] = "Specialization not available",
+    ["CONFIG_CURRENT_SPEC_ASSIGNMENT"] = "Current spec (%s): Template '%s' assigned",
+    ["CONFIG_CURRENT_SPEC_NO_ASSIGNMENT"] = "Current spec (%s): No template assigned",
+    ["CONFIG_ASSIGN_SELECTED_TO_SPEC"] = "Assign Selected to Spec",
+    ["CONFIG_CLEAR_ASSIGNMENT"] = "Clear Assignment",
+    ["TEMPLATE_ASSIGN_CONFIRM"] = "Assign template '%s' to %s?\n\nThis template will automatically apply when you switch to this specialization.",
+    ["TEMPLATE_ASSIGNED_TO_SPEC"] = "Template '%s' assigned to %s",
+    ["TEMPLATE_NO_SPEC_ASSIGNMENT"] = "No template assigned to current spec",
+    ["TEMPLATE_CLEAR_CONFIRM"] = "Clear template assignment for %s?",
+    ["TEMPLATE_CLEARED_FROM_SPEC"] = "Template assignment cleared for %s",
+
     -- Common Buttons
     ["CREATE"] = "Create",
     ["APPLY"] = "Apply",
