@@ -17,7 +17,8 @@ A World of Warcraft addon that visualizes your primary and secondary stats with 
 ## Installation
 
 1. Download from [CurseForge](https://www.curseforge.com/wow/addons/peaversdynamicstats)
-2. Enable the addon on the character selection screen
+2. Ensure PeaversCommons is also installed
+3. Enable the addon on the character selection screen
 
 ## Usage
 
@@ -34,3 +35,7 @@ Access settings through `/pds config` to customize:
 - Bar colors, size, and spacing
 - Frame lock/unlock
 - Combat-only visibility
+
+## Dependencies
+
+- PeaversCommons (required)

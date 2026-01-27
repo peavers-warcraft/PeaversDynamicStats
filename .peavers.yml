@@ -1,0 +1,16 @@
+# .peavers.yml - Addon metadata for peavers.io website
+
+# Icon to display on website
+iconType: CombatRuneIcon
+
+# CurseForge project ID for download statistics
+curseForgeProjectId: 1230220
+
+# Tags for filtering and categorization
+tags:
+  - combat
+  - bars
+
+# Gallery images
+galleryImages:
+  - /addons/PeaversDynamicStats/05.png
