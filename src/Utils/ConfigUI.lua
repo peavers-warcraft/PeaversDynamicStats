@@ -803,7 +803,7 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     end
     if not Config.fontSize then Config.fontSize = 11 end
     if not Config.fontOutline then Config.fontOutline = "" end
-    if not Config.fontShadow then Config.fontShadow = true end
+    if Config.fontShadow == nil then Config.fontShadow = false end
 
     -- Font dropdown container
     local fonts = Config:GetFonts()
