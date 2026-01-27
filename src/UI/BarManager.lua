@@ -35,10 +35,8 @@ function BarManager:CreateBars(parent)
 
             -- Calculate offset based on growth direction
             -- yMult is -1 for growing down, 1 for growing up
-            local barStep = PDS.Config.barHeight
-            if PDS.Config.barSpacing > 0 then
-                barStep = barStep + PDS.Config.barSpacing
-            end
+            -- barSpacing can be negative to make bars overlap (compensating for borders)
+            local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
             yOffset = yOffset + (barStep * yMult)
         end
     end
@@ -87,10 +85,8 @@ function BarManager:ResizeBars()
     end
 
     -- Return the total height of all bars for frame adjustment
-    local totalHeight = #self.bars * PDS.Config.barHeight
-    if PDS.Config.barSpacing > 0 then
-        totalHeight = totalHeight + (#self.bars - 1) * PDS.Config.barSpacing
-    end
+    -- barSpacing can be negative to make bars overlap (compensating for borders)
+    local totalHeight = #self.bars * PDS.Config.barHeight + (#self.bars - 1) * PDS.Config.barSpacing
 
     return totalHeight
 end
@@ -100,11 +96,12 @@ function BarManager:AdjustFrameHeight(frame, contentFrame, titleBarVisible)
     local barCount = #self.bars
     local contentHeight
 
-    -- When barSpacing is 0, calculate height without spacing
-    if PDS.Config.barSpacing == 0 then
-        contentHeight = barCount * PDS.Config.barHeight
+    -- Calculate content height based on bars and spacing
+    -- barSpacing can be negative to make bars overlap (compensating for borders)
+    if barCount > 0 then
+        contentHeight = barCount * PDS.Config.barHeight + (barCount - 1) * PDS.Config.barSpacing
     else
-        contentHeight = barCount * (PDS.Config.barHeight + PDS.Config.barSpacing) - PDS.Config.barSpacing
+        contentHeight = 0
     end
 
     if contentHeight == 0 then
