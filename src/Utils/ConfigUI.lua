@@ -173,6 +173,9 @@ function ConfigUI:InitializeOptions()
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
 
+    -- 6. TROUBLESHOOTING SECTION
+    yPos = self:CreateTroubleshootingOptions(content, yPos, baseSpacing, sectionSpacing)
+
     -- Update content height based on the last element position
     panel:UpdateContentHeight(yPos)
 
@@ -881,6 +884,66 @@ function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
     )
     self.uiElements.fontShadowCheckbox = fontShadowCheckbox
     yPos = newY - 15 -- Update yPos for the next element
+
+    return yPos
+end
+
+-- 6. TROUBLESHOOTING - Reset position and visibility for recovering lost frames
+function ConfigUI:CreateTroubleshootingOptions(content, yPos, baseSpacing, sectionSpacing)
+    baseSpacing = baseSpacing or 25
+    sectionSpacing = sectionSpacing or 40
+    local controlIndent = baseSpacing + 15
+
+    -- Troubleshooting section header
+    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_TROUBLESHOOTING"), baseSpacing, yPos)
+    yPos = newY - 10
+
+    -- Description text
+    local descText = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    descText:SetPoint("TOPLEFT", controlIndent, yPos)
+    descText:SetWidth(400)
+    descText:SetJustifyH("LEFT")
+    descText:SetText(L("CONFIG_RESET_POSITION_DESC"))
+    yPos = yPos - 50
+
+    -- Reset Position button
+    local resetPosButton = CreateFrame("Button", "PeaversResetPositionButton", content, "UIPanelButtonTemplate")
+    resetPosButton:SetSize(120, 22)
+    resetPosButton:SetText(L("CONFIG_RESET_POSITION"))
+    resetPosButton:SetPoint("TOPLEFT", controlIndent, yPos)
+    resetPosButton:SetScript("OnClick", function()
+        -- Reset position to center of screen
+        Config.framePoint = "CENTER"
+        Config.frameX = 0
+        Config.frameY = 0
+
+        -- Reset visibility settings to ensure frame is visible
+        Config.displayMode = "ALWAYS"
+        Config.hideOutOfCombat = false
+
+        Config:Save()
+
+        -- Apply the new position immediately
+        if PDS.Core then
+            PDS.Core:ApplyFramePosition()
+
+            -- Ensure frame is visible
+            if PDS.Core.frame then
+                PDS.Core.frame:Show()
+            end
+
+            -- Update visibility state
+            if PDS.Core.UpdateFrameVisibility then
+                PDS.Core:UpdateFrameVisibility()
+            end
+        end
+
+        -- Refresh UI elements to reflect the changes
+        if PDS.ConfigUI and PDS.ConfigUI.RefreshUI then
+            PDS.ConfigUI:RefreshUI()
+        end
+    end)
+    yPos = yPos - 35
 
     return yPos
 end
