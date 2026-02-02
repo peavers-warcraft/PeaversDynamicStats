@@ -1,54 +1,70 @@
 local addonName, PDS = ...
 
--- Initialize Config namespace with default values
-PDS.Config = {
-    -- Frame settings
-    frameWidth = 250,
-    frameHeight = 300,
-    framePoint = "RIGHT",
-    frameX = -20,
-    frameY = 0,
-    growthAnchor = "TOPLEFT", -- Controls anchor point and bar growth direction
-    lockPosition = false,
+-- Access PeaversCommons
+local PeaversCommons = _G.PeaversCommons
+local DefaultConfig = PeaversCommons and PeaversCommons.DefaultConfig
 
-    -- Bar settings
-    barWidth = 230,
-    barHeight = 20,
-    barSpacing = 2,
-    barBgAlpha = 0.7,
-    barAlpha = 1.0, -- Bar fill opacity (0 = text only, 1 = full bars)
+-- Get defaults from PeaversCommons preset or use fallback
+local defaults
+if DefaultConfig then
+    defaults = DefaultConfig.FromPreset("StatBars")
+else
+    -- Fallback defaults if PeaversCommons not loaded yet
+    defaults = {
+        frameWidth = 250,
+        frameHeight = 300,
+        framePoint = "RIGHT",
+        frameX = -20,
+        frameY = 0,
+        growthAnchor = "TOPLEFT",
+        lockPosition = false,
+        barWidth = 230,
+        barHeight = 20,
+        barSpacing = 2,
+        barBgAlpha = 0.7,
+        barAlpha = 1.0,
+        fontFace = nil,
+        fontSize = 9,
+        fontOutline = "OUTLINE",
+        fontShadow = false,
+        barTexture = "Interface\\TargetingFrame\\UI-StatusBar",
+        bgAlpha = 0.8,
+        bgColor = { r = 0, g = 0, b = 0 },
+        updateInterval = 0.5,
+        combatUpdateInterval = 0.2,
+        showOnLogin = true,
+        showTitleBar = true,
+        showStats = {},
+        customColors = {},
+        showOverflowBars = true,
+        showStatChanges = true,
+        showRatings = true,
+        hideOutOfCombat = false,
+        displayMode = "ALWAYS",
+        enableTalentAdjustments = true,
+        DEBUG_ENABLED = false,
+        lastAppliedTemplate = nil,
+    }
+end
 
-    -- Visual settings (font will be set based on locale in Initialize)
-    fontFace = nil,  -- Will be set based on client locale
-    fontSize = 9,
-    fontOutline = "OUTLINE",
-    fontShadow = false,
+-- Initialize Config namespace with default values from preset
+PDS.Config = {}
+for key, value in pairs(defaults) do
+    if type(value) == "table" then
+        PDS.Config[key] = {}
+        for k, v in pairs(value) do
+            PDS.Config[key][k] = v
+        end
+    else
+        PDS.Config[key] = value
+    end
+end
 
-    -- Other settings
-    barTexture = "Interface\\TargetingFrame\\UI-StatusBar",
-    bgAlpha = 0.8,
-    bgColor = { r = 0, g = 0, b = 0 },
-    updateInterval = 0.5,
-    combatUpdateInterval = 0.2,
-    showOnLogin = true,
-    showTitleBar = true,
-    showStats = {},
-    customColors = {},
-    showOverflowBars = true, -- Show overflow bars for stats exceeding 100%
-    showStatChanges = true, -- Show stat value changes
-    showRatings = true,    -- Show rating values
-    hideOutOfCombat = false, -- Hide the addon when out of combat
-    displayMode = "ALWAYS", -- Display mode: ALWAYS, PARTY_ONLY, RAID_ONLY
-    enableTalentAdjustments = true, -- Enable talent-specific stat adjustments
-    DEBUG_ENABLED = false,  -- Enable debug logging
-    lastAppliedTemplate = nil, -- Track which template is currently active
-
-    -- Character identification
-    currentCharacter = nil,
-    currentRealm = nil,
-    currentSpec = nil,
-    specIDs = {},
-}
+-- Character identification
+PDS.Config.currentCharacter = nil
+PDS.Config.currentRealm = nil
+PDS.Config.currentSpec = nil
+PDS.Config.specIDs = {}
 
 -- Make sure the Stats module is loaded before accessing STAT_ORDER
 -- This will be properly initialized in the InitializeStatSettings function
@@ -81,44 +97,44 @@ end
 
 -- Get the appropriate default font based on client locale
 function Config:GetDefaultFont()
+    local PeaversCommons = _G.PeaversCommons
+    if PeaversCommons and PeaversCommons.DefaultConfig then
+        return PeaversCommons.DefaultConfig.GetDefaultFont()
+    end
+
+    -- Fallback
     local locale = GetLocale()
-    
-    -- Fonts that support Chinese, Korean, and other Asian languages
     if locale == "zhCN" then
-        -- Simplified Chinese - use ARKai font
         return "Fonts\\ARKai_T.ttf"
     elseif locale == "zhTW" then
-        -- Traditional Chinese - use bLEI font
         return "Fonts\\bLEI00D.ttf"
     elseif locale == "koKR" then
-        -- Korean clients - use Korean font
         return "Fonts\\2002.TTF"
     else
-        -- Western clients - use default font
         return "Fonts\\FRIZQT__.TTF"
     end
 end
 
 -- Check if the current font is appropriate for the client locale
 function Config:IsFontCompatibleWithLocale(fontPath)
+    local PeaversCommons = _G.PeaversCommons
+    if PeaversCommons and PeaversCommons.DefaultConfig then
+        return PeaversCommons.DefaultConfig.IsFontCompatibleWithLocale(fontPath)
+    end
+
+    -- Fallback
     local locale = GetLocale()
-    
-    -- For Chinese/Korean locales, check if font supports the language
     if locale == "zhCN" or locale == "zhTW" or locale == "koKR" then
-        -- List of fonts that don't support Asian characters
         local incompatibleFonts = {
             ["Fonts\\FRIZQT__.TTF"] = true,
             ["Fonts\\ARIALN.TTF"] = true,
             ["Fonts\\MORPHEUS.TTF"] = true,
             ["Fonts\\SKURRI.TTF"] = true,
         }
-        
-        -- If using an incompatible font, it needs to be changed
         if incompatibleFonts[fontPath] then
             return false
         end
     end
-    
     return true
 end
 
@@ -589,6 +605,12 @@ end
 
 -- Returns a sorted table of available fonts, including those from LibSharedMedia
 function Config:GetFonts()
+    local PeaversCommons = _G.PeaversCommons
+    if PeaversCommons and PeaversCommons.DefaultConfig then
+        return PeaversCommons.DefaultConfig.GetFonts()
+    end
+
+    -- Fallback
     local fonts = {
         ["Fonts\\ARIALN.TTF"] = "Arial Narrow",
         ["Fonts\\FRIZQT__.TTF"] = "Default",
@@ -598,74 +620,24 @@ function Config:GetFonts()
         ["Fonts\\bLEI00D.ttf"] = "bLEI (Traditional Chinese)",
         ["Fonts\\2002.TTF"] = "2002 (Korean)"
     }
-
-    if LibStub and LibStub:GetLibrary("LibSharedMedia-3.0", true) then
-        local LSM = LibStub:GetLibrary("LibSharedMedia-3.0")
-        if LSM then
-            for name, path in pairs(LSM:HashTable("font")) do
-                fonts[path] = name
-            end
-        end
-    end
-
-    local sortedFonts = {}
-    for path, name in pairs(fonts) do
-        table.insert(sortedFonts, { path = path, name = name })
-    end
-
-    table.sort(sortedFonts, function(a, b)
-        return a.name < b.name
-    end)
-
-    local result = {}
-    for _, font in ipairs(sortedFonts) do
-        result[font.path] = font.name
-    end
-
-    return result
+    return fonts
 end
 
 -- Returns a sorted table of available statusbar textures from various sources
 function Config:GetBarTextures()
+    local PeaversCommons = _G.PeaversCommons
+    if PeaversCommons and PeaversCommons.DefaultConfig then
+        return PeaversCommons.DefaultConfig.GetBarTextures()
+    end
+
+    -- Fallback
     local textures = {
         ["Interface\\TargetingFrame\\UI-StatusBar"] = "Default",
         ["Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar"] = "Skill Bar",
         ["Interface\\PVPFrame\\UI-PVP-Progress-Bar"] = "PVP Bar",
         ["Interface\\RaidFrame\\Raid-Bar-Hp-Fill"] = "Raid"
     }
-
-    if LibStub and LibStub:GetLibrary("LibSharedMedia-3.0", true) then
-        local LSM = LibStub:GetLibrary("LibSharedMedia-3.0")
-        if LSM then
-            for name, path in pairs(LSM:HashTable("statusbar")) do
-                textures[path] = name
-            end
-        end
-    end
-
-    if _G.Details and _G.Details.statusbar_info then
-        for i, textureTable in ipairs(_G.Details.statusbar_info) do
-            if textureTable.file and textureTable.name then
-                textures[textureTable.file] = textureTable.name
-            end
-        end
-    end
-
-    local sortedTextures = {}
-    for path, name in pairs(textures) do
-        table.insert(sortedTextures, { path = path, name = name })
-    end
-
-    table.sort(sortedTextures, function(a, b)
-        return a.name < b.name
-    end)
-
-    local result = {}
-    for _, texture in ipairs(sortedTextures) do
-        result[texture.path] = texture.name
-    end
-
-    return result
+    return textures
 end
 
 function Config:Initialize()
