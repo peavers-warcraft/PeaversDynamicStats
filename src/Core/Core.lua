@@ -95,49 +95,13 @@ function Core:AdjustFrameHeight()
 end
 
 function Core:UpdateFrameLock()
-	if PDS.Config.lockPosition then
-		self.frame:SetMovable(false)
-		self.frame:EnableMouse(true)
-		self.frame:RegisterForDrag("")
-		self.frame:SetScript("OnDragStart", nil)
-		self.frame:SetScript("OnDragStop", nil)
-		
-		self.contentFrame:SetMovable(false)
-		self.contentFrame:EnableMouse(true)
-		self.contentFrame:RegisterForDrag("")
-		self.contentFrame:SetScript("OnDragStart", nil)
-		self.contentFrame:SetScript("OnDragStop", nil)
-	else
-		self.frame:SetMovable(true)
-		self.frame:EnableMouse(true)
-		self.frame:RegisterForDrag("LeftButton")
-		self.frame:SetScript("OnDragStart", self.frame.StartMoving)
-		self.frame:SetScript("OnDragStop", function(frame)
-			frame:StopMovingOrSizing()
-
-			local point, _, _, x, y = frame:GetPoint()
-			PDS.Config.framePoint = point
-			PDS.Config.frameX = x
-			PDS.Config.frameY = y
-			PDS.Config:Save()
-		end)
-		
-		self.contentFrame:SetMovable(true)
-		self.contentFrame:EnableMouse(true)
-		self.contentFrame:RegisterForDrag("LeftButton")
-		self.contentFrame:SetScript("OnDragStart", function()
-			self.frame:StartMoving()
-		end)
-		self.contentFrame:SetScript("OnDragStop", function()
-			self.frame:StopMovingOrSizing()
-			
-			local point, _, _, x, y = self.frame:GetPoint()
-			PDS.Config.framePoint = point
-			PDS.Config.frameX = x
-			PDS.Config.frameY = y
-			PDS.Config:Save()
-		end)
-	end
+	local PeaversCommons = _G.PeaversCommons
+	PeaversCommons.FrameLock:ApplyFromConfig(
+		self.frame,
+		self.contentFrame,
+		PDS.Config,
+		function() PDS.Config:Save() end
+	)
 end
 
 function Core:UpdateTitleBarVisibility()

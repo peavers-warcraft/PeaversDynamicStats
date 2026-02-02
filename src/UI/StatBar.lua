@@ -4,6 +4,9 @@ local addonName, PDS = ...
 PDS.StatBar = {}
 local StatBar = PDS.StatBar
 
+local PeaversCommons = _G.PeaversCommons
+local Utils = PeaversCommons.Utils
+
 -- Default font fallback
 local DEFAULT_FONT = "Fonts\\FRIZQT__.TTF"
 local DEFAULT_FONT_SIZE = 10
@@ -17,19 +20,9 @@ local function GetFontSettings()
     return fontFace, fontSize, fontOutline
 end
 
--- Safely set font on a FontString with fallback to default font
+-- Use PeaversCommons.Utils.SafeSetFont
 local function SafeSetFont(fontString, fontFace, fontSize, fontOutline)
-    if not fontString then return false end
-
-    -- Try the requested font first
-    local success = fontString:SetFont(fontFace, fontSize, fontOutline)
-
-    -- If that failed, fall back to the default font
-    if not success then
-        success = fontString:SetFont(DEFAULT_FONT, fontSize or DEFAULT_FONT_SIZE, fontOutline or DEFAULT_FONT_OUTLINE)
-    end
-
-    return success
+    return Utils.SafeSetFont(fontString, fontFace, fontSize, fontOutline)
 end
 
 -- Creates a new stat bar instance
