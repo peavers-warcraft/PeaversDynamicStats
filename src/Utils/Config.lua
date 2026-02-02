@@ -1,159 +1,72 @@
+--------------------------------------------------------------------------------
+-- PeaversDynamicStats Configuration
+-- Uses PeaversCommons.ConfigManager for character+spec based profile management
+--------------------------------------------------------------------------------
+
 local addonName, PDS = ...
 
--- Access PeaversCommons
 local PeaversCommons = _G.PeaversCommons
-local DefaultConfig = PeaversCommons and PeaversCommons.DefaultConfig
+local ConfigManager = PeaversCommons.ConfigManager
 
--- Get defaults from PeaversCommons preset or use fallback
-local defaults
-if DefaultConfig then
-    defaults = DefaultConfig.FromPreset("StatBars")
-else
-    -- Fallback defaults if PeaversCommons not loaded yet
-    defaults = {
-        frameWidth = 250,
-        frameHeight = 300,
-        framePoint = "RIGHT",
-        frameX = -20,
-        frameY = 0,
-        growthAnchor = "TOPLEFT",
-        lockPosition = false,
-        barWidth = 230,
-        barHeight = 20,
-        barSpacing = 2,
-        barBgAlpha = 0.7,
-        barAlpha = 1.0,
-        fontFace = nil,
-        fontSize = 9,
-        fontOutline = "OUTLINE",
-        fontShadow = false,
-        barTexture = "Interface\\TargetingFrame\\UI-StatusBar",
-        bgAlpha = 0.8,
-        bgColor = { r = 0, g = 0, b = 0 },
-        updateInterval = 0.5,
-        combatUpdateInterval = 0.2,
-        showOnLogin = true,
-        showTitleBar = true,
-        showStats = {},
-        customColors = {},
-        showOverflowBars = true,
-        showStatChanges = true,
-        showRatings = true,
-        hideOutOfCombat = false,
-        displayMode = "ALWAYS",
-        enableTalentAdjustments = true,
-        DEBUG_ENABLED = false,
-        lastAppliedTemplate = nil,
-    }
-end
+-- PDS-specific defaults (these extend the common defaults from ConfigManager)
+local PDS_DEFAULTS = {
+    -- Frame position
+    framePoint = "RIGHT",
+    frameX = -20,
+    frameY = 0,
+    frameWidth = 250,
+    frameHeight = 300,
 
--- Initialize Config namespace with default values from preset
-PDS.Config = {}
-for key, value in pairs(defaults) do
-    if type(value) == "table" then
-        PDS.Config[key] = {}
-        for k, v in pairs(value) do
-            PDS.Config[key][k] = v
-        end
-    else
-        PDS.Config[key] = value
-    end
-end
+    -- Bar settings
+    barWidth = 230,
+    barBgAlpha = 0.7,
 
--- Character identification
-PDS.Config.currentCharacter = nil
-PDS.Config.currentRealm = nil
-PDS.Config.currentSpec = nil
-PDS.Config.specIDs = {}
+    -- PDS-specific features
+    growthAnchor = "TOPLEFT",
+    combatUpdateInterval = 0.2,
+    showStats = {},
+    showOverflowBars = true,
+    showStatChanges = true,
+    showRatings = true,
+    showTooltips = true,
+    hideOutOfCombat = false,
+    displayMode = "ALWAYS",
+    enableTalentAdjustments = true,
+    lastAppliedTemplate = nil,
+}
 
--- Make sure the Stats module is loaded before accessing STAT_ORDER
--- This will be properly initialized in the InitializeStatSettings function
+-- Create the character+spec based config using ConfigManager
+PDS.Config = ConfigManager:NewCharacterSpecBased(
+    PDS,
+    PDS_DEFAULTS,
+    { savedVariablesName = "PeaversDynamicStatsDB" }
+)
 
 local Config = PDS.Config
 
--- Functions to get player identification information
-function Config:GetPlayerName()
-    return UnitName("player")
-end
+--------------------------------------------------------------------------------
+-- PDS-Specific Methods
+--------------------------------------------------------------------------------
 
-function Config:GetRealmName()
-    local realm = GetRealmName()
-    return realm
-end
+-- Returns the growth direction multiplier and anchor point based on growthAnchor setting
+-- Returns: yMultiplier (-1 for down, 1 for up), xMultiplier (-1 for left, 1 for right), anchorPoint
+function Config:GetGrowthDirection()
+    local anchor = self.growthAnchor or "TOPLEFT"
 
-function Config:GetSpecialization()
-    local currentSpec = GetSpecialization()
-    if not currentSpec then
-        return nil
-    end
-    
-    local specID = GetSpecializationInfo(currentSpec)
-    return specID
-end
+    local directions = {
+        TOPLEFT     = { yMult = -1, xMult = 1,  anchor = "TOPLEFT" },
+        TOP         = { yMult = -1, xMult = 0,  anchor = "TOP" },
+        TOPRIGHT    = { yMult = -1, xMult = -1, anchor = "TOPRIGHT" },
+        LEFT        = { yMult = -1, xMult = 1,  anchor = "TOPLEFT" },
+        CENTER      = { yMult = -1, xMult = 0,  anchor = "TOP" },
+        RIGHT       = { yMult = -1, xMult = -1, anchor = "TOPRIGHT" },
+        BOTTOMLEFT  = { yMult = 1,  xMult = 1,  anchor = "BOTTOMLEFT" },
+        BOTTOM      = { yMult = 1,  xMult = 0,  anchor = "BOTTOM" },
+        BOTTOMRIGHT = { yMult = 1,  xMult = -1, anchor = "BOTTOMRIGHT" },
+    }
 
-function Config:GetCharacterKey()
-    return self:GetPlayerName() .. "-" .. self:GetRealmName()
-end
-
--- Get the appropriate default font based on client locale
-function Config:GetDefaultFont()
-    local PeaversCommons = _G.PeaversCommons
-    if PeaversCommons and PeaversCommons.DefaultConfig then
-        return PeaversCommons.DefaultConfig.GetDefaultFont()
-    end
-
-    -- Fallback
-    local locale = GetLocale()
-    if locale == "zhCN" then
-        return "Fonts\\ARKai_T.ttf"
-    elseif locale == "zhTW" then
-        return "Fonts\\bLEI00D.ttf"
-    elseif locale == "koKR" then
-        return "Fonts\\2002.TTF"
-    else
-        return "Fonts\\FRIZQT__.TTF"
-    end
-end
-
--- Check if the current font is appropriate for the client locale
-function Config:IsFontCompatibleWithLocale(fontPath)
-    local PeaversCommons = _G.PeaversCommons
-    if PeaversCommons and PeaversCommons.DefaultConfig then
-        return PeaversCommons.DefaultConfig.IsFontCompatibleWithLocale(fontPath)
-    end
-
-    -- Fallback
-    local locale = GetLocale()
-    if locale == "zhCN" or locale == "zhTW" or locale == "koKR" then
-        local incompatibleFonts = {
-            ["Fonts\\FRIZQT__.TTF"] = true,
-            ["Fonts\\ARIALN.TTF"] = true,
-            ["Fonts\\MORPHEUS.TTF"] = true,
-            ["Fonts\\SKURRI.TTF"] = true,
-        }
-        if incompatibleFonts[fontPath] then
-            return false
-        end
-    end
-    return true
-end
-
-function Config:GetFullProfileKey()
-    local charKey = self:GetCharacterKey()
-    local specID = self:GetSpecialization()
-
-    if not specID then
-        -- Fall back to character-only key if spec not available
-        return charKey
-    end
-
-    return charKey .. "-" .. tostring(specID)
-end
-
-function Config:UpdateCurrentIdentifiers()
-    self.currentCharacter = self:GetPlayerName()
-    self.currentRealm = self:GetRealmName()
-    self.currentSpec = self:GetSpecialization()
+    local dir = directions[anchor] or directions.TOPLEFT
+    return dir.yMult, dir.xMult, dir.anchor
 end
 
 -- Gets the template assigned to the current spec for auto-apply
@@ -210,522 +123,28 @@ function Config:SetSpecTemplate(templateName)
     return true
 end
 
--- Returns the growth direction multiplier and anchor point based on growthAnchor setting
--- Returns: yMultiplier (-1 for down, 1 for up), xMultiplier (-1 for left, 1 for right), anchorPoint
-function Config:GetGrowthDirection()
-    local anchor = self.growthAnchor or "TOPLEFT"
-
-    -- Define growth directions for each anchor
-    -- yMult: -1 = grow down, 1 = grow up
-    -- xMult: -1 = grow left, 1 = grow right (for horizontal layouts, future use)
-    local directions = {
-        TOPLEFT     = { yMult = -1, xMult = 1,  anchor = "TOPLEFT" },
-        TOP         = { yMult = -1, xMult = 0,  anchor = "TOP" },
-        TOPRIGHT    = { yMult = -1, xMult = -1, anchor = "TOPRIGHT" },
-        LEFT        = { yMult = -1, xMult = 1,  anchor = "TOPLEFT" },     -- Grow down from top-left
-        CENTER      = { yMult = -1, xMult = 0,  anchor = "TOP" },         -- Grow down from top-center
-        RIGHT       = { yMult = -1, xMult = -1, anchor = "TOPRIGHT" },    -- Grow down from top-right
-        BOTTOMLEFT  = { yMult = 1,  xMult = 1,  anchor = "BOTTOMLEFT" },
-        BOTTOM      = { yMult = 1,  xMult = 0,  anchor = "BOTTOM" },
-        BOTTOMRIGHT = { yMult = 1,  xMult = -1, anchor = "BOTTOMRIGHT" },
-    }
-
-    local dir = directions[anchor] or directions.TOPLEFT
-    return dir.yMult, dir.xMult, dir.anchor
-end
-
--- Saves all configuration values to the SavedVariables database
-function Config:Save()
-    -- Initialize database structure if it doesn't exist
-    if not PeaversDynamicStatsDB then
-        PeaversDynamicStatsDB = {
-            profiles = {},       -- Per-character + spec profiles
-            characters = {},     -- Character-specific data
-            global = {}          -- Global settings
-        }
-    end
-    
-    -- Initialize structure components if they don't exist
-    PeaversDynamicStatsDB.profiles = PeaversDynamicStatsDB.profiles or {}
-    PeaversDynamicStatsDB.characters = PeaversDynamicStatsDB.characters or {}
-    PeaversDynamicStatsDB.global = PeaversDynamicStatsDB.global or {}
-    
-    -- Update current identifiers
-    self:UpdateCurrentIdentifiers()
-    
-    -- Get character key (CharacterName-Realm)
-    local charKey = self:GetCharacterKey()
-    
-    -- Get full profile key (CharacterName-Realm-SpecID)
-    local profileKey = self:GetFullProfileKey()
-    
-    -- Initialize character data if it doesn't exist
-    if not PeaversDynamicStatsDB.characters[charKey] then
-        PeaversDynamicStatsDB.characters[charKey] = {
-            lastSpec = self.currentSpec,
-            specs = {}
-        }
-    end
-    
-    -- Update character's last specialization
-    PeaversDynamicStatsDB.characters[charKey].lastSpec = self.currentSpec
-    
-    -- Add current spec to list of this character's specs
-    if self.currentSpec then
-        -- Make sure the specs table is initialized
-        PeaversDynamicStatsDB.characters[charKey].specs = PeaversDynamicStatsDB.characters[charKey].specs or {}
-        
-        -- Add the spec to the list if it's not already there
-        local specKey = tostring(self.currentSpec)
-        if not PeaversDynamicStatsDB.characters[charKey].specs[specKey] then
-            PeaversDynamicStatsDB.characters[charKey].specs[specKey] = true
-        end
-    end
-    
-    -- Initialize profile data if it doesn't exist
-    if not PeaversDynamicStatsDB.profiles[profileKey] then
-        PeaversDynamicStatsDB.profiles[profileKey] = {}
-    end
-
-    -- Save current settings to the profile
-    local profile = PeaversDynamicStatsDB.profiles[profileKey]
-    
-    -- Save all configuration settings to the profile
-    profile.fontFace = self.fontFace
-    profile.fontSize = self.fontSize
-    profile.fontOutline = self.fontOutline
-    profile.fontShadow = self.fontShadow
-    profile.framePoint = self.framePoint
-    profile.frameX = self.frameX
-    profile.frameY = self.frameY
-    profile.frameWidth = self.frameWidth
-    profile.barWidth = self.barWidth
-    profile.barHeight = self.barHeight
-    profile.barTexture = self.barTexture
-    profile.barBgAlpha = self.barBgAlpha
-    profile.barAlpha = self.barAlpha
-    profile.bgAlpha = self.bgAlpha
-    profile.bgColor = self.bgColor
-    profile.showStats = self.showStats
-    profile.barSpacing = self.barSpacing
-    profile.showTitleBar = self.showTitleBar
-    profile.lockPosition = self.lockPosition
-    profile.customColors = self.customColors
-    profile.showOverflowBars = self.showOverflowBars
-    profile.showStatChanges = self.showStatChanges
-    profile.showRatings = self.showRatings
-    profile.hideOutOfCombat = self.hideOutOfCombat
-    profile.displayMode = self.displayMode
-    profile.enableTalentAdjustments = self.enableTalentAdjustments
-    profile.DEBUG_ENABLED = self.DEBUG_ENABLED
-    profile.lastAppliedTemplate = self.lastAppliedTemplate
-    profile.growthAnchor = self.growthAnchor
-end
-
--- Loads configuration values from the SavedVariables database
-function Config:Load()
-    -- If no saved data exists, initialize it
-    if not PeaversDynamicStatsDB then
-        PeaversDynamicStatsDB = {
-            profiles = {},       -- Per-character + spec profiles
-            characters = {},     -- Character-specific data
-            global = {}          -- Global settings
-        }
-    end
-    
-    -- Ensure the database has the correct structure
-    if not PeaversDynamicStatsDB.profiles then
-        PeaversDynamicStatsDB.profiles = {}
-    end
-    
-    if not PeaversDynamicStatsDB.characters then
-        PeaversDynamicStatsDB.characters = {}
-    end
-    
-    if not PeaversDynamicStatsDB.global then
-        PeaversDynamicStatsDB.global = {}
-    end
-    
-    -- Convert old database format to new format if needed
-    self:MigrateOldData()
-    
-    -- Update current identifiers
-    self:UpdateCurrentIdentifiers()
-
-    -- Get character key (CharacterName-Realm)
-    local charKey = self:GetCharacterKey()
-    
-    -- Get full profile key (CharacterName-Realm-SpecID)
-    local profileKey = self:GetFullProfileKey()
-    
-    -- Initialize character data if it doesn't exist
-    if not PeaversDynamicStatsDB.characters[charKey] then
-        PeaversDynamicStatsDB.characters[charKey] = {
-            lastSpec = self.currentSpec,
-            specs = {}
-        }
-    end
-    
-    -- If we don't have a profile for this character+spec combo, create one
-    if not PeaversDynamicStatsDB.profiles[profileKey] then
-        -- See if this character exists but with a different spec
-        local lastSpec = PeaversDynamicStatsDB.characters[charKey].lastSpec
-        if lastSpec then
-            -- Try to find a profile with that spec
-            local lastProfileKey = charKey .. "-" .. lastSpec
-            if PeaversDynamicStatsDB.profiles[lastProfileKey] then
-                -- Copy that profile for our new spec
-                PeaversDynamicStatsDB.profiles[profileKey] = self:CopyTable(PeaversDynamicStatsDB.profiles[lastProfileKey])
-            end
-        end
-    end
-    
-    -- If we still don't have a profile, create an empty one
-    if not PeaversDynamicStatsDB.profiles[profileKey] then
-        PeaversDynamicStatsDB.profiles[profileKey] = {}
-    end
-    
-    -- Load settings from the profile
-    local profile = PeaversDynamicStatsDB.profiles[profileKey]
-    
-    -- Load settings from the profile, using defaults if not found
-    if profile.fontFace then
-        self.fontFace = profile.fontFace
-        
-        -- Check if the saved font is compatible with current locale
-        if not self:IsFontCompatibleWithLocale(self.fontFace) then
-            -- Font is incompatible (e.g., Western font on Chinese client)
-            -- Automatically switch to locale-appropriate font
-            local oldFont = self.fontFace
-            self.fontFace = self:GetDefaultFont()
-            
-            -- Log the change for debugging
-            if PDS.Utils and PDS.Utils.Print then
-                PDS.Utils.Print(string.format("Font auto-corrected from %s to %s for locale compatibility", 
-                    oldFont or "nil", self.fontFace))
-            end
-            
-            -- Save the corrected font immediately
-            profile.fontFace = self.fontFace
-        end
-    else
-        -- If no font is saved, use locale-appropriate default
-        self.fontFace = self:GetDefaultFont()
-    end
-    if profile.fontSize then
-        self.fontSize = profile.fontSize
-    end
-    if profile.fontOutline then
-        self.fontOutline = profile.fontOutline
-    end
-    if profile.fontShadow ~= nil then
-        self.fontShadow = profile.fontShadow
-    end
-    if profile.framePoint then
-        self.framePoint = profile.framePoint
-    end
-    if profile.frameX then
-        self.frameX = profile.frameX
-    end
-    if profile.frameY then
-        self.frameY = profile.frameY
-    end
-    if profile.frameWidth then
-        self.frameWidth = profile.frameWidth
-    end
-    if profile.barWidth then
-        self.barWidth = profile.barWidth
-    end
-    if profile.barHeight then
-        self.barHeight = profile.barHeight
-    end
-    if profile.barTexture then
-        self.barTexture = profile.barTexture
-    end
-    if profile.barBgAlpha then
-        self.barBgAlpha = profile.barBgAlpha
-    end
-    if profile.barAlpha then
-        self.barAlpha = profile.barAlpha
-    end
-    if profile.bgAlpha then
-        self.bgAlpha = profile.bgAlpha
-    end
-    if profile.bgColor then
-        self.bgColor = profile.bgColor
-    end
-    if profile.showStats then
-        self.showStats = profile.showStats
-    end
-    if profile.barSpacing then
-        self.barSpacing = profile.barSpacing
-    end
-    if profile.showTitleBar ~= nil then
-        self.showTitleBar = profile.showTitleBar
-    end
-    if profile.lockPosition ~= nil then
-        self.lockPosition = profile.lockPosition
-    end
-    if profile.customColors then
-        self.customColors = profile.customColors
-    end
-    if profile.showOverflowBars ~= nil then
-        self.showOverflowBars = profile.showOverflowBars
-    end
-    if profile.showStatChanges ~= nil then
-        self.showStatChanges = profile.showStatChanges
-    end
-    if profile.showRatings ~= nil then
-        self.showRatings = profile.showRatings
-    end
-    if profile.hideOutOfCombat ~= nil then
-        self.hideOutOfCombat = profile.hideOutOfCombat
-    end
-    if profile.displayMode then
-        self.displayMode = profile.displayMode
-    end
-    if profile.enableTalentAdjustments ~= nil then
-        self.enableTalentAdjustments = profile.enableTalentAdjustments
-    end
-    if profile.DEBUG_ENABLED ~= nil then
-        self.DEBUG_ENABLED = profile.DEBUG_ENABLED
-    end
-    if profile.lastAppliedTemplate then
-        self.lastAppliedTemplate = profile.lastAppliedTemplate
-    else
-        self.lastAppliedTemplate = nil
-    end
-    if profile.growthAnchor then
-        self.growthAnchor = profile.growthAnchor
-    end
-end
-
--- Helper function to make a deep copy of a table
-function Config:CopyTable(source)
-    if type(source) ~= "table" then
-        return source
-    end
-    
-    local copy = {}
-    for key, value in pairs(source) do
-        if type(value) == "table" then
-            copy[key] = self:CopyTable(value)
-        else
-            copy[key] = value
-        end
-    end
-    
-    return copy
-end
-
--- Migration helper for old database format
-function Config:MigrateOldData()
-    -- Only migrate if we have old format (direct keys in the root) and no profiles yet
-    if PeaversDynamicStatsDB.fontFace and (not PeaversDynamicStatsDB.profiles or not next(PeaversDynamicStatsDB.profiles)) then
-        -- Initialize the new structure
-        PeaversDynamicStatsDB.profiles = {}
-        PeaversDynamicStatsDB.characters = {}
-        PeaversDynamicStatsDB.global = {}
-        
-        -- Update identifiers
-        self:UpdateCurrentIdentifiers()
-        
-        -- Create character and profile entries
-        local charKey = self:GetCharacterKey()
-        local profileKey = self:GetFullProfileKey()
-        
-        -- Initialize character data
-        PeaversDynamicStatsDB.characters[charKey] = {
-            lastSpec = self.currentSpec,
-            specs = {}
-        }
-        
-        -- Add current spec to character specs
-        if self.currentSpec then
-            -- Make sure the specs table is initialized
-            PeaversDynamicStatsDB.characters[charKey].specs = PeaversDynamicStatsDB.characters[charKey].specs or {}
-            
-            -- Add the spec to the list
-            PeaversDynamicStatsDB.characters[charKey].specs[tostring(self.currentSpec)] = true
-        end
-        
-        -- Create profile with old settings
-        PeaversDynamicStatsDB.profiles[profileKey] = {
-            fontFace = PeaversDynamicStatsDB.fontFace,
-            fontSize = PeaversDynamicStatsDB.fontSize,
-            fontOutline = PeaversDynamicStatsDB.fontOutline,
-            fontShadow = PeaversDynamicStatsDB.fontShadow,
-            framePoint = PeaversDynamicStatsDB.framePoint,
-            frameX = PeaversDynamicStatsDB.frameX,
-            frameY = PeaversDynamicStatsDB.frameY,
-            frameWidth = PeaversDynamicStatsDB.frameWidth,
-            barWidth = PeaversDynamicStatsDB.barWidth,
-            barHeight = PeaversDynamicStatsDB.barHeight,
-            barTexture = PeaversDynamicStatsDB.barTexture,
-            barBgAlpha = PeaversDynamicStatsDB.barBgAlpha,
-            bgAlpha = PeaversDynamicStatsDB.bgAlpha,
-            bgColor = PeaversDynamicStatsDB.bgColor,
-            showStats = PeaversDynamicStatsDB.showStats,
-            barSpacing = PeaversDynamicStatsDB.barSpacing,
-            showTitleBar = PeaversDynamicStatsDB.showTitleBar,
-            lockPosition = PeaversDynamicStatsDB.lockPosition,
-            customColors = PeaversDynamicStatsDB.customColors,
-            showOverflowBars = PeaversDynamicStatsDB.showOverflowBars,
-            showStatChanges = PeaversDynamicStatsDB.showStatChanges,
-            showRatings = PeaversDynamicStatsDB.showRatings,
-            hideOutOfCombat = PeaversDynamicStatsDB.hideOutOfCombat
-        }
-        
-        -- Clean up old format data
-        PeaversDynamicStatsDB.fontFace = nil
-        PeaversDynamicStatsDB.fontSize = nil
-        PeaversDynamicStatsDB.fontOutline = nil
-        PeaversDynamicStatsDB.fontShadow = nil
-        PeaversDynamicStatsDB.framePoint = nil
-        PeaversDynamicStatsDB.frameX = nil
-        PeaversDynamicStatsDB.frameY = nil
-        PeaversDynamicStatsDB.frameWidth = nil
-        PeaversDynamicStatsDB.barWidth = nil
-        PeaversDynamicStatsDB.barHeight = nil
-        PeaversDynamicStatsDB.barTexture = nil
-        PeaversDynamicStatsDB.barBgAlpha = nil
-        PeaversDynamicStatsDB.bgAlpha = nil
-        PeaversDynamicStatsDB.bgColor = nil
-        PeaversDynamicStatsDB.showStats = nil
-        PeaversDynamicStatsDB.barSpacing = nil
-        PeaversDynamicStatsDB.showTitleBar = nil
-        PeaversDynamicStatsDB.lockPosition = nil
-        PeaversDynamicStatsDB.customColors = nil
-        PeaversDynamicStatsDB.showOverflowBars = nil
-        PeaversDynamicStatsDB.showStatChanges = nil
-        PeaversDynamicStatsDB.showRatings = nil
-        PeaversDynamicStatsDB.hideOutOfCombat = nil
-    end
-end
-
--- Returns a sorted table of available fonts, including those from LibSharedMedia
-function Config:GetFonts()
-    local PeaversCommons = _G.PeaversCommons
-    if PeaversCommons and PeaversCommons.DefaultConfig then
-        return PeaversCommons.DefaultConfig.GetFonts()
-    end
-
-    -- Fallback
-    local fonts = {
-        ["Fonts\\ARIALN.TTF"] = "Arial Narrow",
-        ["Fonts\\FRIZQT__.TTF"] = "Default",
-        ["Fonts\\MORPHEUS.TTF"] = "Morpheus",
-        ["Fonts\\SKURRI.TTF"] = "Skurri",
-        ["Fonts\\ARKai_T.ttf"] = "ARKai (Simplified Chinese)",
-        ["Fonts\\bLEI00D.ttf"] = "bLEI (Traditional Chinese)",
-        ["Fonts\\2002.TTF"] = "2002 (Korean)"
-    }
-    return fonts
-end
-
--- Returns a sorted table of available statusbar textures from various sources
-function Config:GetBarTextures()
-    local PeaversCommons = _G.PeaversCommons
-    if PeaversCommons and PeaversCommons.DefaultConfig then
-        return PeaversCommons.DefaultConfig.GetBarTextures()
-    end
-
-    -- Fallback
-    local textures = {
-        ["Interface\\TargetingFrame\\UI-StatusBar"] = "Default",
-        ["Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar"] = "Skill Bar",
-        ["Interface\\PVPFrame\\UI-PVP-Progress-Bar"] = "PVP Bar",
-        ["Interface\\RaidFrame\\Raid-Bar-Hp-Fill"] = "Raid"
-    }
-    return textures
-end
-
-function Config:Initialize()
-    -- Update current character, realm, and spec identifiers
-    self:UpdateCurrentIdentifiers()
-    
-    -- Load settings for the current character and spec
-    self:Load()
-    
-    -- Ensure font is set and compatible with locale
-    if not self.fontFace then
-        self.fontFace = self:GetDefaultFont()
-    else
-        -- Check if current font is compatible with locale
-        if not self:IsFontCompatibleWithLocale(self.fontFace) then
-            local oldFont = self.fontFace
-            self.fontFace = self:GetDefaultFont()
-            
-            -- Log the change
-            if PDS.Utils and PDS.Utils.Print then
-                PDS.Utils.Print(string.format("Font auto-corrected from %s to %s for locale compatibility", 
-                    oldFont or "nil", self.fontFace))
-            end
-        end
-    end
-
-    -- Initialize default values if they're not set
-    if not next(self.showStats) then
-        self.showStats = {}
-    end
-
-    if self.showStatChanges == nil then
-        self.showStatChanges = true
-    end
-
-    if self.showRatings == nil then
-        self.showRatings = true
-    end
-
-    if self.showOverflowBars == nil then
-        self.showOverflowBars = true
-    end
-
-    if self.hideOutOfCombat == nil then
-        self.hideOutOfCombat = false
-    end
-    
-    -- Initialize the spec ID list for debugging/info
-    self.specIDs = self.specIDs or {}
-    if self.currentSpec then
-        self.specIDs[tostring(self.currentSpec)] = true
-    end
-    
-    -- Save settings after initialization to ensure they're persisted
-    self:Save()
-end
-
+-- Initialize stat visibility settings based on available stats
 function Config:InitializeStatSettings()
-    -- Initialize showStats if it's not already defined
     self.showStats = self.showStats or {}
 
     -- Stats that should default to hidden (opt-in rather than opt-out)
     local defaultHiddenStats = {
-        ["VERSATILITY_DAMAGE_REDUCTION"] = true, -- Hidden by default, useful for tanks/Disc Priests
+        ["VERSATILITY_DAMAGE_REDUCTION"] = true,
     }
 
-    -- Make sure Stats module is loaded and has STAT_ORDER defined
-    if PDS.Stats and PDS.Stats.STAT_ORDER then
-        for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
-            if self.showStats[statType] == nil then
-                -- Check if this stat should default to hidden
-                self.showStats[statType] = not defaultHiddenStats[statType]
-            end
-        end
-    else
-        -- Fallback if Stats.STAT_ORDER is not available
-        local defaultStats = {
-            "STRENGTH", "AGILITY", "INTELLECT", "STAMINA",
-            "CRIT", "HASTE", "MASTERY", "VERSATILITY",
-            "VERSATILITY_DAMAGE_REDUCTION",
-            "DODGE", "PARRY", "BLOCK", "LEECH", "AVOIDANCE", "SPEED"
-        }
+    -- Get stat order from Stats module if available
+    local statOrder = (PDS.Stats and PDS.Stats.STAT_ORDER) or {
+        "STRENGTH", "AGILITY", "INTELLECT", "STAMINA",
+        "CRIT", "HASTE", "MASTERY", "VERSATILITY",
+        "VERSATILITY_DAMAGE_REDUCTION",
+        "DODGE", "PARRY", "BLOCK", "LEECH", "AVOIDANCE", "SPEED"
+    }
 
-        for _, statType in ipairs(defaultStats) do
-            if self.showStats[statType] == nil then
-                -- Check if this stat should default to hidden
-                self.showStats[statType] = not defaultHiddenStats[statType]
-            end
+    for _, statType in ipairs(statOrder) do
+        if self.showStats[statType] == nil then
+            self.showStats[statType] = not defaultHiddenStats[statType]
         end
     end
 end
+
+return PDS.Config

@@ -35,6 +35,11 @@ local function SafeGetValue(apiFunc, ...)
         return nil
     end
 
+    -- Ensure we return a number, not a table or other type
+    if type(result) ~= "number" then
+        return nil
+    end
+
     return result
 end
 
@@ -954,7 +959,7 @@ end
 -- Gets the formatted display value for a stat
 -- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetDisplayValue(statType, value, showRating)
-    local displayValue = PDS.Utils:FormatPercent(value)
+    local displayValue = PDS.Utils.FormatPercent(value)
 
     -- If showRating is not specified, use the config setting
     if showRating == nil then
@@ -1013,7 +1018,7 @@ end
 
 -- Gets the formatted change display value and color for a stat change
 function Stats:GetChangeDisplayValue(change)
-    local changeDisplay = PDS.Utils:FormatChange(change)
+    local changeDisplay = PDS.Utils.FormatChange(change)
     local r, g, b = 1, 1, 1
 
     if change > 0 then

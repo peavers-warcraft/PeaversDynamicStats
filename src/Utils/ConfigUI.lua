@@ -145,6 +145,13 @@ function ConfigUI:InitializeOptions()
     local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
     yPos = newY - baseSpacing
 
+    -- 1.5. GLOBAL APPEARANCE SECTION
+    yPos = self:CreateGlobalAppearanceOptions(content, yPos, baseSpacing, sectionSpacing)
+
+    -- Add a separator between major sections
+    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
+    yPos = newY - baseSpacing
+
     -- 2. STAT OPTIONS SECTION
     yPos = self:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
 
@@ -433,6 +440,40 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     yPos = yPos - 65 -- Update yPos for the next element
 
     return yPos
+end
+
+-- 1.5. GLOBAL APPEARANCE
+function ConfigUI:CreateGlobalAppearanceOptions(content, yPos, baseSpacing, sectionSpacing)
+    baseSpacing = baseSpacing or 25
+
+    -- Create the global appearance section using ConfigUIUtils helper
+    local _, newY = ConfigUIUtils.CreateGlobalAppearanceSection(
+        content,
+        "PeaversDynamicStats",
+        PDS,
+        baseSpacing,
+        yPos,
+        function()
+            -- Refresh UI callback when global settings change
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
+            end
+            if PDS.Core and PDS.Core.frame then
+                PDS.Core.frame:SetBackdropColor(
+                    PDS.Config.bgColor.r,
+                    PDS.Config.bgColor.g,
+                    PDS.Config.bgColor.b,
+                    PDS.Config.bgAlpha
+                )
+            end
+            if ConfigUI.RefreshUI then
+                ConfigUI:RefreshUI()
+            end
+        end
+    )
+
+    return newY
 end
 
 -- 2. STAT OPTIONS - Separated into Primary and Secondary stats with explanations

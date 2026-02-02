@@ -1,19 +1,31 @@
 local addonName, PDS = ...
 
+--------------------------------------------------------------------------------
+-- PDS BarManager - Manages stat bars for dynamic stats display
+--------------------------------------------------------------------------------
+
+local PeaversCommons = _G.PeaversCommons
+local BaseBarManager = PeaversCommons.BarManager
+
 -- Initialize BarManager namespace
 PDS.BarManager = {}
 local BarManager = PDS.BarManager
 
+-- Inherit from base BarManager
+setmetatable(BarManager, { __index = BaseBarManager })
+
 -- Collection to store all created bars
 BarManager.bars = {}
+BarManager.previousValues = {}
+
+--------------------------------------------------------------------------------
+-- Bar Creation (PDS-specific)
+--------------------------------------------------------------------------------
 
 -- Creates or recreates all stat bars based on current configuration
 function BarManager:CreateBars(parent)
-    -- Clear existing bars
-    for _, bar in ipairs(self.bars) do
-        bar.frame:Hide()
-    end
-    self.bars = {}
+    -- Clear existing bars using base method
+    self:Clear()
 
     -- Get growth direction from config
     local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
@@ -34,8 +46,6 @@ function BarManager:CreateBars(parent)
             table.insert(self.bars, bar)
 
             -- Calculate offset based on growth direction
-            -- yMult is -1 for growing down, 1 for growing up
-            -- barSpacing can be negative to make bars overlap (compensating for borders)
             local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
             yOffset = yOffset + (barStep * yMult)
         end
@@ -44,12 +54,12 @@ function BarManager:CreateBars(parent)
     return math.abs(yOffset)
 end
 
+--------------------------------------------------------------------------------
+-- Bar Updates (PDS-specific with change tracking)
+--------------------------------------------------------------------------------
+
 -- Updates all stat bars with latest values, only if they've changed
 function BarManager:UpdateAllBars()
-    if not self.previousValues then
-        self.previousValues = {}
-    end
-
     for _, bar in ipairs(self.bars) do
         local value = PDS.Stats:GetValue(bar.statType)
         local statKey = bar.statType
@@ -74,6 +84,10 @@ function BarManager:UpdateAllBars()
     end
 end
 
+--------------------------------------------------------------------------------
+-- Bar Resizing
+--------------------------------------------------------------------------------
+
 -- Resizes all bars based on current configuration
 function BarManager:ResizeBars()
     for _, bar in ipairs(self.bars) do
@@ -85,42 +99,21 @@ function BarManager:ResizeBars()
     end
 
     -- Return the total height of all bars for frame adjustment
-    -- barSpacing can be negative to make bars overlap (compensating for borders)
-    local totalHeight = #self.bars * PDS.Config.barHeight + (#self.bars - 1) * PDS.Config.barSpacing
-
-    return totalHeight
+    return self:CalculateTotalHeight(PDS.Config)
 end
+
+--------------------------------------------------------------------------------
+-- Frame Height Adjustment
+--------------------------------------------------------------------------------
 
 -- Adjusts the frame height based on number of bars and title bar visibility
 function BarManager:AdjustFrameHeight(frame, contentFrame, titleBarVisible)
-    local barCount = #self.bars
-    local contentHeight
-
-    -- Calculate content height based on bars and spacing
-    -- barSpacing can be negative to make bars overlap (compensating for borders)
-    if barCount > 0 then
-        contentHeight = barCount * PDS.Config.barHeight + (barCount - 1) * PDS.Config.barSpacing
-    else
-        contentHeight = 0
-    end
-
-    if contentHeight == 0 then
-        if titleBarVisible then
-            frame:SetHeight(20) -- Just title bar
-        else
-            frame:SetHeight(10) -- Minimal height
-        end
-    else
-        if titleBarVisible then
-            frame:SetHeight(contentHeight + 20) -- Add title bar height
-        else
-            frame:SetHeight(contentHeight) -- Just content
-        end
-    end
-
-    -- Content frame position is managed by Core:UpdateTitleBarVisibility
-    -- to avoid duplicate repositioning that could cause UI glitches
+    BaseBarManager.AdjustFrameHeight(self, frame, contentFrame, titleBarVisible, PDS.Config, 0)
 end
+
+--------------------------------------------------------------------------------
+-- Bar Lookups
+--------------------------------------------------------------------------------
 
 -- Gets a bar by its stat type
 function BarManager:GetBar(statType)
@@ -130,11 +123,6 @@ function BarManager:GetBar(statType)
         end
     end
     return nil
-end
-
--- Gets the number of visible bars
-function BarManager:GetBarCount()
-    return #self.bars
 end
 
 return BarManager
