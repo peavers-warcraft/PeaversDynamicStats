@@ -1,709 +1,332 @@
 local addonName, PDS = ...
 
+--------------------------------------------------------------------------------
+-- PDS StatBar - Extends PeaversCommons.StatBar with overflow bars and tooltips
+--------------------------------------------------------------------------------
+
+local PeaversCommons = _G.PeaversCommons
+local BaseStatBar = PeaversCommons.StatBar
+local AnimatedStatusBar = PeaversCommons.AnimatedStatusBar
+
 -- Initialize StatBar namespace
 PDS.StatBar = {}
 local StatBar = PDS.StatBar
 
-local PeaversCommons = _G.PeaversCommons
-local Utils = PeaversCommons.Utils
+-- Inherit from base StatBar
+setmetatable(StatBar, { __index = BaseStatBar })
 
--- Default font fallback
-local DEFAULT_FONT = "Fonts\\FRIZQT__.TTF"
-local DEFAULT_FONT_SIZE = 10
-local DEFAULT_FONT_OUTLINE = "OUTLINE"
+--------------------------------------------------------------------------------
+-- Constructor
+--------------------------------------------------------------------------------
 
--- Helper to get safe font values with fallbacks
-local function GetFontSettings()
-    local fontFace = PDS.Config and PDS.Config.fontFace or DEFAULT_FONT
-    local fontSize = PDS.Config and PDS.Config.fontSize or DEFAULT_FONT_SIZE
-    local fontOutline = PDS.Config and PDS.Config.fontOutline and "OUTLINE" or ""
-    return fontFace, fontSize, fontOutline
-end
-
--- Use PeaversCommons.Utils.SafeSetFont
-local function SafeSetFont(fontString, fontFace, fontSize, fontOutline)
-    return Utils.SafeSetFont(fontString, fontFace, fontSize, fontOutline)
-end
-
--- Creates a new stat bar instance
 function StatBar:New(parent, name, statType)
-	local obj = {}
-	setmetatable(obj, { __index = StatBar })
+    -- Create base instance with PDS config
+    local obj = BaseStatBar.New(self, parent, name, statType, PDS.Config)
 
-	obj.name = name
-	obj.statType = statType
-	obj.value = 0
-	obj.maxValue = 100
-	obj.targetValue = 0
-	obj.smoothing = true
-	obj.yOffset = 0
-	obj.frame = obj:CreateFrame(parent)
+    -- Override metatable to use PDS.StatBar methods
+    setmetatable(obj, { __index = StatBar })
 
-	-- Set the initial color after frame is created
-	obj:UpdateColor()
+    -- Create overflow bar for values > 100%
+    obj:CreateOverflowBar()
 
-	obj:InitAnimationSystem()
-	obj:InitChangeTextFadeAnimation()
+    -- Initialize PDS-specific tooltip
+    obj:InitTooltip()
 
-	return obj
+    return obj
 end
 
--- Sets up the animation system for smooth value transitions
-function StatBar:InitAnimationSystem()
-	self.smoothing = true
-	self.animationGroup = self.frame.bar:CreateAnimationGroup()
-	self.valueAnimation = self.animationGroup:CreateAnimation("Progress")
-	self.valueAnimation:SetDuration(0.3)
-	self.valueAnimation:SetSmoothing("OUT")
+--------------------------------------------------------------------------------
+-- Overflow Bar (PDS-specific feature)
+--------------------------------------------------------------------------------
 
-	self.valueAnimation:SetScript("OnUpdate", function(anim)
-		local progress = anim:GetProgress()
-		local startValue = anim.startValue or 0
-		local changeValue = anim.changeValue or 0
-		local currentValue = startValue + (changeValue * progress)
+function StatBar:CreateOverflowBar()
+    -- Create overflow bar on top of the main bar
+    local mainBar = self.statusBar:GetStatusBar()
 
-		self.frame.bar:SetValue(currentValue)
-	end)
+    self.overflowBar = AnimatedStatusBar:New(self.frame, {
+        texture = PDS.Config.barTexture,
+        bgAlpha = 0,  -- No background for overflow
+        barAlpha = (PDS.Config.barAlpha or 1.0) * 0.7,
+        showBackground = false,
+    })
+    self.overflowBar:SetAllPoints(mainBar)
+    self.overflowBar:GetFrame():SetFrameLevel(mainBar:GetFrameLevel() + 1)
+    self.overflowBar:Hide()
+
+    -- Set overflow color (contrasting)
+    local r, g, b = self:GetColorForStat(self.statType)
+    local or_r, or_g, or_b = self:GetOverflowColor(r, g, b)
+    self.overflowBar:SetColor(or_r, or_g, or_b, (PDS.Config.barAlpha or 1.0) * 0.7)
 end
 
--- Sets up the fade animation for the change indicator text
-function StatBar:InitChangeTextFadeAnimation()
-	-- Create animation group for the change text
-	self.changeTextAnimGroup = self.frame.changeText:CreateAnimationGroup()
-
-	-- Create alpha animation to fade out the text
-	-- This animation will gradually reduce the opacity of the text from 100% to 0%
-	self.changeTextFadeAnim = self.changeTextAnimGroup:CreateAnimation("Alpha")
-	self.changeTextFadeAnim:SetFromAlpha(1.0)  -- Start fully visible
-	self.changeTextFadeAnim:SetToAlpha(0.0)    -- End completely transparent
-	self.changeTextFadeAnim:SetDuration(3.0)   -- Fade out over 3 seconds
-	self.changeTextFadeAnim:SetStartDelay(1.0) -- Start fading after 1 second display
-	self.changeTextFadeAnim:SetSmoothing("OUT") -- Ease out for smoother appearance
-
-	-- Hide the text when the animation completes to ensure it's not taking up space
-	-- and reset the alpha for the next time it needs to be displayed
-	self.changeTextAnimGroup:SetScript("OnFinished", function()
-		-- Ensure font is valid before calling SetText (can become invalid after profile change)
-		local fontFile = self.frame.changeText:GetFont()
-		if not fontFile then
-			local fontFace, fontSize, fontOutline = GetFontSettings()
-			SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
-		end
-		self.frame.changeText:SetText("")      -- Clear the text
-		self.frame.changeText:SetAlpha(1.0)    -- Reset alpha for next display
-	end)
-end
-
--- Creates the visual elements of the stat bar
-function StatBar:CreateFrame(parent)
-	local frame = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-	frame:SetSize(PDS.Config.barWidth, PDS.Config.barHeight)
-
-	local bg = CreateFrame("Frame", nil, frame, "BackdropTemplate")
-	bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-	bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-	bg:SetBackdrop({
-		bgFile = "Interface\\BUTTONS\\WHITE8X8",
-		edgeFile = "Interface\\BUTTONS\\WHITE8X8",
-		tile = true, edgeSize = 1,
-	})
-	bg:SetBackdropColor(0, 0, 0, PDS.Config.barBgAlpha)
-	bg:SetBackdropBorderColor(0, 0, 0, PDS.Config.barBgAlpha)
-	frame.bg = bg
-
-	-- Create the status bar with explicit name to help with debugging
-	local bar = CreateFrame("StatusBar", "PDS_StatBar_" .. self.statType, bg)
-	bar:SetPoint("TOPLEFT", bg, "TOPLEFT", 1, -1)
-	bar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -1, 1)
-	bar:SetMinMaxValues(0, 100)
-	bar:SetValue(0)
-
-	-- Set the status bar texture using the configured texture if available
-	if PDS.Config.barTexture then
-		bar:SetStatusBarTexture(PDS.Config.barTexture)
-	else
-		-- Fallback to a plain white texture if no texture path is configured
-		local texture = bar:CreateTexture(nil, "ARTWORK")
-		texture:SetAllPoints()
-		texture:SetColorTexture(1, 1, 1, 1) -- White texture that will take color
-		bar:SetStatusBarTexture(texture)
-	end
-
-	-- Set initial color
-	bar:SetStatusBarColor(0.8, 0.8, 0.8, 1)
-
-	frame.bar = bar
-
-	-- Create the overflow bar that will show when value exceeds 100%
-	local overflowBar = CreateFrame("StatusBar", "PDS_StatBar_Overflow_" .. self.statType, bg)
-	overflowBar:SetPoint("TOPLEFT", bg, "TOPLEFT", 1, -1)
-	overflowBar:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -1, 1)
-	overflowBar:SetMinMaxValues(0, 100)
-	overflowBar:SetValue(0)
-	overflowBar:SetFrameLevel(bar:GetFrameLevel() + 1) -- Set higher frame level to ensure it's visible above the main bar
-
-	-- Set the overflow bar texture
-	if PDS.Config.barTexture then
-		overflowBar:SetStatusBarTexture(PDS.Config.barTexture)
-	else
-		local texture = overflowBar:CreateTexture(nil, "ARTWORK")
-		texture:SetAllPoints()
-		texture:SetColorTexture(1, 1, 1, 1)
-		overflowBar:SetStatusBarTexture(texture)
-	end
-
-	-- Initially hide the overflow bar
-	overflowBar:Hide()
-
-	frame.overflowBar = overflowBar
-
-	-- Create a text layer frame that will be above both bars
-	local textLayer = CreateFrame("Frame", nil, bar)
-	textLayer:SetAllPoints()
-	textLayer:SetFrameLevel(overflowBar:GetFrameLevel() + 1) -- Set higher than overflow bar
-
-	local valueText = textLayer:CreateFontString(nil, "OVERLAY")
-	valueText:SetPoint("RIGHT", bar, "RIGHT", -4, 0)
-	local fontFace, fontSize, fontOutline = GetFontSettings()
-	SafeSetFont(valueText, fontFace, fontSize, fontOutline)
-	valueText:SetJustifyH("RIGHT")
-	valueText:SetText("0")
-	valueText:SetTextColor(1, 1, 1)
-	if PDS.Config.fontShadow then
-		valueText:SetShadowOffset(1, -1)
-	else
-		valueText:SetShadowOffset(0, 0)
-	end
-	frame.valueText = valueText
-
-	local nameText = textLayer:CreateFontString(nil, "OVERLAY")
-	nameText:SetPoint("LEFT", bar, "LEFT", 4, 0)
-	fontFace, fontSize, fontOutline = GetFontSettings()
-	SafeSetFont(nameText, fontFace, fontSize, fontOutline)
-	nameText:SetJustifyH("LEFT")
-	nameText:SetText(self.name)
-	nameText:SetTextColor(1, 1, 1)
-	if PDS.Config.fontShadow then
-		nameText:SetShadowOffset(1, -1)
-	else
-		nameText:SetShadowOffset(0, 0)
-	end
-	frame.nameText = nameText
-
-	-- Create change indicator text
-	local changeText = textLayer:CreateFontString(nil, "OVERLAY")
-	changeText:SetPoint("CENTER", bar, "CENTER", 0, 0)
-	fontFace, fontSize, fontOutline = GetFontSettings()
-	SafeSetFont(changeText, fontFace, fontSize, fontOutline)
-	changeText:SetJustifyH("CENTER")
-	changeText:SetText("")
-	changeText:SetTextColor(1, 1, 1)
-	if PDS.Config.fontShadow then
-		changeText:SetShadowOffset(1, -1)
-	else
-		changeText:SetShadowOffset(0, 0)
-	end
-	frame.changeText = changeText
-
-	-- Store the text layer for future reference
-	frame.textLayer = textLayer
-
-	return frame
-end
-
--- Handle overflow bar visibility and tooltip initialization
-function StatBar:HandleOverflow(overflowValue)
-	if not self.frame.overflowBar then
-		return false
-	end
-
-	-- Track overflow bar visibility changes to reinit tooltip if needed
-	local overflowBarWasVisible = self.frame.overflowBar:IsVisible()
-	local overflowBarShouldBeVisible = overflowValue > 0 and PDS.Config.showOverflowBars
-
-	-- Show or hide the overflow bar based on the overflow value and global user preference
-	if overflowBarShouldBeVisible then
-		-- Show the overflow bar if user has enabled it
-		self.frame.overflowBar:Show()
-	else
-		-- Hide the overflow bar if value is 100% or less, or if user has disabled overflow bars globally
-		self.frame.overflowBar:Hide()
-		self.frame.overflowBar:SetValue(0)
-	end
-
-	-- Return whether visibility changed (for tooltip reinitialization)
-	return overflowBarWasVisible ~= overflowBarShouldBeVisible
-end
-
--- Updates the bar with a new value, using animation for smooth transitions
-function StatBar:Update(value, maxValue, change)
-	if value ~= self.value then
-		self.value = value or 0
-
-		-- Get the bar values from Stats.lua
-		local percentValue, overflowValue = PDS.Stats:CalculateBarValues(self.value)
-
-		-- Handle overflow bar visibility and reinitialize tooltip if needed
-		local visibilityChanged = self:HandleOverflow(overflowValue)
-		if visibilityChanged then
-			-- Force tooltip reinitialization when overflow bar visibility changes
-			self.tooltipInitialized = false
-			self:InitTooltip()
-		end
-
-		-- Get the formatted display value from Stats.lua
-		local displayValue = PDS.Stats:GetDisplayValue(self.statType, self.value)
-
-		local currentText = self.frame.valueText:GetText()
-		if currentText ~= displayValue then
-			-- Ensure font is valid before calling SetText
-			local fontFile = self.frame.valueText:GetFont()
-			if not fontFile then
-				local fontFace, fontSize, fontOutline = GetFontSettings()
-				SafeSetFont(self.frame.valueText, fontFace, fontSize, fontOutline)
-			end
-			self.frame.valueText:SetText(displayValue)
-		end
-
-		-- Update change indicator if showStatChanges is enabled
-		if PDS.Config.showStatChanges and change and change ~= 0 then
-			-- If there's an existing animation playing, we need to stop it
-			-- before starting a new one to prevent visual glitches
-			if self.changeTextAnimGroup then
-				self.changeTextAnimGroup:Stop()
-			end
-
-			-- Reset alpha to full visibility for the new change display
-			self.frame.changeText:SetAlpha(1.0)
-
-			-- Ensure font is valid before calling SetText
-			local fontFile = self.frame.changeText:GetFont()
-			if not fontFile then
-				local fontFace, fontSize, fontOutline = GetFontSettings()
-				SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
-			end
-
-			-- Get the formatted change display value and color from Stats.lua
-			local changeDisplay, r, g, b = PDS.Stats:GetChangeDisplayValue(change)
-			self.frame.changeText:SetText(changeDisplay)
-			self.frame.changeText:SetTextColor(r, g, b)
-
-			-- Start the fade-out animation to gradually hide the change indicator
-			-- This will make the text fade out over a few seconds instead of staying static
-			if self.changeTextAnimGroup then
-				self.changeTextAnimGroup:Play()
-			end
-		else
-			-- If there's no change or changes are disabled, just clear the text
-			-- Ensure font is valid before calling SetText
-			local fontFile = self.frame.changeText:GetFont()
-			if not fontFile then
-				local fontFace, fontSize, fontOutline = GetFontSettings()
-				SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
-			end
-			self.frame.changeText:SetText("")
-		end
-
-		-- Use animation if enabled, otherwise set value directly
-		if self.smoothing then
-			self:AnimateToValue(percentValue, overflowValue)
-		else
-			self.frame.bar:SetValue(percentValue)
-			if self.frame.overflowBar then
-				self.frame.overflowBar:SetValue(overflowValue)
-			end
-		end
-	end
-end
-
--- Animates the bar to a new value
-function StatBar:AnimateToValue(newValue, overflowValue)
-	self.animationGroup:Stop()
-
-	-- Handle the main bar animation
-	local currentValue = self.frame.bar:GetValue()
-
-	if math.abs(newValue - currentValue) >= 0.5 then
-		self.valueAnimation.startValue = currentValue
-		self.valueAnimation.changeValue = newValue - currentValue
-		self.animationGroup:Play()
-	else
-		self.frame.bar:SetValue(newValue)
-	end
-
-	-- Handle the overflow bar animation if it exists
-	if self.frame.overflowBar then
-		overflowValue = overflowValue or 0
-
-		-- Handle overflow bar visibility and reinitialize tooltip if needed
-		local visibilityChanged = self:HandleOverflow(overflowValue)
-		if visibilityChanged then
-			self:InitTooltip()
-		end
-
-		-- If overflow bar is visible, animate it
-		if self.frame.overflowBar:IsVisible() then
-			-- Create animation group for overflow bar if it doesn't exist
-			if not self.overflowAnimationGroup then
-				self.overflowAnimationGroup = self.frame.overflowBar:CreateAnimationGroup()
-				self.overflowValueAnimation = self.overflowAnimationGroup:CreateAnimation("Progress")
-				self.overflowValueAnimation:SetDuration(0.3)
-				self.overflowValueAnimation:SetSmoothing("OUT")
-
-				self.overflowValueAnimation:SetScript("OnUpdate", function(anim)
-					local progress = anim:GetProgress()
-					local startValue = anim.startValue or 0
-					local changeValue = anim.changeValue or 0
-					local currentValue = startValue + (changeValue * progress)
-
-					self.frame.overflowBar:SetValue(currentValue)
-				end)
-			end
-
-			-- Animate the overflow bar
-			self.overflowAnimationGroup:Stop()
-
-			local currentOverflowValue = self.frame.overflowBar:GetValue()
-
-			if math.abs(overflowValue - currentOverflowValue) >= 0.5 then
-				self.overflowValueAnimation.startValue = currentOverflowValue
-				self.overflowValueAnimation.changeValue = overflowValue - currentOverflowValue
-				self.overflowAnimationGroup:Play()
-			else
-				self.frame.overflowBar:SetValue(overflowValue)
-			end
-		end
-	end
-end
-
--- Returns the color for a specific stat type
-function StatBar:GetColorForStat(statType)
-	-- Check if there's a custom color for this stat
-	if PDS.Config.customColors and PDS.Config.customColors[statType] then
-		local color = PDS.Config.customColors[statType]
-		if color and color.r and color.g and color.b then
-			return color.r, color.g, color.b
-		end
-	end
-
-	-- Fall back to default colors from STAT_COLORS
-	if PDS.Stats.STAT_COLORS and PDS.Stats.STAT_COLORS[statType] then
-		return unpack(PDS.Stats.STAT_COLORS[statType])
-	end
-
-	-- Ultimate fallback to ensure visibility
-	return 0.8, 0.8, 0.8
-end
-
--- Returns a contrasting color for the overflow portion of the bar
+-- Returns a contrasting color for overflow
 function StatBar:GetOverflowColor(r, g, b)
-	-- Create a contrasting color by inverting the brightness
-	-- If the original color is bright, make the overflow darker
-	-- If the original color is dark, make the overflow brighter
+    local brightness = 0.299 * r + 0.587 * g + 0.114 * b
 
-	-- Calculate perceived brightness (using the formula for luminance)
-	local brightness = 0.299 * r + 0.587 * g + 0.114 * b
-
-	if brightness > 0.5 then
-		-- Original color is bright, make overflow darker
-		return r * 0.6, g * 0.6, b * 0.6
-	else
-		-- Original color is dark, make overflow brighter
-		return math.min(r * 1.4, 1), math.min(g * 1.4, 1), math.min(b * 1.4, 1)
-	end
+    if brightness > 0.5 then
+        return r * 0.6, g * 0.6, b * 0.6
+    else
+        return math.min(r * 1.4, 1), math.min(g * 1.4, 1), math.min(b * 1.4, 1)
+    end
 end
 
--- Updates the color of the bar
+-- Handle overflow bar visibility
+function StatBar:HandleOverflow(overflowValue)
+    if not self.overflowBar then return false end
+
+    local showOverflow = PDS.Config.showOverflowBars
+    local shouldShow = overflowValue and overflowValue > 0 and showOverflow
+    local wasVisible = self.overflowBar:IsShown()
+
+    if shouldShow then
+        self.overflowBar:Show()
+        self.overflowBar:SetValue(overflowValue)
+    else
+        self.overflowBar:Hide()
+        self.overflowBar:SetValue(0, true)
+    end
+
+    -- Return true if visibility changed (for tooltip reinit)
+    return wasVisible ~= shouldShow
+end
+
+--------------------------------------------------------------------------------
+-- Color Management (PDS-specific)
+--------------------------------------------------------------------------------
+
+function StatBar:GetColorForStat(statType)
+    -- Check if there's a custom color for this stat
+    if PDS.Config.customColors and PDS.Config.customColors[statType] then
+        local color = PDS.Config.customColors[statType]
+        if color and color.r and color.g and color.b then
+            return color.r, color.g, color.b
+        end
+    end
+
+    -- Fall back to default colors from STAT_COLORS
+    if PDS.Stats and PDS.Stats.STAT_COLORS and PDS.Stats.STAT_COLORS[statType] then
+        return unpack(PDS.Stats.STAT_COLORS[statType])
+    end
+
+    return 0.8, 0.8, 0.8
+end
+
+-- Override UpdateColor to also update overflow bar
 function StatBar:UpdateColor()
-	local r, g, b = self:GetColorForStat(self.statType)
+    local r, g, b = self:GetColorForStat(self.statType)
+    r = r or 0.8
+    g = g or 0.8
+    b = b or 0.8
 
-	-- Ensure we have valid color values
-	r = r or 0.8
-	g = g or 0.8
-	b = b or 0.8
+    self.statusBar:SetColor(r, g, b, PDS.Config.barAlpha or 1.0)
 
-	-- Get bar opacity from config (allows text-only mode when set to 0)
-	local barAlpha = PDS.Config.barAlpha or 1.0
-
-	-- Apply the color to the status bar - set color directly without recreating texture
-	if self.frame and self.frame.bar then
-		self.frame.bar:SetStatusBarColor(r, g, b, barAlpha)
-	end
-
-	-- Apply contrasting color to the overflow bar with transparency
-	if self.frame and self.frame.overflowBar then
-		local or_r, or_g, or_b = self:GetOverflowColor(r, g, b)
-		-- Scale overflow alpha relative to main bar alpha (0.7 ratio)
-		local overflowAlpha = barAlpha * 0.7
-		self.frame.overflowBar:SetStatusBarColor(or_r, or_g, or_b, overflowAlpha)
-	end
+    if self.overflowBar then
+        local or_r, or_g, or_b = self:GetOverflowColor(r, g, b)
+        self.overflowBar:SetColor(or_r, or_g, or_b, (PDS.Config.barAlpha or 1.0) * 0.7)
+    end
 end
 
--- Sets the position of the bar relative to its parent
--- anchorPoint: The anchor point to use (e.g., "TOPLEFT", "BOTTOMLEFT", "TOP", etc.)
-function StatBar:SetPosition(x, y, anchorPoint)
-	self.yOffset = y
-	self.anchorPoint = anchorPoint or "TOPLEFT"
-	self.frame:ClearAllPoints()
+--------------------------------------------------------------------------------
+-- Value Calculations (PDS-specific)
+--------------------------------------------------------------------------------
 
-	-- Determine if this is a bottom anchor (bars grow upward)
-	local isBottomAnchor = self.anchorPoint == "BOTTOMLEFT" or
-	                       self.anchorPoint == "BOTTOM" or
-	                       self.anchorPoint == "BOTTOMRIGHT"
+function StatBar:CalculateBarValues(value, maxValue)
+    if PDS.Stats and PDS.Stats.CalculateBarValues then
+        return PDS.Stats:CalculateBarValues(value)
+    end
 
-	-- Bars always stretch full width of the content frame
-	-- The anchor just determines if we anchor from top or bottom
-	if isBottomAnchor then
-		self.frame:SetPoint("BOTTOMLEFT", self.frame:GetParent(), "BOTTOMLEFT", x, y)
-		self.frame:SetPoint("BOTTOMRIGHT", self.frame:GetParent(), "BOTTOMRIGHT", 0, y)
-	else
-		-- Top anchors (TOPLEFT, TOP, TOPRIGHT, LEFT, CENTER, RIGHT)
-		self.frame:SetPoint("TOPLEFT", self.frame:GetParent(), "TOPLEFT", x, y)
-		self.frame:SetPoint("TOPRIGHT", self.frame:GetParent(), "TOPRIGHT", 0, y)
-	end
+    -- Fallback: simple percentage with overflow
+    if maxValue <= 0 then return 0, 0 end
+
+    local percent = (value / maxValue) * 100
+    if percent <= 100 then
+        return percent, 0
+    else
+        return 100, math.min(percent - 100, 100)
+    end
 end
 
--- Sets the highlight/select state of the bar
-function StatBar:SetSelected(selected)
-	if selected then
-		if not self.frame.highlight then
-			local highlight = self.frame.bar:CreateTexture(nil, "OVERLAY")
-			highlight:SetAllPoints()
-			highlight:SetColorTexture(1, 1, 1, 0.1)
-			self.frame.highlight = highlight
-		end
-		self.frame.highlight:Show()
-	elseif self.frame.highlight then
-		self.frame.highlight:Hide()
-	end
+function StatBar:GetDisplayValue(value)
+    if PDS.Stats and PDS.Stats.GetDisplayValue then
+        return PDS.Stats:GetDisplayValue(self.statType, value)
+    end
+    return tostring(math.floor(value + 0.5))
 end
 
--- Updates the font used for text elements
-function StatBar:UpdateFont()
-	local fontFace, fontSize, fontOutline = GetFontSettings()
-	SafeSetFont(self.frame.valueText, fontFace, fontSize, fontOutline)
-	SafeSetFont(self.frame.nameText, fontFace, fontSize, fontOutline)
-	SafeSetFont(self.frame.changeText, fontFace, fontSize, fontOutline)
-
-	-- Apply shadow if enabled
-	if PDS.Config.fontShadow then
-		self.frame.valueText:SetShadowOffset(1, -1)
-		self.frame.nameText:SetShadowOffset(1, -1)
-		self.frame.changeText:SetShadowOffset(1, -1)
-	else
-		self.frame.valueText:SetShadowOffset(0, 0)
-		self.frame.nameText:SetShadowOffset(0, 0)
-		self.frame.changeText:SetShadowOffset(0, 0)
-	end
+function StatBar:GetChangeDisplayValue(change)
+    if PDS.Stats and PDS.Stats.GetChangeDisplayValue then
+        return PDS.Stats:GetChangeDisplayValue(change)
+    end
+    return BaseStatBar.GetChangeDisplayValue(self, change)
 end
 
--- Updates the texture used for the status bar
-function StatBar:UpdateTexture()
-	-- Use the configured texture path if available
-	if PDS.Config.barTexture then
-		self.frame.bar:SetStatusBarTexture(PDS.Config.barTexture)
+--------------------------------------------------------------------------------
+-- Update Override (PDS-specific with overflow handling)
+--------------------------------------------------------------------------------
 
-		-- Also update the overflow bar texture if it exists
-		if self.frame.overflowBar then
-			self.frame.overflowBar:SetStatusBarTexture(PDS.Config.barTexture)
-		end
-	else
-		-- Fallback to a plain white texture if no texture path is configured
-		local texture = self.frame.bar:CreateTexture(nil, "ARTWORK")
-		texture:SetAllPoints()
-		texture:SetColorTexture(1, 1, 1, 1)
-		self.frame.bar:SetStatusBarTexture(texture)
+function StatBar:Update(value, maxValue, change, noAnimation)
+    if self.value == value then return end
 
-		-- Also update the overflow bar texture if it exists
-		if self.frame.overflowBar then
-			local overflowTexture = self.frame.overflowBar:CreateTexture(nil, "ARTWORK")
-			overflowTexture:SetAllPoints()
-			overflowTexture:SetColorTexture(1, 1, 1, 1)
-			self.frame.overflowBar:SetStatusBarTexture(overflowTexture)
-		end
-	end
+    self.value = value or 0
 
-	-- Reapply color after updating texture
-	self:UpdateColor()
+    -- Get bar values including overflow
+    local percentValue, overflowValue = self:CalculateBarValues(self.value, maxValue)
 
-	-- Force tooltip reinitialization
-	self.tooltipInitialized = false
-	self:InitTooltip()
+    -- Handle overflow bar visibility
+    local visibilityChanged = self:HandleOverflow(overflowValue)
+    if visibilityChanged then
+        self.tooltipInitialized = false
+        self:InitTooltip()
+    end
+
+    -- Update main bar
+    self.statusBar:SetMinMaxValues(0, 100)
+    self.statusBar:SetValue(percentValue, noAnimation)
+
+    -- Update value text
+    local displayValue = self:GetDisplayValue(self.value)
+    self.textManager:SetValue(displayValue)
+
+    -- Show change indicator if enabled
+    if PDS.Config.showStatChanges and change and change ~= 0 then
+        self.textManager:ShowChange(change, function(c)
+            return self:GetChangeDisplayValue(c)
+        end)
+    end
 end
 
--- Updates the height of the bar
-function StatBar:UpdateHeight()
-	self.frame:SetHeight(PDS.Config.barHeight)
-end
+--------------------------------------------------------------------------------
+-- Tooltip System (PDS-specific)
+--------------------------------------------------------------------------------
 
--- Updates the width of the bar
-function StatBar:UpdateWidth()
-	-- Re-use SetPosition to apply the correct anchoring based on growth direction
-	local _, _, anchorPoint = PDS.Config:GetGrowthDirection()
-	self:SetPosition(0, self.yOffset, self.anchorPoint or anchorPoint)
-end
-
--- Updates the background opacity of the bar
-function StatBar:UpdateBackgroundOpacity()
-	self.frame.bg:SetBackdropColor(0, 0, 0, PDS.Config.barBgAlpha)
-	self.frame.bg:SetBackdropBorderColor(0, 0, 0, PDS.Config.barBgAlpha)
-end
-
--- Shows the tooltip with stat information
-function StatBar:ShowTooltip(frame)
-	-- Only show tooltip if enabled in config
-	if not PDS.Config.showTooltips then
-		return
-	end
-
-	-- Always ensure tooltip is initialized properly
-	if not self.tooltipInitialized then
-		self:InitTooltip()
-	end
-
-	-- Get current stat value and rating
-	local value = PDS.Stats:GetValue(self.statType)
-	local rating = PDS.Stats:GetRating(self.statType)
-
-	-- Safety check before using the tooltip
-	if not self.tooltip then
-		self:InitTooltip()
-	end
-
-	-- Reset the tooltip
-	self.tooltip:ClearLines()
-
-	-- Determine if this is an overflow bar (kept for future reference, not used for tooltip display)
-	local isOverflow = (frame == self.frame.overflowBar)
-
-	-- Use the standard ANCHOR_RIGHT for both main and overflow tooltips
-	self.tooltip:SetOwner(self.frame, "ANCHOR_RIGHT")
-
-	-- Add tooltip content
-	if PDS.StatTooltips then
-		PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
-	else
-		-- Fallback if StatTooltips module is not available
-		self.tooltip:SetText(PDS.Stats:GetName(self.statType))
-		self.tooltip:AddLine(PDS.Utils:FormatPercent(value))
-		self.tooltip:Show()
-	end
-end
-
--- Hides the tooltip
-function StatBar:HideTooltip()
-	if self.tooltip then
-		self.tooltip:Hide()
-	end
-end
-
--- Sets up the tooltip for the stat bar
 function StatBar:InitTooltip()
-	-- Always destroy existing tooltip to prevent memory leaks and stale references
-	if self.tooltip then
-		self.tooltip:Hide()
-		self.tooltip:ClearLines()
-		self.tooltip = nil
-	end
+    -- Always destroy existing tooltip to prevent memory leaks
+    if self.tooltip then
+        self.tooltip:Hide()
+        self.tooltip:ClearLines()
+        self.tooltip = nil
+    end
 
-	-- Create a new tooltip with a unique name
-	local tooltipName = "PDS_StatTooltip_" .. self.statType .. "_" .. tostring(self):gsub("table:", "")
-	self.tooltip = CreateFrame("GameTooltip", tooltipName, UIParent, "GameTooltipTemplate")
+    -- Create a new tooltip
+    local tooltipName = "PDS_StatTooltip_" .. self.statType .. "_" .. tostring(self):gsub("table:", "")
+    self.tooltip = CreateFrame("GameTooltip", tooltipName, UIParent, "GameTooltipTemplate")
 
-	-- Set up mouse event handlers for main bar
-	self.frame:SetScript("OnEnter", function()
-		self:ShowTooltip(self.frame)
-	end)
+    -- Set up mouse event handlers for main frame
+    self.frame:SetScript("OnEnter", function()
+        self:ShowTooltip()
+    end)
 
-	self.frame:SetScript("OnLeave", function()
-		self:HideTooltip()
-	end)
+    self.frame:SetScript("OnLeave", function()
+        self:HideTooltip()
+    end)
 
-	self.frame:SetScript("OnMouseDown", function(frame, button)
-		if button == "LeftButton" and not PDS.Config.lockPosition then
-			local parentFrame = PDS.Core.frame
-			if parentFrame and parentFrame:GetScript("OnDragStart") then
-				parentFrame:StartMoving()
-			end
-		end
-	end)
+    -- Drag support through bar
+    self.frame:SetScript("OnMouseDown", function(frame, button)
+        if button == "LeftButton" and not PDS.Config.lockPosition then
+            local parentFrame = PDS.Core.frame
+            if parentFrame then
+                parentFrame:StartMoving()
+            end
+        end
+    end)
 
-	self.frame:SetScript("OnMouseUp", function(frame, button)
-		if button == "LeftButton" and not PDS.Config.lockPosition then
-			local parentFrame = PDS.Core.frame
-			if parentFrame and parentFrame:GetScript("OnDragStop") then
-				parentFrame:StopMovingOrSizing()
+    self.frame:SetScript("OnMouseUp", function(frame, button)
+        if button == "LeftButton" and not PDS.Config.lockPosition then
+            local parentFrame = PDS.Core.frame
+            if parentFrame then
+                parentFrame:StopMovingOrSizing()
+                local point, _, _, x, y = parentFrame:GetPoint()
+                PDS.Config.framePoint = point
+                PDS.Config.frameX = x
+                PDS.Config.frameY = y
+                PDS.Config:Save()
+            end
+        end
+    end)
 
-				local point, _, _, x, y = parentFrame:GetPoint()
-				PDS.Config.framePoint = point
-				PDS.Config.frameX = x
-				PDS.Config.frameY = y
-				PDS.Config:Save()
-			end
-		end
-	end)
+    -- Set up handlers for overflow bar too
+    if self.overflowBar then
+        local overflowFrame = self.overflowBar:GetFrame()
+        overflowFrame:SetScript("OnEnter", function()
+            self:ShowTooltip()
+        end)
+        overflowFrame:SetScript("OnLeave", function()
+            self:HideTooltip()
+        end)
+        overflowFrame:SetScript("OnMouseDown", function(frame, button)
+            if button == "LeftButton" and not PDS.Config.lockPosition then
+                local parentFrame = PDS.Core.frame
+                if parentFrame then
+                    parentFrame:StartMoving()
+                end
+            end
+        end)
+        overflowFrame:SetScript("OnMouseUp", function(frame, button)
+            if button == "LeftButton" and not PDS.Config.lockPosition then
+                local parentFrame = PDS.Core.frame
+                if parentFrame then
+                    parentFrame:StopMovingOrSizing()
+                    local point, _, _, x, y = parentFrame:GetPoint()
+                    PDS.Config.framePoint = point
+                    PDS.Config.frameX = x
+                    PDS.Config.frameY = y
+                    PDS.Config:Save()
+                end
+            end
+        end)
+    end
 
-	-- Set up mouse event handlers for overflow bar if it exists
-	if self.frame.overflowBar then
-		self.frame.overflowBar:SetScript("OnEnter", function()
-			self:ShowTooltip(self.frame.overflowBar)
-		end)
-
-		self.frame.overflowBar:SetScript("OnLeave", function()
-			self:HideTooltip()
-		end)
-
-		self.frame.overflowBar:SetScript("OnMouseDown", function(frame, button)
-				if button == "LeftButton" and not PDS.Config.lockPosition then
-					local parentFrame = PDS.Core.frame
-				if parentFrame and parentFrame:GetScript("OnDragStart") then
-					parentFrame:StartMoving()
-				end
-			end
-		end)
-
-		self.frame.overflowBar:SetScript("OnMouseUp", function(frame, button)
-				if button == "LeftButton" and not PDS.Config.lockPosition then
-				local parentFrame = PDS.Core.frame
-				if parentFrame and parentFrame:GetScript("OnDragStop") then
-					parentFrame:StopMovingOrSizing()
-
-						local point, _, _, x, y = parentFrame:GetPoint()
-					PDS.Config.framePoint = point
-					PDS.Config.frameX = x
-					PDS.Config.frameY = y
-					PDS.Config:Save()
-				end
-			end
-		end)
-	end
-
-	-- Mark the tooltip as initialized
-	self.tooltipInitialized = true
+    self.tooltipInitialized = true
 end
+
+function StatBar:ShowTooltip()
+    if not PDS.Config.showTooltips then return end
+
+    if not self.tooltipInitialized or not self.tooltip then
+        self:InitTooltip()
+    end
+
+    self.tooltip:ClearLines()
+    self.tooltip:SetOwner(self.frame, "ANCHOR_RIGHT")
+
+    local value = PDS.Stats:GetValue(self.statType)
+    local rating = PDS.Stats:GetRating(self.statType)
+
+    if PDS.StatTooltips then
+        PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
+    else
+        self.tooltip:SetText(PDS.Stats:GetName(self.statType))
+        self.tooltip:AddLine(PDS.Utils.FormatPercent(value))
+        self.tooltip:Show()
+    end
+end
+
+--------------------------------------------------------------------------------
+-- Appearance Updates (override to handle overflow bar)
+--------------------------------------------------------------------------------
+
+function StatBar:UpdateTexture()
+    BaseStatBar.UpdateTexture(self)
+
+    if self.overflowBar then
+        self.overflowBar:SetTexture(PDS.Config.barTexture)
+        self:UpdateColor()
+    end
+
+    self.tooltipInitialized = false
+    self:InitTooltip()
+end
+
+--------------------------------------------------------------------------------
+-- Cleanup
+--------------------------------------------------------------------------------
 
 function StatBar:Destroy()
-	-- Clean up the tooltip
-	if self.tooltip then
-		self.tooltip:Hide()
-		self.tooltip:ClearLines()
-		self.tooltip = nil
-	end
+    if self.overflowBar then
+        self.overflowBar:Destroy()
+    end
 
-	-- Hide and clear the frame
-	if self.frame then
-		self.frame:Hide()
-		self.frame:SetScript("OnEnter", nil)
-		self.frame:SetScript("OnLeave", nil)
-		self.frame:SetScript("OnMouseDown", nil)
-		self.frame:SetScript("OnMouseUp", nil)
-	end
-
-	-- Clear overflow bar scripts if it exists
-	if self.frame and self.frame.overflowBar then
-		self.frame.overflowBar:SetScript("OnEnter", nil)
-		self.frame.overflowBar:SetScript("OnLeave", nil)
-		self.frame.overflowBar:SetScript("OnMouseDown", nil)
-		self.frame.overflowBar:SetScript("OnMouseUp", nil)
-	end
+    BaseStatBar.Destroy(self)
 end
+
+return StatBar

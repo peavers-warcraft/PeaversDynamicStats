@@ -72,22 +72,8 @@ function Core:Initialize()
 	self.frame:SetPoint(PDS.Config.framePoint, PDS.Config.frameX, PDS.Config.frameY)
 	self:UpdateFrameLock()
 
-	local inCombat = InCombatLockdown()
-	self.inCombat = inCombat
-
-	if PDS.Config.showOnLogin then
-		if PDS.Config.hideOutOfCombat and not inCombat then
-			self.frame:Hide()
-		else
-			self.frame:Show()
-		end
-	else
-		self.frame:Hide()
-	end
-	
-	if PDS.Config.hideOutOfCombat and not inCombat then
-		self.frame:Hide()
-	end
+	self.inCombat = InCombatLockdown()
+	self:UpdateFrameVisibility()
 end
 
 function Core:AdjustFrameHeight()
@@ -167,39 +153,8 @@ end
 -- Updates frame visibility based on display mode setting
 -- Display modes: ALWAYS, PARTY_ONLY, RAID_ONLY
 function Core:UpdateFrameVisibility()
-	if not self.frame then return end
-
-	local displayMode = PDS.Config.displayMode or "ALWAYS"
-
-	-- Check if we should hide due to hideOutOfCombat setting
-	if PDS.Config.hideOutOfCombat and not self.inCombat then
-		self.frame:Hide()
-		return
-	end
-
-	-- Check display mode
-	if displayMode == "ALWAYS" then
-		self.frame:Show()
-	elseif displayMode == "PARTY_ONLY" then
-		-- Show if in a party (but not a raid) or solo
-		local inRaid = IsInRaid()
-		local inParty = IsInGroup()
-		if inParty and not inRaid then
-			self.frame:Show()
-		else
-			self.frame:Hide()
-		end
-	elseif displayMode == "RAID_ONLY" then
-		-- Show only if in a raid
-		if IsInRaid() then
-			self.frame:Show()
-		else
-			self.frame:Hide()
-		end
-	else
-		-- Default to showing
-		self.frame:Show()
-	end
+	local PeaversCommons = _G.PeaversCommons
+	PeaversCommons.VisibilityManager:UpdateVisibility(self.frame, PDS.Config, self.inCombat)
 end
 
 return Core

@@ -173,12 +173,32 @@ PeaversCommons.Events:Init(addonName, function()
             Save = function() end -- No-op function
         }
     else
-        -- Config exists, make sure it's properly initialized 
+        -- Config exists, make sure it's properly initialized
         if PDS.Config.Initialize then
             PDS.Config:Initialize()
         end
     end
-    
+
+    -- Register with GlobalAppearance if using global appearance
+    if PDS.Config.useGlobalAppearance and PeaversCommons.GlobalAppearance then
+        PeaversCommons.GlobalAppearance:RegisterAddon("PeaversDynamicStats", PDS.Config, function(key, value)
+            -- Refresh UI when global appearance changes
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
+            end
+            -- Update frame background
+            if PDS.Core and PDS.Core.frame then
+                PDS.Core.frame:SetBackdropColor(
+                    PDS.Config.bgColor.r,
+                    PDS.Config.bgColor.g,
+                    PDS.Config.bgColor.b,
+                    PDS.Config.bgAlpha
+                )
+            end
+        end)
+    end
+
     -- Initialize template management
     if PDS.TemplateUI and PDS.TemplateUI.Initialize then
         PDS.TemplateUI:Initialize()
