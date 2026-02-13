@@ -93,6 +93,9 @@ end
 -- Make the function globally accessible
 _G.ToggleStatsDisplay = ToggleStatsDisplay
 
+-- Expose addon namespace globally for PeaversUISetup integration
+_G.PeaversDynamicStats = PDS
+
 -- Register slash commands
 PeaversCommons.SlashCommands:Register(addonName, "pds", {
     default = function()
