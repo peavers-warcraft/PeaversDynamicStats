@@ -3,7 +3,7 @@
 ## Title: |cff3abdf7Peavers|rDynamicStats
 ## Notes: Displays secondary stats (haste, crit, mastery, versatility) in a movable frame
 ## Author: Peavers
-## Version: 1.0.77
+## Version: 1.0.78
 
 ## IconTexture: Interface\AddOns\PeaversCommons\src\Media\Icon.tga
 ## Category-enUS: Peavers
