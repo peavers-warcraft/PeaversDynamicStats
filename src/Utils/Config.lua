@@ -17,6 +17,14 @@ local PDS_DEFAULTS = {
     frameWidth = 250,
     frameHeight = 300,
 
+    -- Frame anchoring (for resolution-independent positioning)
+    -- When anchorFrame is set, position is relative to that frame instead of UIParent
+    anchorFrame = nil,           -- Frame name to anchor to (e.g., "UUF_Player")
+    anchorPoint = "TOPLEFT",     -- Point on PDS frame
+    anchorRelPoint = "BOTTOMLEFT", -- Point on anchor frame
+    anchorOffsetX = 0,           -- X offset from anchor
+    anchorOffsetY = -5,          -- Y offset from anchor (negative = below)
+
     -- Bar settings
     barWidth = 230,
     barBgAlpha = 0.7,

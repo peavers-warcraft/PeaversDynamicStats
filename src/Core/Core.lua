@@ -69,7 +69,7 @@ function Core:Initialize()
 
 	PDS.BarManager:CreateBars(self.contentFrame)
 	self:AdjustFrameHeight()
-	self.frame:SetPoint(PDS.Config.framePoint, PDS.Config.frameX, PDS.Config.frameY)
+	self:ApplyFramePosition()
 	self:UpdateFrameLock()
 
 	self.inCombat = InCombatLockdown()
@@ -139,15 +139,36 @@ end
 
 -- Applies frame position from current Config values
 -- Call this after loading a profile to update the physical frame position
+-- Supports both absolute positioning (UIParent) and relative anchoring (to another frame)
 function Core:ApplyFramePosition()
-	if self.frame and PDS.Config then
-		self.frame:ClearAllPoints()
-		self.frame:SetPoint(
-			PDS.Config.framePoint or "CENTER",
-			PDS.Config.frameX or 0,
-			PDS.Config.frameY or 0
-		)
+	if not self.frame or not PDS.Config then return end
+
+	self.frame:ClearAllPoints()
+
+	-- Check if we should anchor to another frame
+	local anchorFrameName = PDS.Config.anchorFrame
+	if anchorFrameName and anchorFrameName ~= "" then
+		local anchorFrame = _G[anchorFrameName]
+		if anchorFrame and anchorFrame.IsShown and anchorFrame:IsShown() then
+			-- Use relative anchoring to the specified frame
+			self.frame:SetPoint(
+				PDS.Config.anchorPoint or "TOPLEFT",
+				anchorFrame,
+				PDS.Config.anchorRelPoint or "BOTTOMLEFT",
+				PDS.Config.anchorOffsetX or 0,
+				PDS.Config.anchorOffsetY or -5
+			)
+			return
+		end
+		-- Anchor frame not found or not visible, fall through to absolute positioning
 	end
+
+	-- Fallback to absolute positioning relative to UIParent
+	self.frame:SetPoint(
+		PDS.Config.framePoint or "CENTER",
+		PDS.Config.frameX or 0,
+		PDS.Config.frameY or 0
+	)
 end
 
 -- Updates frame visibility based on display mode setting
