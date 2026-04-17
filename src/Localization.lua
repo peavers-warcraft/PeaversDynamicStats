@@ -83,6 +83,7 @@ Locales["enUS"] = {
     ["CONFIG_BAR_SPACING"] = "Bar Spacing",
     ["CONFIG_BAR_BG_OPACITY"] = "Bar Background Opacity",
     ["CONFIG_BAR_OPACITY"] = "Bar Fill Opacity",
+    ["CONFIG_TEXT_OPACITY"] = "Text Opacity",
     ["CONFIG_BAR_STYLE"] = "Bar Style:",
     ["CONFIG_BAR_TEXTURE"] = "Bar Texture",
     ["CONFIG_ADDITIONAL_BAR_OPTIONS"] = "Additional Bar Options:",

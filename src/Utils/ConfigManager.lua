@@ -19,6 +19,7 @@ local defaults = {
     barHeight = 20,
     barSpacing = 2,
     barBgAlpha = 0.7,
+    textAlpha = 1.0,
 
     -- Visual settings
     fontFace = "Fonts\\FRIZQT__.TTF",

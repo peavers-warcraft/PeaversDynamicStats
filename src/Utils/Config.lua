@@ -28,6 +28,7 @@ local PDS_DEFAULTS = {
     -- Bar settings
     barWidth = 230,
     barBgAlpha = 0.7,
+    textAlpha = 1.0,
 
     -- PDS-specific features
     growthAnchor = "TOPLEFT",
