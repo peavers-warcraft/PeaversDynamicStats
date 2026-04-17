@@ -70,6 +70,7 @@ function TemplateUI:SaveTemplate(name)
         barSpacing = config.barSpacing,
         barBgAlpha = config.barBgAlpha,
         barAlpha = config.barAlpha,
+        textAlpha = config.textAlpha,
         barTexture = config.barTexture,
 
         -- Visual settings

@@ -632,6 +632,7 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     if not Config.barSpacing then Config.barSpacing = 2 end
     if not Config.barAlpha then Config.barAlpha = 1 end
     if not Config.barBgAlpha then Config.barBgAlpha = 0.2 end
+    if not Config.textAlpha then Config.textAlpha = 1 end
 
     -- Bar height slider
     local heightContainer, heightSlider = Utils:CreateSlider(
@@ -704,6 +705,27 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     )
     barOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
     self.uiElements.barOpacitySlider = barOpacitySlider
+    yPos = yPos - 65
+
+    -- Text opacity slider (independent of bar fill; allows bars-only mode when set to 0)
+    local textOpacityContainer, textOpacitySlider = Utils:CreateSlider(
+        content, "PeaversTextAlphaSlider",
+        L("CONFIG_TEXT_OPACITY"), 0, 1, 0.05,
+        Config.textAlpha or 1.0, sliderWidth,
+        function(value)
+            Config.textAlpha = value
+            Config:Save()
+            if PDS.BarManager and PDS.BarManager.bars then
+                for _, bar in ipairs(PDS.BarManager.bars) do
+                    if bar.textManager then
+                        bar.textManager:SetTextAlpha(value)
+                    end
+                end
+            end
+        end
+    )
+    textOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
+    self.uiElements.textOpacitySlider = textOpacitySlider
     yPos = yPos - 65
 
     -- Add a thin separator
@@ -1019,6 +1041,10 @@ function ConfigUI:RefreshUI()
 
     if self.uiElements.barOpacitySlider then
         self.uiElements.barOpacitySlider:SetValue(Config.barAlpha or 1.0)
+    end
+
+    if self.uiElements.textOpacitySlider then
+        self.uiElements.textOpacitySlider:SetValue(Config.textAlpha or 1.0)
     end
 
     if self.uiElements.fontSizeSlider then
