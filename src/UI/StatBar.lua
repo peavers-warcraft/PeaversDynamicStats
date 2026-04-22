@@ -165,6 +165,27 @@ end
 --------------------------------------------------------------------------------
 
 function StatBar:Update(value, maxValue, change, noAnimation)
+    local IsSecretValue = PDS.Stats.IsSecretValue
+
+    -- 12.0.5+: Secret values can't be compared, tested, or used in arithmetic.
+    -- Pass them directly to display APIs which natively accept secrets.
+    if IsSecretValue(value) then
+        self.value = value
+
+        -- Hide overflow (can't calculate overflow from secret values)
+        self:HandleOverflow(0)
+
+        -- Pass secret value directly to StatusBar (SetValue accepts secrets)
+        self.statusBar:SetMinMaxValues(0, 100)
+        self.statusBar:SetValue(value, noAnimation)
+
+        -- Format text with string.format (works with secrets) and set on FontString
+        local displayValue = self:GetDisplayValue(value)
+        self.textManager:SetValue(displayValue)
+        return
+    end
+
+    -- Normal (non-secret) path: full arithmetic and change tracking
     if self.value == value then return end
 
     self.value = value or 0

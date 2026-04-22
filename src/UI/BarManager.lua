@@ -59,27 +59,36 @@ end
 --------------------------------------------------------------------------------
 
 -- Updates all stat bars with latest values, only if they've changed
+-- 12.0.5+: Secret values can't be compared or subtracted, so skip change tracking
 function BarManager:UpdateAllBars()
+    local IsSecretValue = PDS.Stats.IsSecretValue
+
     for _, bar in ipairs(self.bars) do
         local value = PDS.Stats:GetValue(bar.statType)
         local statKey = bar.statType
 
-        if not self.previousValues[statKey] then
-            self.previousValues[statKey] = 0
-        end
-
-        if value ~= self.previousValues[statKey] then
-            -- Calculate the change in value
-            local change = value - self.previousValues[statKey]
-
-            -- Update the bar with the new value and change
-            bar:Update(value, nil, change)
-
-            -- Ensure the color is properly applied when updating
+        if IsSecretValue(value) then
+            -- Secret value: can't compare or do math, always update, no change tracking
+            bar:Update(value)
             bar:UpdateColor()
+        else
+            if not self.previousValues[statKey] then
+                self.previousValues[statKey] = 0
+            end
 
-            -- Store the new value for next comparison
-            self.previousValues[statKey] = value
+            if value ~= self.previousValues[statKey] then
+                -- Calculate the change in value
+                local change = value - self.previousValues[statKey]
+
+                -- Update the bar with the new value and change
+                bar:Update(value, nil, change)
+
+                -- Ensure the color is properly applied when updating
+                bar:UpdateColor()
+
+                -- Store the new value for next comparison
+                self.previousValues[statKey] = value
+            end
         end
     end
 end

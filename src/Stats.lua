@@ -21,6 +21,8 @@ local function IsSecretValue(value)
 end
 
 -- Safely call an API function with error handling and secret value detection
+-- 12.0.5+: Returns secret values as-is for pass-through to display APIs
+-- (string.format, FontString:SetText, StatusBar:SetValue all accept secrets)
 local function SafeGetValue(apiFunc, ...)
     if not apiFunc then return nil end
 
@@ -30,9 +32,10 @@ local function SafeGetValue(apiFunc, ...)
         return nil
     end
 
-    -- Check if result is a secret value (would return true for restricted combat data)
+    -- 12.0.5+: Stat APIs return secret values during combat.
+    -- Return them as-is so callers can pass through to display widgets.
     if IsSecretValue(result) then
-        return nil
+        return result
     end
 
     -- Ensure we return a number, not a table or other type
@@ -44,6 +47,7 @@ local function SafeGetValue(apiFunc, ...)
 end
 
 -- Safely call an API function that returns multiple values
+-- 12.0.5+: Returns secret values as-is for pass-through
 local function SafeGetMultiValue(apiFunc, ...)
     if not apiFunc then return nil end
 
@@ -54,12 +58,16 @@ local function SafeGetMultiValue(apiFunc, ...)
         return nil
     end
 
-    -- Check first result for secret value
-    if #results > 0 and IsSecretValue(results[1]) then
-        return nil
-    end
-
+    -- 12.0.5+: Return secrets as-is (callers must check with IsSecretValue)
     return unpack(results)
+end
+
+-- Safe fallback helper: returns val if it's a secret or non-nil, otherwise returns default.
+-- Unlike `val or default`, this doesn't boolean-test val (which errors on secrets).
+local function DefaultIfNil(val, default)
+    if IsSecretValue(val) then return val end
+    if val ~= nil then return val end
+    return default
 end
 
 --------------------------------------------------------------------------------
@@ -72,61 +80,70 @@ local StatAPI = {}
 -- Primary stat wrappers (using UnitStat)
 function StatAPI.GetUnitStat(statIndex)
     local base, stat, posBuff, negBuff = SafeGetMultiValue(UnitStat, "player", statIndex)
+    -- 12.0.5+: If values are secret, return them as-is (can't do arithmetic)
+    if IsSecretValue(base) then
+        return base, stat, posBuff, negBuff
+    end
     if base == nil then
         return 0, 0, 0, 0
     end
     return base, stat or base, posBuff or 0, negBuff or 0
 end
 
--- Secondary stat wrappers
+-- Secondary stat wrappers (use DefaultIfNil instead of `or 0` to avoid boolean-testing secrets)
 function StatAPI.GetHaste()
-    return SafeGetValue(GetHaste) or 0
+    return DefaultIfNil(SafeGetValue(GetHaste), 0)
 end
 
 function StatAPI.GetCritChance()
     -- Try spell crit first (most accurate for casters), then generic crit
-    return SafeGetValue(GetSpellCritChance, 2) or SafeGetValue(GetCritChance) or 0
+    local val = SafeGetValue(GetSpellCritChance, 2)
+    if IsSecretValue(val) or val ~= nil then return val end
+    return DefaultIfNil(SafeGetValue(GetCritChance), 0)
 end
 
 function StatAPI.GetMastery()
-    return SafeGetValue(GetMasteryEffect) or SafeGetValue(GetMastery) or 0
+    local val = SafeGetValue(GetMasteryEffect)
+    if IsSecretValue(val) or val ~= nil then return val end
+    return DefaultIfNil(SafeGetValue(GetMastery), 0)
 end
 
 function StatAPI.GetSpeed()
-    return SafeGetValue(GetSpeed) or 0
+    return DefaultIfNil(SafeGetValue(GetSpeed), 0)
 end
 
 function StatAPI.GetLifesteal()
-    return SafeGetValue(GetLifesteal) or 0
+    return DefaultIfNil(SafeGetValue(GetLifesteal), 0)
 end
 
 function StatAPI.GetAvoidance()
-    return SafeGetValue(GetAvoidance) or 0
+    return DefaultIfNil(SafeGetValue(GetAvoidance), 0)
 end
 
 function StatAPI.GetDodgeChance()
-    return SafeGetValue(GetDodgeChance) or 0
+    return DefaultIfNil(SafeGetValue(GetDodgeChance), 0)
 end
 
 function StatAPI.GetParryChance()
-    return SafeGetValue(GetParryChance) or 0
+    return DefaultIfNil(SafeGetValue(GetParryChance), 0)
 end
 
 function StatAPI.GetBlockChance()
-    return SafeGetValue(GetBlockChance) or 0
+    return DefaultIfNil(SafeGetValue(GetBlockChance), 0)
 end
 
 -- Combat rating wrappers
 function StatAPI.GetCombatRating(ratingIndex)
-    return SafeGetValue(GetCombatRating, ratingIndex) or 0
+    return DefaultIfNil(SafeGetValue(GetCombatRating, ratingIndex), 0)
 end
 
 function StatAPI.GetCombatRatingBonus(ratingIndex)
-    return SafeGetValue(GetCombatRatingBonus, ratingIndex) or 0
+    return DefaultIfNil(SafeGetValue(GetCombatRatingBonus, ratingIndex), 0)
 end
 
--- Expose StatAPI for other modules and testing
+-- Expose StatAPI and secret value helpers for other modules
 Stats.StatAPI = StatAPI
+Stats.IsSecretValue = IsSecretValue
 
 --------------------------------------------------------------------------------
 -- Combat State Caching
@@ -361,49 +378,42 @@ end
 function Stats:GetValue(statType)
     local value = 0
 
-    -- Primary stats - use StatAPI wrapper with fallback chain
+    -- Helper: get primary stat total via fallback chain, secret-safe
+    -- C_Attributes/C_Stats return a single total; UnitStat returns components
+    local function GetPrimaryStat(attrName, statIndex)
+        local val = nil
+        -- Try C_Attributes (returns total as single value)
+        if C_Attributes then
+            val = SafeGetValue(C_Attributes.GetAttribute, "player", attrName)
+        end
+        -- If unavailable, try C_Stats
+        if not IsSecretValue(val) and val == nil then
+            if C_Stats then
+                val = SafeGetValue(C_Stats.GetStatByID, statIndex)
+            end
+        end
+        -- If still unavailable, try UnitStat
+        if not IsSecretValue(val) and val == nil then
+            local base, stat, posBuff, negBuff = StatAPI.GetUnitStat(statIndex)
+            if IsSecretValue(base) then
+                val = stat  -- stat (2nd return) is total effective value
+            else
+                val = base + posBuff + negBuff
+            end
+        end
+        if IsSecretValue(val) then return val end
+        return val or 0
+    end
+
+    -- Primary stats - use fallback chain with secret value support
     if statType == Stats.STAT_TYPES.STRENGTH then
-        -- Try to use C_Attributes if available, otherwise fall back to C_Stats, then StatAPI
-        if C_Attributes then
-            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Strength") or 0
-        elseif C_Stats then
-            value = SafeGetValue(C_Stats.GetStatByID, 1) or 0
-        end
-        -- Fallback to StatAPI wrapper (uses UnitStat with safety)
-        if value == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
-            value = base + posBuff + negBuff
-        end
+        value = GetPrimaryStat("Strength", 1)
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        if C_Attributes then
-            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Agility") or 0
-        elseif C_Stats then
-            value = SafeGetValue(C_Stats.GetStatByID, 2) or 0
-        end
-        if value == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(2)
-            value = base + posBuff + negBuff
-        end
+        value = GetPrimaryStat("Agility", 2)
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        if C_Attributes then
-            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Intellect") or 0
-        elseif C_Stats then
-            value = SafeGetValue(C_Stats.GetStatByID, 4) or 0
-        end
-        if value == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(4)
-            value = base + posBuff + negBuff
-        end
+        value = GetPrimaryStat("Intellect", 4)
     elseif statType == Stats.STAT_TYPES.STAMINA then
-        if C_Attributes then
-            value = SafeGetValue(C_Attributes.GetAttribute, "player", "Stamina") or 0
-        elseif C_Stats then
-            value = SafeGetValue(C_Stats.GetStatByID, 3) or 0
-        end
-        if value == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(3)
-            value = base + posBuff + negBuff
-        end
+        value = GetPrimaryStat("Stamina", 3)
 
     -- Secondary stats - Using StatAPI wrappers for 12.0 compatibility
     elseif statType == Stats.STAT_TYPES.HASTE then
@@ -416,60 +426,48 @@ function Stats:GetValue(statType)
         -- Get base value using StatAPI wrapper
         value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
 
-        -- Only apply talent adjustments if value is valid (non-zero)
-        local adjustment = self:GetTalentAdjustment(statType)
-
-        -- Debug output
-        if PDS.Config.DEBUG_ENABLED then
-            PDS.Utils.Debug("Versatility calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
-        end
-
-        if value > 0 or adjustment > 0 then
-            value = value + adjustment
-
-            -- Debug output
-            if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
-                PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+        -- 12.0.5+: Skip talent adjustment for secret values (can't do arithmetic)
+        -- Secret values from the API already include all combat bonuses
+        if not IsSecretValue(value) then
+            local adjustment = self:GetTalentAdjustment(statType)
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Versatility calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
+            end
+            if value > 0 or adjustment > 0 then
+                value = value + adjustment
+                if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
+                    PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+                end
             end
         end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
-        -- Get base value using StatAPI wrapper
         value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
 
-        -- Only apply talent adjustments if value is valid (non-zero)
-        local adjustment = self:GetTalentAdjustment(statType)
-
-        -- Debug output
-        if PDS.Config.DEBUG_ENABLED then
-            PDS.Utils.Debug("Versatility Damage calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
-        end
-
-        if value > 0 or adjustment > 0 then
-            value = value + adjustment
-
-            -- Debug output
-            if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
-                PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+        if not IsSecretValue(value) then
+            local adjustment = self:GetTalentAdjustment(statType)
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Versatility Damage calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
+            end
+            if value > 0 or adjustment > 0 then
+                value = value + adjustment
+                if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
+                    PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+                end
             end
         end
     elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
-        -- Get base value using StatAPI wrapper
         value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
 
-        -- Only apply talent adjustments if value is valid (non-zero)
-        local adjustment = self:GetTalentAdjustment(statType)
-
-        -- Debug output
-        if PDS.Config.DEBUG_ENABLED then
-            PDS.Utils.Debug("Versatility Damage Reduction calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
-        end
-
-        if value > 0 or adjustment > 0 then
-            value = value + adjustment
-
-            -- Debug output
-            if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
-                PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+        if not IsSecretValue(value) then
+            local adjustment = self:GetTalentAdjustment(statType)
+            if PDS.Config.DEBUG_ENABLED then
+                PDS.Utils.Debug("Versatility Damage Reduction calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
+            end
+            if value > 0 or adjustment > 0 then
+                value = value + adjustment
+                if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
+                    PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
+                end
             end
         end
     elseif statType == Stats.STAT_TYPES.SPEED then
@@ -494,39 +492,33 @@ end
 function Stats:GetRating(statType)
     local rating = 0
 
-    -- Primary stats - return the total stat value using StatAPI wrappers
+    -- Primary stats - return the total stat value (reuses GetPrimaryStat pattern)
+    -- Helper: get primary stat for rating display, secret-safe
+    local function GetPrimaryStatRating(statIndex)
+        local val = nil
+        if C_Stats then
+            val = SafeGetValue(C_Stats.GetStatByID, statIndex)
+        end
+        if not IsSecretValue(val) and val == nil then
+            local base, stat, posBuff, negBuff = StatAPI.GetUnitStat(statIndex)
+            if IsSecretValue(base) then
+                val = stat
+            else
+                val = base + posBuff + negBuff
+            end
+        end
+        if IsSecretValue(val) then return val end
+        return val or 0
+    end
+
     if statType == Stats.STAT_TYPES.STRENGTH then
-        if C_Stats then
-            rating = SafeGetValue(C_Stats.GetStatByID, 1) or 0
-        end
-        if rating == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
-            rating = base + posBuff + negBuff
-        end
+        rating = GetPrimaryStatRating(1)
     elseif statType == Stats.STAT_TYPES.AGILITY then
-        if C_Stats then
-            rating = SafeGetValue(C_Stats.GetStatByID, 2) or 0
-        end
-        if rating == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(2)
-            rating = base + posBuff + negBuff
-        end
+        rating = GetPrimaryStatRating(2)
     elseif statType == Stats.STAT_TYPES.INTELLECT then
-        if C_Stats then
-            rating = SafeGetValue(C_Stats.GetStatByID, 4) or 0
-        end
-        if rating == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(4)
-            rating = base + posBuff + negBuff
-        end
+        rating = GetPrimaryStatRating(4)
     elseif statType == Stats.STAT_TYPES.STAMINA then
-        if C_Stats then
-            rating = SafeGetValue(C_Stats.GetStatByID, 3) or 0
-        end
-        if rating == 0 then
-            local base, _, posBuff, negBuff = StatAPI.GetUnitStat(3)
-            rating = base + posBuff + negBuff
-        end
+        rating = GetPrimaryStatRating(3)
 
     -- Secondary stats - return the combat rating using StatAPI wrappers
     elseif statType == Stats.STAT_TYPES.HASTE then
@@ -894,33 +886,27 @@ end
 
 
 -- Gets the rating needed for 1% of a stat using StatAPI wrappers
+-- 12.0.5+: Returns 0 when values are secret (can't do arithmetic on secrets)
 function Stats:GetRatingPer1Percent(statType)
     local ratingPer1Percent = 0
 
+    local function CalcRatingPer1Pct(ratingIndex)
+        local bonus = StatAPI.GetCombatRatingBonus(ratingIndex)
+        local rating = StatAPI.GetCombatRating(ratingIndex)
+        -- Can't divide secret values
+        if IsSecretValue(bonus) or IsSecretValue(rating) then return 0 end
+        if rating > 0 then return bonus / rating end
+        return 0
+    end
+
     if statType == Stats.STAT_TYPES.HASTE then
-        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
-        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
-        if rating > 0 then
-            ratingPer1Percent = bonus / rating
-        end
+        ratingPer1Percent = CalcRatingPer1Pct(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
     elseif statType == Stats.STAT_TYPES.CRIT then
-        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
-        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
-        if rating > 0 then
-            ratingPer1Percent = bonus / rating
-        end
+        ratingPer1Percent = CalcRatingPer1Pct(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
     elseif statType == Stats.STAT_TYPES.MASTERY then
-        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_MASTERY)
-        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
-        if rating > 0 then
-            ratingPer1Percent = bonus / rating
-        end
+        ratingPer1Percent = CalcRatingPer1Pct(Stats.COMBAT_RATINGS.CR_MASTERY)
     elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
-        local bonus = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        local rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        if rating > 0 then
-            ratingPer1Percent = bonus / rating
-        end
+        ratingPer1Percent = CalcRatingPer1Pct(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
     end
 
     if ratingPer1Percent > 0 then
@@ -945,7 +931,12 @@ function Stats:GetRatingForNextPercent(statType, currentRating, currentPercent)
 end
 
 -- Calculates the bar values for display
+-- 12.0.5+: Secret values pass through directly (no overflow support)
 function Stats:CalculateBarValues(value)
+    if IsSecretValue(value) then
+        return value, 0
+    end
+
     local percentValue = math.min(value, 100)
     local overflowValue = 0
 
@@ -957,8 +948,25 @@ function Stats:CalculateBarValues(value)
 end
 
 -- Gets the formatted display value for a stat
--- Updated for WoW 12.0 compatibility with StatAPI wrappers
+-- Updated for WoW 12.0.5 compatibility with secret value pass-through
 function Stats:GetDisplayValue(statType, value, showRating)
+    -- 12.0.5+: Secret values work with string.format for display
+    if IsSecretValue(value) then
+        if showRating == nil then
+            showRating = PDS.Config.showRatings
+        end
+        if showRating then
+            local rating = self:GetRating(statType)
+            if IsSecretValue(rating) then
+                -- Both secret: format together (string.format accepts secrets)
+                return string.format("%.2f%% | %.0f", value, rating)
+            elseif rating > 0 then
+                return string.format("%.2f%% | %d", value, math.floor(rating + 0.5))
+            end
+        end
+        return string.format("%.2f%%", value)
+    end
+
     local displayValue = PDS.Utils.FormatPercent(value)
 
     -- If showRating is not specified, use the config setting
@@ -1008,7 +1016,10 @@ function Stats:GetDisplayValue(statType, value, showRating)
         end
 
         -- If we have a rating value, add it to the display value
-        if rating and rating > 0 then
+        -- 12.0.5+: Secret ratings use string.format pass-through
+        if IsSecretValue(rating) then
+            displayValue = string.format("%s | %.0f", displayValue, rating)
+        elseif rating and rating > 0 then
             displayValue = displayValue .. " | " .. math.floor(rating + 0.5)
         end
     end
