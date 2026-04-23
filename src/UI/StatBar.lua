@@ -170,7 +170,8 @@ function StatBar:Update(value, maxValue, change, noAnimation)
     -- 12.0.5+: Secret values can't be compared, tested, or used in arithmetic.
     -- Pass them directly to display APIs which natively accept secrets.
     if IsSecretValue(value) then
-        self.value = value
+        -- Don't retain the secret; next non-secret update must not compare against it.
+        self.value = nil
 
         -- Hide overflow (can't calculate overflow from secret values)
         self:HandleOverflow(0)
