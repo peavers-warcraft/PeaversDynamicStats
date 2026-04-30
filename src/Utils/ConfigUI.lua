@@ -120,6 +120,45 @@ function Utils:CreateStatColorPicker(parent, statType, y, indent)
     return newY
 end
 
+-- Creates a text color picker for a stat (default white, opt-in customization)
+function Utils:CreateStatTextColorPicker(parent, statType, y, indent)
+    Config.customTextColors = Config.customTextColors or {}
+
+    local r, g, b = 1, 1, 1
+    if Config.customTextColors[statType] then
+        local color = Config.customTextColors[statType]
+        r, g, b = color.r, color.g, color.b
+    end
+
+    local colorContainer, colorPicker, resetButton, newY = ConfigUIUtils.CreateColorPicker(
+        parent,
+        "PeaversStat" .. statType .. "TextColorPicker",
+        L("CONFIG_TEXT_COLOR"),
+        indent,
+        y,
+        { r = r, g = g, b = b },
+        function(newR, newG, newB)
+            Config.customTextColors[statType] = { r = newR, g = newG, b = newB }
+            Config:Save()
+            if PDS.BarManager then
+                local bar = PDS.BarManager:GetBar(statType)
+                if bar then bar:UpdateColor() end
+            end
+        end,
+        function()
+            Config.customTextColors[statType] = nil
+            Config:Save()
+            colorPicker:SetBackdropColor(1, 1, 1)
+            if PDS.BarManager then
+                local bar = PDS.BarManager:GetBar(statType)
+                if bar then bar:UpdateColor() end
+            end
+        end
+    )
+
+    return newY
+end
+
 -- Creates and initializes the options panel
 function ConfigUI:InitializeOptions()
     if not UI then
@@ -550,8 +589,11 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
         local newY = CreateStatCheckbox(statType, yPos, baseSpacing + 40)
         yPos = newY
 
-        -- Color picker
+        -- Bar color picker
         yPos = Utils:CreateStatColorPicker(content, statType, yPos, baseSpacing + 40)
+
+        -- Text color picker
+        yPos = Utils:CreateStatTextColorPicker(content, statType, yPos, baseSpacing + 40)
 
         -- Add a thin separator between stats (except after the last one)
         if i < #primaryStats then
@@ -598,8 +640,11 @@ function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
         local newY = CreateStatCheckbox(statType, yPos, baseSpacing + 40)
         yPos = newY
 
-        -- Color picker
+        -- Bar color picker
         yPos = Utils:CreateStatColorPicker(content, statType, yPos, baseSpacing + 40)
+
+        -- Text color picker
+        yPos = Utils:CreateStatTextColorPicker(content, statType, yPos, baseSpacing + 40)
 
         -- Add a thin separator between stats (except after the last one)
         if i < #secondaryStats then
@@ -818,6 +863,29 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
         end
     )
     self.uiElements.showOverflowBarsCheckbox = showOverflowBarsCheckbox
+    yPos = newY - 8 -- Update yPos for the next element
+
+    -- Auto-hide zero-value stats checkbox
+    if Config.autoHideZeroStats == nil then Config.autoHideZeroStats = true end
+    local autoHideZeroStatsCheckbox, newY = Utils:CreateCheckbox(
+        content, "PeaversAutoHideZeroStatsCheckbox",
+        L("CONFIG_AUTO_HIDE_ZERO_STATS"), controlIndent, yPos,
+        Config.autoHideZeroStats,
+        function(checked)
+            Config.autoHideZeroStats = checked
+            Config:Save()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                if checked then
+                    -- Re-evaluate visibility immediately for current values
+                    PDS.BarManager:UpdateAllBars()
+                else
+                    -- Show every previously-hidden bar
+                    PDS.BarManager:ShowAllZeroHiddenBars()
+                end
+            end
+        end
+    )
+    self.uiElements.autoHideZeroStatsCheckbox = autoHideZeroStatsCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
     -- Enable talent adjustments checkbox
@@ -1074,6 +1142,10 @@ function ConfigUI:RefreshUI()
 
     if self.uiElements.showOverflowBarsCheckbox then
         self.uiElements.showOverflowBarsCheckbox:SetChecked(Config.showOverflowBars)
+    end
+
+    if self.uiElements.autoHideZeroStatsCheckbox then
+        self.uiElements.autoHideZeroStatsCheckbox:SetChecked(Config.autoHideZeroStats ~= false)
     end
 
     if self.uiElements.enableTalentAdjustmentsCheckbox then

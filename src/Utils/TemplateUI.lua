@@ -89,6 +89,8 @@ function TemplateUI:SaveTemplate(name)
         showTitleBar = config.showTitleBar,
         showStats = config.showStats and PDS.Config.CopyTable and PDS.Config:CopyTable(config.showStats) or config.showStats,
         customColors = config.customColors and PDS.Config.CopyTable and PDS.Config:CopyTable(config.customColors) or config.customColors,
+        customTextColors = config.customTextColors and PDS.Config.CopyTable and PDS.Config:CopyTable(config.customTextColors) or config.customTextColors,
+        autoHideZeroStats = config.autoHideZeroStats,
         showOverflowBars = config.showOverflowBars,
         showStatChanges = config.showStatChanges,
         showRatings = config.showRatings,
