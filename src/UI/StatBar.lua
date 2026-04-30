@@ -111,7 +111,18 @@ function StatBar:GetColorForStat(statType)
     return 0.8, 0.8, 0.8
 end
 
--- Override UpdateColor to also update overflow bar
+-- Returns the configured text color for a stat, or white if unset
+function StatBar:GetTextColorForStat(statType)
+    if PDS.Config.customTextColors and PDS.Config.customTextColors[statType] then
+        local color = PDS.Config.customTextColors[statType]
+        if color and color.r and color.g and color.b then
+            return color.r, color.g, color.b
+        end
+    end
+    return 1, 1, 1
+end
+
+-- Override UpdateColor to also update overflow bar and text color
 function StatBar:UpdateColor()
     local r, g, b = self:GetColorForStat(self.statType)
     r = r or 0.8
@@ -123,6 +134,11 @@ function StatBar:UpdateColor()
     if self.overflowBar then
         local or_r, or_g, or_b = self:GetOverflowColor(r, g, b)
         self.overflowBar:SetColor(or_r, or_g, or_b, (PDS.Config.barAlpha or 1.0) * 0.7)
+    end
+
+    if self.textManager and self.textManager.SetTextColor then
+        local tr, tg, tb = self:GetTextColorForStat(self.statType)
+        self.textManager:SetTextColor(tr, tg, tb)
     end
 end
 

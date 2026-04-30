@@ -22,6 +22,14 @@ BarManager.previousValues = {}
 -- Bar Creation (PDS-specific)
 --------------------------------------------------------------------------------
 
+-- Should this bar be hidden because its value is 0 and auto-hide is enabled?
+-- Returns false for secret values so we never compare them against 0.
+local function ShouldHideForZero(value)
+    if not PDS.Config.autoHideZeroStats then return false end
+    if PDS.Stats.IsSecretValue(value) then return false end
+    return value == 0
+end
+
 -- Creates or recreates all stat bars based on current configuration
 function BarManager:CreateBars(parent)
     -- Clear existing bars using base method
@@ -29,29 +37,65 @@ function BarManager:CreateBars(parent)
 
     -- Get growth direction from config
     local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
+    local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
 
     local yOffset = 0
     for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
         if PDS.Config.showStats[statType] then
             local statName = PDS.Stats:GetName(statType)
             local bar = PDS.StatBar:New(parent, statName, statType)
-            bar:SetPosition(0, yOffset, anchorPoint)
 
             local value = PDS.Stats:GetValue(statType)
             bar:Update(value)
-
-            -- Ensure the color is properly applied
             bar:UpdateColor()
 
-            table.insert(self.bars, bar)
+            bar.hiddenByZero = ShouldHideForZero(value)
+            if bar.hiddenByZero then
+                bar.frame:Hide()
+            else
+                bar:SetPosition(0, yOffset, anchorPoint)
+                yOffset = yOffset + (barStep * yMult)
+            end
 
-            -- Calculate offset based on growth direction
-            local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
-            yOffset = yOffset + (barStep * yMult)
+            table.insert(self.bars, bar)
         end
     end
 
     return math.abs(yOffset)
+end
+
+-- Re-positions visible bars to remove gaps left by hidden ones.
+-- Call after toggling bar.hiddenByZero on any bar.
+function BarManager:RelayoutVisibleBars()
+    local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
+    local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
+
+    local yOffset = 0
+    for _, bar in ipairs(self.bars) do
+        if bar.hiddenByZero then
+            bar.frame:Hide()
+        else
+            bar.frame:Show()
+            bar:SetPosition(0, yOffset, anchorPoint)
+            yOffset = yOffset + (barStep * yMult)
+        end
+    end
+end
+
+-- Override total-height calculation so hidden bars don't reserve space
+function BarManager:CalculateTotalHeight(config)
+    config = config or PDS.Config
+    local barCount = 0
+    for _, bar in ipairs(self.bars) do
+        if not bar.hiddenByZero then
+            barCount = barCount + 1
+        end
+    end
+    if barCount == 0 then return 0 end
+
+    local barHeight = config.barHeight or 20
+    local barSpacing = config.barSpacing or 0
+    return barCount * barHeight + (barCount - 1) * barSpacing
 end
 
 --------------------------------------------------------------------------------
@@ -62,6 +106,7 @@ end
 -- 12.0.5+: Secret values can't be compared or subtracted, so skip change tracking
 function BarManager:UpdateAllBars()
     local IsSecretValue = PDS.Stats.IsSecretValue
+    local layoutDirty = false
 
     for _, bar in ipairs(self.bars) do
         local value = PDS.Stats:GetValue(bar.statType)
@@ -89,7 +134,32 @@ function BarManager:UpdateAllBars()
                 -- Store the new value for next comparison
                 self.previousValues[statKey] = value
             end
+
+            -- Re-evaluate auto-hide visibility against the latest value
+            local shouldHide = ShouldHideForZero(value)
+            if shouldHide ~= (bar.hiddenByZero == true) then
+                bar.hiddenByZero = shouldHide
+                layoutDirty = true
+            end
         end
+    end
+
+    if layoutDirty then
+        self:RelayoutVisibleBars()
+        if PDS.Core and PDS.Core.AdjustFrameHeight then
+            PDS.Core:AdjustFrameHeight()
+        end
+    end
+end
+
+-- Clears all hiddenByZero flags and relays out (called when user disables autoHideZeroStats)
+function BarManager:ShowAllZeroHiddenBars()
+    for _, bar in ipairs(self.bars) do
+        bar.hiddenByZero = false
+    end
+    self:RelayoutVisibleBars()
+    if PDS.Core and PDS.Core.AdjustFrameHeight then
+        PDS.Core:AdjustFrameHeight()
     end
 end
 

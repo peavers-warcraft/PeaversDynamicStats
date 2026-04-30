@@ -76,7 +76,8 @@ Locales["enUS"] = {
     ["CONFIG_SECONDARY_STATS_DESC"] = "Secondary stats enhance your character's performance: Crit, Haste, Mastery, Versatility, etc.",
     ["CONFIG_SHOW_STAT"] = "Show %s",
     ["CONFIG_BAR_COLOR"] = "Bar Color:",
-    
+    ["CONFIG_TEXT_COLOR"] = "Text Color:",
+
     -- Config UI - Bar Appearance
     ["CONFIG_BAR_DIMENSIONS"] = "Bar Dimensions:",
     ["CONFIG_BAR_HEIGHT"] = "Bar Height",
@@ -90,6 +91,7 @@ Locales["enUS"] = {
     ["CONFIG_SHOW_STAT_CHANGES"] = "Show Stat Value Changes",
     ["CONFIG_SHOW_RATINGS"] = "Show Rating Values",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "Show Overflow Bars",
+    ["CONFIG_AUTO_HIDE_ZERO_STATS"] = "Auto-hide stats with value 0",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "Enable Talent Adjustments (Rogue: Thief's Versatility)",
 
     -- Config UI - Text Settings
