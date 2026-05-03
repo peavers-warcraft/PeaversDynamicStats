@@ -93,6 +93,7 @@ function TemplateUI:SaveTemplate(name)
         autoHideZeroStats = config.autoHideZeroStats,
         showOverflowBars = config.showOverflowBars,
         showStatChanges = config.showStatChanges,
+        persistStatChanges = config.persistStatChanges,
         showRatings = config.showRatings,
         hideOutOfCombat = config.hideOutOfCombat,
         enableTalentAdjustments = config.enableTalentAdjustments,
@@ -120,6 +121,10 @@ function TemplateUI:ApplyTemplate(name)
     if not config then
         PDS.Utils.Print(L("TEMPLATE_ERROR_NO_PROFILE"))
         return false
+    end
+
+    if config.lastAppliedTemplate == name then
+        return true
     end
 
     -- Apply template settings to config

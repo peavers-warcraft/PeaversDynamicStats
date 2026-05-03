@@ -251,8 +251,9 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
     local widthContainer, widthSlider = Utils:CreateSlider(
         content, "PeaversWidthSlider",
         L("CONFIG_FRAME_WIDTH"), 50, 400, 10,
-        Config.frameWidth or 300, sliderWidth,
+        Config.frameWidth or 250, sliderWidth,
         function(value)
+            if self.isRefreshing then return end
             Config.frameWidth = value
             Config.barWidth = value - 20
             Config:Save()
@@ -831,6 +832,19 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     self.uiElements.showStatChangesCheckbox = showStatChangesCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
+    -- Persist stat changes checkbox
+    local persistStatChangesCheckbox, newY = Utils:CreateCheckbox(
+        content, "PeaversPersistStatChangesCheckbox",
+        L("CONFIG_PERSIST_STAT_CHANGES"), controlIndent, yPos,
+        Config.persistStatChanges,
+        function(checked)
+            Config.persistStatChanges = checked
+            Config:Save()
+        end
+    )
+    self.uiElements.persistStatChangesCheckbox = persistStatChangesCheckbox
+    yPos = newY - 8
+
     -- Show ratings checkbox
     local showRatingsCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversShowRatingsCheckbox",
@@ -1084,6 +1098,7 @@ end
 function ConfigUI:RefreshUI()
     if not self.uiElements then return end
 
+    self.isRefreshing = true
     local Config = PDS.Config
 
     -- Refresh sliders
@@ -1092,7 +1107,7 @@ function ConfigUI:RefreshUI()
     end
 
     if self.uiElements.opacitySlider then
-        self.uiElements.opacitySlider:SetValue(Config.bgAlpha or 0.8)
+        self.uiElements.opacitySlider:SetValue(Config.bgAlpha or 0.5)
     end
 
     if self.uiElements.heightSlider then
@@ -1116,7 +1131,7 @@ function ConfigUI:RefreshUI()
     end
 
     if self.uiElements.fontSizeSlider then
-        self.uiElements.fontSizeSlider:SetValue(Config.fontSize or 9)
+        self.uiElements.fontSizeSlider:SetValue(Config.fontSize or 11)
     end
 
     -- Refresh checkboxes
@@ -1134,6 +1149,10 @@ function ConfigUI:RefreshUI()
 
     if self.uiElements.showStatChangesCheckbox then
         self.uiElements.showStatChangesCheckbox:SetChecked(Config.showStatChanges)
+    end
+
+    if self.uiElements.persistStatChangesCheckbox then
+        self.uiElements.persistStatChangesCheckbox:SetChecked(Config.persistStatChanges)
     end
 
     if self.uiElements.showRatingsCheckbox then
@@ -1203,6 +1222,8 @@ function ConfigUI:RefreshUI()
     if PDS.TemplateUI and PDS.TemplateUI.UpdateAssignmentLabel then
         PDS.TemplateUI.UpdateAssignmentLabel()
     end
+
+    self.isRefreshing = false
 end
 
 -- Opens the configuration panel

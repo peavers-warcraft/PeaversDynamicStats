@@ -210,6 +210,12 @@ function StatBar:Update(value, maxValue, change, noAnimation)
     -- Get bar values including overflow
     local percentValue, overflowValue = self:CalculateBarValues(self.value, maxValue)
 
+    -- Primary stats (Str/Agi/Int/Sta) are raw values, not percentages — overflow is meaningless
+    if PDS.Stats:IsPrimaryStat(self.statType) then
+        percentValue = 100
+        overflowValue = 0
+    end
+
     -- Handle overflow bar visibility
     local visibilityChanged = self:HandleOverflow(overflowValue)
     if visibilityChanged then
@@ -229,7 +235,7 @@ function StatBar:Update(value, maxValue, change, noAnimation)
     if PDS.Config.showStatChanges and change and change ~= 0 then
         self.textManager:ShowChange(change, function(c)
             return self:GetChangeDisplayValue(c)
-        end)
+        end, PDS.Config.persistStatChanges)
     end
 end
 
@@ -332,9 +338,21 @@ function StatBar:ShowTooltip()
 
     if PDS.StatTooltips then
         PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
+    elseif PDS.Stats:IsPrimaryStat(self.statType) then
+        self.tooltip:SetText(PDS.Stats:GetName(self.statType))
+        if not PDS.Stats.IsSecretValue(value) then
+            self.tooltip:AddLine(tostring(math.floor(value + 0.5)), 1, 1, 1)
+            local buffValue = PDS.Stats:GetBuffValue(self.statType)
+            if buffValue ~= 0 then
+                local color = buffValue > 0 and {0, 1, 0} or {1, 0, 0}
+                local prefix = buffValue > 0 and "+" or ""
+                self.tooltip:AddLine(prefix .. math.floor(buffValue + 0.5) .. " from buffs", color[1], color[2], color[3])
+            end
+        end
+        self.tooltip:Show()
     else
         self.tooltip:SetText(PDS.Stats:GetName(self.statType))
-        self.tooltip:AddLine(PDS.Utils.FormatPercent(value))
+        self.tooltip:AddLine(PDS.Utils.FormatPercent(value), 1, 1, 1)
         self.tooltip:Show()
     end
 end
