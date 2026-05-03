@@ -38,6 +38,7 @@ local PDS_DEFAULTS = {
     autoHideZeroStats = true,
     showOverflowBars = true,
     showStatChanges = true,
+    persistStatChanges = false,
     showRatings = true,
     showTooltips = true,
     hideOutOfCombat = false,

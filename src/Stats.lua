@@ -235,6 +235,18 @@ Stats.STAT_TYPES = {
     ARMOR_PENETRATION = "ARMOR_PENETRATION"
 }
 
+-- Primary stat lookup for display/bar logic
+Stats.PRIMARY_STATS = {
+    [Stats.STAT_TYPES.STRENGTH] = true,
+    [Stats.STAT_TYPES.AGILITY] = true,
+    [Stats.STAT_TYPES.INTELLECT] = true,
+    [Stats.STAT_TYPES.STAMINA] = true,
+}
+
+function Stats:IsPrimaryStat(statType)
+    return Stats.PRIMARY_STATS[statType] == true
+end
+
 -- Stat display names (will be populated from localization)
 Stats.STAT_NAMES = {}
 
@@ -422,7 +434,7 @@ function Stats:GetValue(statType)
         value = StatAPI.GetCritChance()
     elseif statType == Stats.STAT_TYPES.MASTERY then
         value = StatAPI.GetMastery()
-    elseif statType == Stats.STAT_TYPES.VERSATILITY then
+    elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
         -- Get base value using StatAPI wrapper
         value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
 
@@ -440,25 +452,12 @@ function Stats:GetValue(statType)
                 end
             end
         end
-    elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
+    elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
+        -- Damage reduction is always half of damage done bonus
         value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
 
         if not IsSecretValue(value) then
-            local adjustment = self:GetTalentAdjustment(statType)
-            if PDS.Config.DEBUG_ENABLED then
-                PDS.Utils.Debug("Versatility Damage calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
-            end
-            if value > 0 or adjustment > 0 then
-                value = value + adjustment
-                if PDS.Config.DEBUG_ENABLED and adjustment > 0 then
-                    PDS.Utils.Debug("Applied talent adjustment. New value: " .. value)
-                end
-            end
-        end
-    elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
-        value = StatAPI.GetCombatRatingBonus(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
-
-        if not IsSecretValue(value) then
+            value = value / 2
             local adjustment = self:GetTalentAdjustment(statType)
             if PDS.Config.DEBUG_ENABLED then
                 PDS.Utils.Debug("Versatility Damage Reduction calculation - Base: " .. value .. ", Adjustment: " .. adjustment)
@@ -470,6 +469,7 @@ function Stats:GetValue(statType)
                 end
             end
         end
+        -- When value is secret, pass through as-is (can't do arithmetic on secrets)
     elseif statType == Stats.STAT_TYPES.SPEED then
         value = StatAPI.GetSpeed()
     elseif statType == Stats.STAT_TYPES.LEECH then
@@ -952,22 +952,28 @@ end
 function Stats:GetDisplayValue(statType, value, showRating)
     -- 12.0.5+: Secret values work with string.format for display
     if IsSecretValue(value) then
+        local fmt = self:IsPrimaryStat(statType) and "%.0f" or "%.2f%%"
         if showRating == nil then
             showRating = PDS.Config.showRatings
         end
         if showRating then
             local rating = self:GetRating(statType)
             if IsSecretValue(rating) then
-                -- Both secret: format together (string.format accepts secrets)
-                return string.format("%.2f%% | %.0f", value, rating)
+                return string.format(fmt .. " | %.0f", value, rating)
             elseif rating > 0 then
-                return string.format("%.2f%% | %d", value, math.floor(rating + 0.5))
+                return string.format(fmt .. " | %d", value, math.floor(rating + 0.5))
             end
         end
-        return string.format("%.2f%%", value)
+        return string.format(fmt, value)
     end
 
-    local displayValue = PDS.Utils.FormatPercent(value)
+    -- Primary stats display as raw numbers, not percentages
+    local displayValue
+    if self:IsPrimaryStat(statType) then
+        displayValue = tostring(math.floor(value + 0.5))
+    else
+        displayValue = PDS.Utils.FormatPercent(value)
+    end
 
     -- If showRating is not specified, use the config setting
     if showRating == nil then
@@ -976,46 +982,8 @@ function Stats:GetDisplayValue(statType, value, showRating)
 
     -- If showRatings is enabled, get the rating and add it to the display value
     if showRating then
-        -- Get raw rating value using StatAPI wrappers or GetRating for primary stats
-        local rating = nil
+        local rating = self:GetRating(statType)
 
-        -- Map stat types to combat ratings or get primary stat values
-        if statType == Stats.STAT_TYPES.STRENGTH then
-            rating = self:GetRating(statType)
-        elseif statType == Stats.STAT_TYPES.AGILITY then
-            rating = self:GetRating(statType)
-        elseif statType == Stats.STAT_TYPES.INTELLECT then
-            rating = self:GetRating(statType)
-        elseif statType == Stats.STAT_TYPES.STAMINA then
-            rating = self:GetRating(statType)
-        elseif statType == Stats.STAT_TYPES.DODGE then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_DODGE)
-        elseif statType == Stats.STAT_TYPES.PARRY then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_PARRY)
-        elseif statType == Stats.STAT_TYPES.BLOCK then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_BLOCK)
-        elseif statType == Stats.STAT_TYPES.HASTE then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
-        elseif statType == Stats.STAT_TYPES.CRIT then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
-        elseif statType == Stats.STAT_TYPES.MASTERY then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_MASTERY)
-        elseif statType == Stats.STAT_TYPES.VERSATILITY or statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_DONE then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_DONE)
-        elseif statType == Stats.STAT_TYPES.VERSATILITY_DAMAGE_REDUCTION then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_VERSATILITY_DAMAGE_TAKEN)
-        elseif statType == Stats.STAT_TYPES.SPEED then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_SPEED)
-        elseif statType == Stats.STAT_TYPES.LEECH then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_LIFESTEAL)
-        elseif statType == Stats.STAT_TYPES.AVOIDANCE then
-            rating = StatAPI.GetCombatRating(Stats.COMBAT_RATINGS.CR_AVOIDANCE)
-        else
-            -- Fallback to using GetRating method
-            rating = self:GetRating(statType)
-        end
-
-        -- If we have a rating value, add it to the display value
         -- 12.0.5+: Secret ratings use string.format pass-through
         if IsSecretValue(rating) then
             displayValue = string.format("%s | %.0f", displayValue, rating)
