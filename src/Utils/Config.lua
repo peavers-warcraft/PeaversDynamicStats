@@ -47,11 +47,20 @@ local PDS_DEFAULTS = {
     lastAppliedTemplate = nil,
 }
 
--- Create the character+spec based config using ConfigManager
-PDS.Config = ConfigManager:NewCharacterSpecBased(
+-- Create the AceDB-backed config with spec-based profiles
+PDS.Config = ConfigManager:NewWithAceDB(
     PDS,
     PDS_DEFAULTS,
-    { savedVariablesName = "PeaversDynamicStatsDB" }
+    {
+        savedVariablesName = "PeaversDynamicStatsDB",
+        profileType = "spec",
+        onProfileChanged = function()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
+            end
+        end,
+    }
 )
 
 local Config = PDS.Config
@@ -81,58 +90,50 @@ function Config:GetGrowthDirection()
     return dir.yMult, dir.xMult, dir.anchor
 end
 
--- Gets the template assigned to the current spec for auto-apply
 function Config:GetSpecTemplate()
-    local charKey = self:GetCharacterKey()
-    local specID = self:GetSpecialization()
-
-    if not specID or not PeaversDynamicStatsDB or not PeaversDynamicStatsDB.characters then
-        return nil
-    end
-
-    local charData = PeaversDynamicStatsDB.characters[charKey]
-    if not charData or not charData.specTemplates then
-        return nil
-    end
-
-    return charData.specTemplates[tostring(specID)]
+    if not self.db or not self.db.char then return nil end
+    local specID = GetSpecialization() and GetSpecializationInfo(GetSpecialization())
+    if not specID then return nil end
+    local specTemplates = self.db.char.specTemplates
+    if not specTemplates then return nil end
+    return specTemplates[tostring(specID)]
 end
 
--- Assigns a template to the current spec for auto-apply
 function Config:SetSpecTemplate(templateName)
-    local charKey = self:GetCharacterKey()
-    local specID = self:GetSpecialization()
+    if not self.db then return false end
+    local specID = GetSpecialization() and GetSpecializationInfo(GetSpecialization())
+    if not specID then return false end
 
-    if not specID then
-        return false
-    end
-
-    -- Initialize database structure if needed
-    if not PeaversDynamicStatsDB then
-        PeaversDynamicStatsDB = { profiles = {}, characters = {}, global = {} }
-    end
-    if not PeaversDynamicStatsDB.characters then
-        PeaversDynamicStatsDB.characters = {}
-    end
-    if not PeaversDynamicStatsDB.characters[charKey] then
-        PeaversDynamicStatsDB.characters[charKey] = {
-            lastSpec = specID,
-            specs = {},
-            specTemplates = {}
-        }
-    end
-    if not PeaversDynamicStatsDB.characters[charKey].specTemplates then
-        PeaversDynamicStatsDB.characters[charKey].specTemplates = {}
+    if not self.db.char.specTemplates then
+        self.db.char.specTemplates = {}
     end
 
-    -- Set or clear the template mapping
     if templateName and templateName ~= "" then
-        PeaversDynamicStatsDB.characters[charKey].specTemplates[tostring(specID)] = templateName
+        self.db.char.specTemplates[tostring(specID)] = templateName
     else
-        PeaversDynamicStatsDB.characters[charKey].specTemplates[tostring(specID)] = nil
+        self.db.char.specTemplates[tostring(specID)] = nil
     end
 
     return true
+end
+
+function Config:GetSpecialization()
+    local specIndex = GetSpecialization()
+    if not specIndex then return nil end
+    return GetSpecializationInfo(specIndex)
+end
+
+function Config:CopyTable(src)
+    if type(src) ~= "table" then return src end
+    local copy = {}
+    for k, v in pairs(src) do
+        if type(v) == "table" then
+            copy[k] = self:CopyTable(v)
+        else
+            copy[k] = v
+        end
+    end
+    return copy
 end
 
 -- Initialize stat visibility settings based on available stats

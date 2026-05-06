@@ -363,6 +363,18 @@ PeaversCommons.Events:Init(addonName, function()
             end)
         end
     end)
+    -- Register with PeaversConfig registry
+    if PeaversCommons.ConfigRegistry then
+        PeaversCommons.ConfigRegistry:Register({
+            name = "PeaversDynamicStats",
+            displayName = "Dynamic Stats",
+            description = "Real-time character stat tracking and display",
+            addonRef = PDS,
+            config = PDS.Config,
+            pages = PDS.ConfigUI:GetPages(),
+            order = 2,
+        })
+    end
 end, {
 	suppressAnnouncement = true
 })
