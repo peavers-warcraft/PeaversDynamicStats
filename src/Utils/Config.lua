@@ -45,6 +45,9 @@ local PDS_DEFAULTS = {
     displayMode = "ALWAYS",
     enableTalentAdjustments = true,
     lastAppliedTemplate = nil,
+    highlightHighestRating = false,
+    highlightStyle = "SUBTLE",
+    highlightShowIcon = false,
 }
 
 -- Create the character+spec based config using ConfigManager

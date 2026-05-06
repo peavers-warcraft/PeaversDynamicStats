@@ -95,6 +95,16 @@ Locales["enUS"] = {
     ["CONFIG_AUTO_HIDE_ZERO_STATS"] = "Auto-hide stats with value 0",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "Enable Talent Adjustments (Rogue: Thief's Versatility)",
 
+    -- Highest Rating Highlight
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING"] = "Highlight Highest Rating",
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING_DESC"] = "Highlight the secondary stat with the highest raw rating. Useful for items like Potion of Recklessness that amplify your highest stat by number.",
+    ["CONFIG_HIGHLIGHT_STYLE"] = "Highlight Style",
+    ["CONFIG_HIGHLIGHT_STYLE_STATIC"] = "Static Border",
+    ["CONFIG_HIGHLIGHT_STYLE_SUBTLE"] = "Marching Dots (Subtle)",
+    ["CONFIG_HIGHLIGHT_STYLE_GLOW"] = "Marching Dots (Glow)",
+    ["CONFIG_HIGHLIGHT_STYLE_BRIGHT"] = "Marching Dots (Bright)",
+    ["CONFIG_HIGHLIGHT_SHOW_ICON"] = "Show Star Icon Indicator",
+
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "Font Selection:",
     ["CONFIG_FONT"] = "Font",
@@ -237,6 +247,16 @@ Locales["zhCN"] = {
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "显示溢出条",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "启用天赋调整（盗贼：盗贼的全能）",
 
+    -- Highest Rating Highlight
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING"] = "高亮最高等级属性",
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING_DESC"] = "高亮拥有最高原始等级值的次要属性。适用于鲁莽药水等根据最高属性数值增强的物品。",
+    ["CONFIG_HIGHLIGHT_STYLE"] = "高亮样式",
+    ["CONFIG_HIGHLIGHT_STYLE_STATIC"] = "静态边框",
+    ["CONFIG_HIGHLIGHT_STYLE_SUBTLE"] = "流动点（细微）",
+    ["CONFIG_HIGHLIGHT_STYLE_GLOW"] = "流动点（发光）",
+    ["CONFIG_HIGHLIGHT_STYLE_BRIGHT"] = "流动点（明亮）",
+    ["CONFIG_HIGHLIGHT_SHOW_ICON"] = "显示星标指示器",
+
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "字体选择：",
     ["CONFIG_FONT"] = "字体",
@@ -365,6 +385,16 @@ Locales["zhTW"] = {
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "顯示溢出條",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "啟用天賦調整（盜賊：盜賊的臨機應變）",
 
+    -- Highest Rating Highlight
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING"] = "醒目顯示最高等級屬性",
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING_DESC"] = "醒目顯示擁有最高原始等級值的次要屬性。適用於魯莽藥水等根據最高屬性數值增強的物品。",
+    ["CONFIG_HIGHLIGHT_STYLE"] = "醒目樣式",
+    ["CONFIG_HIGHLIGHT_STYLE_STATIC"] = "靜態邊框",
+    ["CONFIG_HIGHLIGHT_STYLE_SUBTLE"] = "流動點（細微）",
+    ["CONFIG_HIGHLIGHT_STYLE_GLOW"] = "流動點（發光）",
+    ["CONFIG_HIGHLIGHT_STYLE_BRIGHT"] = "流動點（明亮）",
+    ["CONFIG_HIGHLIGHT_SHOW_ICON"] = "顯示星標指示器",
+
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "字型選擇：",
     ["CONFIG_FONT"] = "字型",
@@ -492,6 +522,16 @@ Locales["koKR"] = {
     ["CONFIG_SHOW_RATINGS"] = "평점 값 표시",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "오버플로우 바 표시",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "특성 조정 활성화 (도적: 도적의 유연성)",
+
+    -- Highest Rating Highlight
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING"] = "최고 등급 능력치 강조",
+    ["CONFIG_HIGHLIGHT_HIGHEST_RATING_DESC"] = "가장 높은 원시 등급 값을 가진 부 능력치를 강조합니다. 무모함의 물약과 같이 가장 높은 능력치 수치를 증폭하는 아이템에 유용합니다.",
+    ["CONFIG_HIGHLIGHT_STYLE"] = "강조 스타일",
+    ["CONFIG_HIGHLIGHT_STYLE_STATIC"] = "정적 테두리",
+    ["CONFIG_HIGHLIGHT_STYLE_SUBTLE"] = "행진 점 (미묘한)",
+    ["CONFIG_HIGHLIGHT_STYLE_GLOW"] = "행진 점 (빛남)",
+    ["CONFIG_HIGHLIGHT_STYLE_BRIGHT"] = "행진 점 (밝은)",
+    ["CONFIG_HIGHLIGHT_SHOW_ICON"] = "별 아이콘 표시",
 
     -- Config UI - Text Settings
     ["CONFIG_FONT_SELECTION"] = "글꼴 선택:",
