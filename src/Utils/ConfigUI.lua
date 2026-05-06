@@ -1,764 +1,206 @@
 local _, PDS = ...
 local Config = PDS.Config
-local UI = PDS.UI
 
--- Initialize ConfigUI.lua namespace
 local ConfigUI = {}
 PDS.ConfigUI = ConfigUI
 
--- Storage for UI elements that need refreshing when profile changes
-ConfigUI.uiElements = {}
-
--- Access PeaversCommons utilities
 local PeaversCommons = _G.PeaversCommons
--- Ensure PeaversCommons is loaded
 if not PeaversCommons then
-    print("|cffff0000Error:|r PeaversCommons not found. Please ensure it is installed and enabled.")
+    print("|cffff0000Error:|r PeaversCommons not found.")
     return
 end
 
--- Access required utilities
+local SettingsObjects = PeaversCommons.SettingsObjects
+local W = PeaversCommons.Widgets
+local C = W.Colors
 local ConfigUIUtils = PeaversCommons.ConfigUIUtils
 
--- Verify dependencies are loaded
-if not ConfigUIUtils then
-    print("|cffff0000Error:|r PeaversCommons.ConfigUIUtils not found. Please ensure PeaversCommons is up to date.")
-    return
-end
-
--- Localization helper - uses PDS.L:Get() from Localization.lua
-local function L(key, ...)
-    if PDS.L and PDS.L.Get then
-        return PDS.L:Get(key, ...)
+local function RefreshBars()
+    if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+        PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+        PDS.Core:AdjustFrameHeight()
     end
-    return key
 end
 
--- Utility functions to reduce code duplication (now using PeaversCommons.ConfigUIUtils)
-local Utils = {}
-
--- Creates a slider with standardized formatting
-function Utils:CreateSlider(parent, name, label, min, max, step, defaultVal, width, callback)
-    return ConfigUIUtils.CreateSlider(parent, name, label, min, max, step, defaultVal, width, callback)
-end
-
--- Creates a dropdown with standardized formatting
-function Utils:CreateDropdown(parent, name, label, options, defaultOption, width, callback)
-    return ConfigUIUtils.CreateDropdown(parent, name, label, options, defaultOption, width, callback)
-end
-
--- Creates a checkbox with standardized formatting
-function Utils:CreateCheckbox(parent, name, label, x, y, checked, callback)
-    return ConfigUIUtils.CreateCheckbox(parent, name, label, x, y, checked, callback)
-end
-
--- Creates a section header with standardized formatting
-function Utils:CreateSectionHeader(parent, text, indent, yPos, fontSize)
-    return ConfigUIUtils.CreateSectionHeader(parent, text, indent, yPos, fontSize)
-end
-
--- Creates a subsection label with standardized formatting
-function Utils:CreateSubsectionLabel(parent, text, indent, y)
-    return ConfigUIUtils.CreateSubsectionLabel(parent, text, indent, y)
-end
-
--- Creates a color picker for a stat
-function Utils:CreateStatColorPicker(parent, statType, y, indent)
-    local r, g, b
-    -- Use custom color if available, otherwise use default
-    if Config.customColors[statType] then
-        local color = Config.customColors[statType]
-        r, g, b = color.r, color.g, color.b
-    else
-        r, g, b = PDS.Stats:GetColor(statType)
+local function OnSettingChanged(key, value)
+    if key == "frameWidth" then
+        Config.barWidth = value - 20
+        if PDS.Core and PDS.Core.frame then
+            PDS.Core.frame:SetWidth(value)
+            if PDS.BarManager then PDS.BarManager:ResizeBars() end
+        end
+    elseif key == "bgAlpha" or key == "bgColor" then
+        if PDS.Core and PDS.Core.frame then
+            local color = Config.bgColor or { r = 0, g = 0, b = 0 }
+            PDS.Core.frame:SetBackdropColor(color.r, color.g, color.b, Config.bgAlpha or 0.8)
+            PDS.Core.frame:SetBackdropBorderColor(0, 0, 0, Config.bgAlpha or 0.8)
+            if PDS.Core.titleBar then
+                PDS.Core.titleBar:SetBackdropColor(color.r, color.g, color.b, Config.bgAlpha or 0.8)
+                PDS.Core.titleBar:SetBackdropBorderColor(0, 0, 0, Config.bgAlpha or 0.8)
+            end
+        end
+    elseif key == "lockPosition" then
+        if PDS.Core then PDS.Core:UpdateFrameLock() end
+    elseif key == "showTitleBar" then
+        if PDS.Core then PDS.Core:UpdateTitleBarVisibility() end
+    elseif key == "barAlpha" or key == "barBgAlpha" or key == "barTexture" then
+        if PDS.BarManager then PDS.BarManager:ResizeBars() end
+    elseif key == "barHeight" or key == "barSpacing" then
+        RefreshBars()
+    elseif key == "fontFace" or key == "fontSize" or key == "fontOutline" or key == "fontShadow" then
+        RefreshBars()
+    elseif key == "displayMode" or key == "hideOutOfCombat" or key == "showOnLogin" then
+        if PDS.Core and PDS.Core.UpdateFrameVisibility then
+            PDS.Core:UpdateFrameVisibility()
+        end
     end
-
-    -- Use the ConfigUIUtils for creating a color picker with reset functionality
-    local colorContainer, colorPicker, resetButton, newY = ConfigUIUtils.CreateColorPicker(
-        parent,
-        "PeaversStat" .. statType .. "ColorPicker",
-        L("CONFIG_BAR_COLOR"),
-        indent,
-        y,
-        {r = r, g = g, b = b},
-        -- Color change handler
-        function(newR, newG, newB)
-            -- Save the custom color
-            Config.customColors[statType] = { r = newR, g = newG, b = newB }
-            Config:Save()
-
-            -- Update the bar if it exists
-            if PDS.BarManager then
-                local bar = PDS.BarManager:GetBar(statType)
-                if bar then
-                    bar:UpdateColor()
-                end
-            end
-        end,
-        -- Reset handler
-        function()
-            -- Remove custom color
-            Config.customColors[statType] = nil
-            Config:Save()
-
-            -- Get default color
-            local defaultR, defaultG, defaultB = PDS.Stats:GetColor(statType)
-
-            -- Update color picker appearance
-            colorPicker:SetBackdropColor(defaultR, defaultG, defaultB)
-
-            -- Update the bar if it exists
-            if PDS.BarManager then
-                local bar = PDS.BarManager:GetBar(statType)
-                if bar then
-                    bar:UpdateColor()
-                end
-            end
-        end
-    )
-
-    return newY
 end
 
--- Creates a text color picker for a stat (default white, opt-in customization)
-function Utils:CreateStatTextColorPicker(parent, statType, y, indent)
-    Config.customTextColors = Config.customTextColors or {}
+local pageOpts = {
+    indent = 25,
+    width = 360,
+    onChanged = OnSettingChanged,
+}
 
-    local r, g, b = 1, 1, 1
-    if Config.customTextColors[statType] then
-        local color = Config.customTextColors[statType]
-        r, g, b = color.r, color.g, color.b
+local function GetPageOpts(parentFrame)
+    local opts = {}
+    for k, v in pairs(pageOpts) do opts[k] = v end
+    local frameWidth = parentFrame:GetWidth()
+    if frameWidth and frameWidth > 100 then
+        opts.width = frameWidth - (opts.indent * 2) - 10
     end
-
-    local colorContainer, colorPicker, resetButton, newY = ConfigUIUtils.CreateColorPicker(
-        parent,
-        "PeaversStat" .. statType .. "TextColorPicker",
-        L("CONFIG_TEXT_COLOR"),
-        indent,
-        y,
-        { r = r, g = g, b = b },
-        function(newR, newG, newB)
-            Config.customTextColors[statType] = { r = newR, g = newG, b = newB }
-            Config:Save()
-            if PDS.BarManager then
-                local bar = PDS.BarManager:GetBar(statType)
-                if bar then bar:UpdateColor() end
-            end
-        end,
-        function()
-            Config.customTextColors[statType] = nil
-            Config:Save()
-            colorPicker:SetBackdropColor(1, 1, 1)
-            if PDS.BarManager then
-                local bar = PDS.BarManager:GetBar(statType)
-                if bar then bar:UpdateColor() end
-            end
-        end
-    )
-
-    return newY
+    return opts
 end
 
--- Creates and initializes the options panel
-function ConfigUI:InitializeOptions()
-    if not UI then
-        print("ERROR: UI module not loaded. Cannot initialize options.")
-        return
-    end
+--------------------------------------------------------------------------------
+-- Page Builders
+--------------------------------------------------------------------------------
 
-    -- Use ConfigUIUtils to create a standard settings panel
-    local panel = ConfigUIUtils.CreateSettingsPanel(
-        "Settings",
-        "Configuration options for the dynamic stats display"
-    )
+function ConfigUI:BuildGeneralPage(parentFrame)
+    local y = -10
+    local opts = GetPageOpts(parentFrame)
 
-    local content = panel.content
-    local yPos = panel.yPos
-    local baseSpacing = panel.baseSpacing
-    local sectionSpacing = panel.sectionSpacing
+    y = SettingsObjects.FrameSettings(parentFrame, Config, y, opts)
+    y = SettingsObjects.Visibility(parentFrame, Config, y, opts)
 
-    -- 1. DISPLAY SETTINGS SECTION
-    yPos = self:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacing)
-
-    -- Add a separator between major sections
-    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
-    yPos = newY - baseSpacing
-
-    -- 1.5. GLOBAL APPEARANCE SECTION
-    yPos = self:CreateGlobalAppearanceOptions(content, yPos, baseSpacing, sectionSpacing)
-
-    -- Add a separator between major sections
-    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
-    yPos = newY - baseSpacing
-
-    -- 2. STAT OPTIONS SECTION
-    yPos = self:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
-
-    -- Add a separator between major sections
-    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
-    yPos = newY - baseSpacing
-
-    -- 3. BAR APPEARANCE SECTION
-    yPos = self:CreateBarAppearanceOptions(content, yPos, baseSpacing, sectionSpacing)
-
-    -- Add a separator between major sections
-    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
-    yPos = newY - baseSpacing
-
-    -- 4. TEMPLATE MANAGEMENT SECTION
-    yPos = self:CreateTemplateManagementSection(content, yPos, baseSpacing, sectionSpacing)
-
-    -- Add a separator between major sections
-    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
-    yPos = newY - baseSpacing
-
-    -- 5. TEXT SETTINGS SECTION
-    yPos = self:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
-
-    -- Add a separator between major sections
-    local _, newY = UI:CreateSeparator(content, baseSpacing, yPos)
-    yPos = newY - baseSpacing
-
-    -- 6. TROUBLESHOOTING SECTION
-    yPos = self:CreateTroubleshootingOptions(content, yPos, baseSpacing, sectionSpacing)
-
-    -- Update content height based on the last element position
-    panel:UpdateContentHeight(yPos)
-
-    -- Note: Settings registration is handled by PeaversCommons.SettingsUI:CreateSettingsPages
-    -- in Main.lua to avoid duplicate panels
-
-    return panel
+    parentFrame:SetHeight(math.abs(y) + 30)
 end
 
--- 1. DISPLAY SETTINGS - Frame positioning, visibility, and main dimensions
-function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
-    local controlIndent = baseSpacing + 15
-    local subControlIndent = controlIndent + 15
-    local sliderWidth = 400
+function ConfigUI:BuildStatsPage(parentFrame)
+    local y = -10
+    local opts = GetPageOpts(parentFrame)
+    local indent = opts.indent
+    local width = opts.width
 
-    -- Display Settings section header
-    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_DISPLAY_SETTINGS"), baseSpacing, yPos)
-    yPos = newY - 10
+    local _, newY = W:CreateSectionHeader(parentFrame, "Stat Visibility & Colors", indent, y)
+    y = newY - 8
 
-    -- Frame dimensions subsection
-    local dimensionsLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_FRAME_DIMENSIONS"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Frame width slider
-    local widthContainer, widthSlider = Utils:CreateSlider(
-        content, "PeaversWidthSlider",
-        L("CONFIG_FRAME_WIDTH"), 50, 400, 10,
-        Config.frameWidth or 250, sliderWidth,
-        function(value)
-            if self.isRefreshing then return end
-            Config.frameWidth = value
-            Config.barWidth = value - 20
-            Config:Save()
-            if PDS.Core and PDS.Core.frame then
-                PDS.Core.frame:SetWidth(value)
-                if PDS.BarManager then
-                    PDS.BarManager:ResizeBars()
-                end
-            end
-        end
-    )
-    widthContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.widthSlider = widthSlider
-    yPos = yPos - 55
-
-    -- Background opacity slider
-    local opacityContainer, opacitySlider = Utils:CreateSlider(
-        content, "PeaversOpacitySlider",
-        L("CONFIG_BG_OPACITY"), 0, 1, 0.05,
-        Config.bgAlpha or 0.5, sliderWidth,
-        function(value)
-            Config.bgAlpha = value
-            Config:Save()
-            if PDS.Core and PDS.Core.frame then
-                PDS.Core.frame:SetBackdropColor(
-                    Config.bgColor.r,
-                    Config.bgColor.g,
-                    Config.bgColor.b,
-                    Config.bgAlpha
-                )
-                PDS.Core.frame:SetBackdropBorderColor(0, 0, 0, Config.bgAlpha)
-                if PDS.Core.titleBar then
-                    PDS.Core.titleBar:SetBackdropColor(
-                        Config.bgColor.r,
-                        Config.bgColor.g,
-                        Config.bgColor.b,
-                        Config.bgAlpha
-                    )
-                    PDS.Core.titleBar:SetBackdropBorderColor(0, 0, 0, Config.bgAlpha)
-                end
-            end
-        end
-    )
-    opacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.opacitySlider = opacitySlider
-    yPos = yPos - 65
-
-    -- Add a thin separator with more spacing
-    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
-    yPos = newY - 15
-
-    -- Visibility options subsection
-    local visibilityLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_VISIBILITY_OPTIONS"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Show title bar checkbox
-    local titleBarCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversTitleBarCheckbox",
-        L("CONFIG_SHOW_TITLE_BAR"), controlIndent, yPos,
-        Config.showTitleBar or true,
-        function(checked)
-            Config.showTitleBar = checked
-            Config:Save()
-            if PDS.Core then
-                PDS.Core:UpdateTitleBarVisibility()
-            end
-        end
-    )
-    self.uiElements.titleBarCheckbox = titleBarCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
-
-    -- Lock position checkbox
-    local lockPositionCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversLockPositionCheckbox",
-        L("CONFIG_LOCK_POSITION"), controlIndent, yPos,
-        Config.lockPosition or false,
-        function(checked)
-            Config.lockPosition = checked
-            Config:Save()
-            if PDS.Core then
-                PDS.Core:UpdateFrameLock()
-            end
-        end
-    )
-    self.uiElements.lockPositionCheckbox = lockPositionCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
-
-    -- Hide out of combat checkbox
-    local hideOutOfCombatCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversHideOutOfCombatCheckbox",
-        L("CONFIG_HIDE_OUT_OF_COMBAT"), controlIndent, yPos,
-        Config.hideOutOfCombat or false,
-        function(checked)
-            Config.hideOutOfCombat = checked
-            Config:Save()
-            -- Apply the change immediately if out of combat
-            if PDS.Core and PDS.Core.frame then
-                local inCombat = InCombatLockdown()
-                if checked and not inCombat then
-                    PDS.Core.frame:Hide()
-                elseif not checked and not PDS.Core.frame:IsShown() then
-                    PDS.Core.frame:Show()
-                end
-            end
-        end
-    )
-    self.uiElements.hideOutOfCombatCheckbox = hideOutOfCombatCheckbox
-    yPos = newY - 12 -- Update yPos for the next element
-
-    -- Display mode dropdown - custom implementation to properly track selection
-    local displayModeOptions = {
-        { key = "ALWAYS", text = L("CONFIG_DISPLAY_MODE_ALWAYS") },
-        { key = "PARTY_ONLY", text = L("CONFIG_DISPLAY_MODE_PARTY") },
-        { key = "RAID_ONLY", text = L("CONFIG_DISPLAY_MODE_RAID") },
+    local statGroups = {
+        { label = "Primary Stats", stats = { "STRENGTH", "AGILITY", "INTELLECT", "STAMINA" } },
+        { label = "Secondary Stats", stats = { "CRIT", "HASTE", "MASTERY", "VERSATILITY", "VERSATILITY_DAMAGE_REDUCTION" } },
+        { label = "Tertiary Stats", stats = { "DODGE", "PARRY", "BLOCK", "LEECH", "AVOIDANCE", "SPEED" } },
     }
 
-    local function getDisplayModeText(key)
-        for _, opt in ipairs(displayModeOptions) do
-            if opt.key == key then return opt.text end
-        end
-        return L("CONFIG_DISPLAY_MODE_ALWAYS")
-    end
+    if not Config.showStats then Config.showStats = {} end
+    if not Config.customColors then Config.customColors = {} end
+    if not Config.customTextColors then Config.customTextColors = {} end
 
-    local displayModeContainer = CreateFrame("Frame", nil, content)
-    displayModeContainer:SetSize(sliderWidth, 60)
+    for _, group in ipairs(statGroups) do
+        local groupLabel = parentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        groupLabel:SetPoint("TOPLEFT", indent, y)
+        groupLabel:SetText(group.label)
+        y = y - 20
 
-    local displayModeLabel = displayModeContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    displayModeLabel:SetPoint("TOPLEFT", 0, 0)
-    displayModeLabel:SetText(L("CONFIG_DISPLAY_MODE"))
+        for _, statType in ipairs(group.stats) do
+            local statName = (PDS.Stats and PDS.Stats.GetName) and PDS.Stats:GetName(statType) or statType
+            local toggle = W:CreateToggle(parentFrame, statName, {
+                checked = Config.showStats[statType] ~= false,
+                width = width,
+                onChange = function(checked)
+                    Config.showStats[statType] = checked
+                    Config:Save()
+                    RefreshBars()
+                end,
+            })
+            toggle:SetPoint("TOPLEFT", indent + 10, y)
+            y = y - 26
 
-    local displayModeDropdown = CreateFrame("Frame", "PeaversDisplayModeDropdown", displayModeContainer, "UIDropDownMenuTemplate")
-    displayModeDropdown:SetPoint("TOPLEFT", 0, -20)
-    UIDropDownMenu_SetWidth(displayModeDropdown, sliderWidth - 55)
-    UIDropDownMenu_SetText(displayModeDropdown, getDisplayModeText(Config.displayMode))
-
-    UIDropDownMenu_Initialize(displayModeDropdown, function(self, level)
-        local info = UIDropDownMenu_CreateInfo()
-        for _, opt in ipairs(displayModeOptions) do
-            info.text = opt.text
-            info.checked = (Config.displayMode == opt.key)
-            info.func = function()
-                Config.displayMode = opt.key
-                UIDropDownMenu_SetText(displayModeDropdown, opt.text)
-                Config:Save()
-                -- Apply the change immediately
-                if PDS.Core and PDS.Core.UpdateFrameVisibility then
-                    PDS.Core:UpdateFrameVisibility()
-                end
+            -- Bar color picker
+            local barR, barG, barB = 1, 1, 1
+            if Config.customColors[statType] then
+                barR = Config.customColors[statType].r or 1
+                barG = Config.customColors[statType].g or 1
+                barB = Config.customColors[statType].b or 1
+            elseif PDS.Stats and PDS.Stats.GetColor then
+                barR, barG, barB = PDS.Stats:GetColor(statType)
             end
-            UIDropDownMenu_AddButton(info)
-        end
-    end)
 
-    displayModeContainer:SetPoint("TOPLEFT", subControlIndent, yPos)
-    self.uiElements.displayModeDropdown = displayModeDropdown
-    yPos = yPos - 65 -- Update yPos for the next element
-
-    -- Add a thin separator
-    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
-    yPos = newY - 15
-
-    -- Growth anchor subsection
-    local growthAnchorLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_GROWTH_ANCHOR"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Growth direction dropdown - controls whether bars grow down or up
-    -- Custom dropdown implementation to properly track current selection
-    local growthAnchorOptions = {
-        { key = "TOPLEFT", text = L("CONFIG_GROWTH_DOWN") },
-        { key = "BOTTOMLEFT", text = L("CONFIG_GROWTH_UP") },
-    }
-
-    -- Helper to get display text from key
-    local function getGrowthAnchorText(key)
-        -- Map any top-style anchor to "grow down", any bottom-style to "grow up"
-        local isBottom = key == "BOTTOMLEFT" or key == "BOTTOM" or key == "BOTTOMRIGHT"
-        return isBottom and L("CONFIG_GROWTH_UP") or L("CONFIG_GROWTH_DOWN")
-    end
-
-    local growthAnchorContainer = CreateFrame("Frame", nil, content)
-    growthAnchorContainer:SetSize(sliderWidth, 60)
-
-    local growthAnchorLabel = growthAnchorContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    growthAnchorLabel:SetPoint("TOPLEFT", 0, 0)
-    growthAnchorLabel:SetText(L("CONFIG_GROWTH_ANCHOR_LABEL"))
-
-    local growthAnchorDropdown = CreateFrame("Frame", "PeaversGrowthAnchorDropdown", growthAnchorContainer, "UIDropDownMenuTemplate")
-    growthAnchorDropdown:SetPoint("TOPLEFT", 0, -20)
-    UIDropDownMenu_SetWidth(growthAnchorDropdown, sliderWidth - 55)
-    UIDropDownMenu_SetText(growthAnchorDropdown, getGrowthAnchorText(Config.growthAnchor))
-
-    UIDropDownMenu_Initialize(growthAnchorDropdown, function(self, level)
-        local info = UIDropDownMenu_CreateInfo()
-        -- Check if current anchor is a bottom type (for backwards compatibility with old 9-anchor values)
-        local currentIsBottom = Config.growthAnchor == "BOTTOMLEFT" or
-                                Config.growthAnchor == "BOTTOM" or
-                                Config.growthAnchor == "BOTTOMRIGHT"
-        for _, opt in ipairs(growthAnchorOptions) do
-            info.text = opt.text
-            -- Match based on growth direction, not exact key
-            local optIsBottom = opt.key == "BOTTOMLEFT"
-            info.checked = (currentIsBottom == optIsBottom)
-            info.func = function()
-                Config.growthAnchor = opt.key
-                UIDropDownMenu_SetText(growthAnchorDropdown, opt.text)
-                Config:Save()
-                -- Update layout and recreate bars with new anchor point
-                if PDS.Core then
-                    if PDS.Core.UpdateLayoutForGrowthAnchor then
-                        PDS.Core:UpdateLayoutForGrowthAnchor()
+            local barColor = W:CreateColorPicker(parentFrame, "Bar Color", {
+                r = barR, g = barG, b = barB,
+                width = width - 20,
+                onChange = function(r, g, b)
+                    Config.customColors[statType] = { r = r, g = g, b = b }
+                    Config:Save()
+                    if PDS.BarManager and PDS.BarManager.bars then
+                        for _, bar in ipairs(PDS.BarManager.bars) do
+                            if bar.statType == statType then bar:UpdateColor() end
+                        end
                     end
-                    if PDS.BarManager and PDS.Core.contentFrame then
-                        PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                        PDS.Core:AdjustFrameHeight()
+                end,
+            })
+            barColor:SetPoint("TOPLEFT", indent + 20, y)
+            y = y - 28
+
+            -- Text color picker
+            local textR, textG, textB = 1, 1, 1
+            if Config.customTextColors[statType] then
+                textR = Config.customTextColors[statType].r or 1
+                textG = Config.customTextColors[statType].g or 1
+                textB = Config.customTextColors[statType].b or 1
+            end
+
+            local textColor = W:CreateColorPicker(parentFrame, "Text Color", {
+                r = textR, g = textG, b = textB,
+                width = width - 20,
+                onChange = function(r, g, b)
+                    Config.customTextColors[statType] = { r = r, g = g, b = b }
+                    Config:Save()
+                    if PDS.BarManager and PDS.BarManager.bars then
+                        for _, bar in ipairs(PDS.BarManager.bars) do
+                            if bar.statType == statType and bar.textManager then
+                                bar.textManager:SetTextColor(r, g, b)
+                            end
+                        end
                     end
-                end
-            end
-            UIDropDownMenu_AddButton(info)
+                end,
+            })
+            textColor:SetPoint("TOPLEFT", indent + 20, y)
+            y = y - 30
         end
-    end)
 
-    growthAnchorContainer:SetPoint("TOPLEFT", subControlIndent, yPos)
-    self.uiElements.growthAnchorDropdown = growthAnchorDropdown
-    yPos = yPos - 65 -- Update yPos for the next element
+        y = y - 10
+    end
 
-    return yPos
+    parentFrame:SetHeight(math.abs(y) + 30)
 end
 
--- 1.5. GLOBAL APPEARANCE
-function ConfigUI:CreateGlobalAppearanceOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
+function ConfigUI:BuildBarsPage(parentFrame)
+    local y = -10
+    local opts = GetPageOpts(parentFrame)
+    local indent = opts.indent
+    local width = opts.width
 
-    -- Create the global appearance section using ConfigUIUtils helper
-    local _, newY = ConfigUIUtils.CreateGlobalAppearanceSection(
-        content,
-        "PeaversDynamicStats",
-        PDS,
-        baseSpacing,
-        yPos,
-        function()
-            -- Refresh UI callback when global settings change
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-            if PDS.Core and PDS.Core.frame then
-                PDS.Core.frame:SetBackdropColor(
-                    PDS.Config.bgColor.r,
-                    PDS.Config.bgColor.g,
-                    PDS.Config.bgColor.b,
-                    PDS.Config.bgAlpha
-                )
-            end
-            if ConfigUI.RefreshUI then
-                ConfigUI:RefreshUI()
-            end
-        end
-    )
+    y = SettingsObjects.BarAppearance(parentFrame, Config, y, opts)
 
-    return newY
-end
+    -- Text opacity (PDS-specific)
+    local _, newY = W:CreateSectionHeader(parentFrame, "Text & Bar Options", indent, y)
+    y = newY - 8
 
--- 2. STAT OPTIONS - Separated into Primary and Secondary stats with explanations
-function ConfigUI:CreateStatOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
-    local controlIndent = baseSpacing + 15
-    local subControlIndent = controlIndent + 15
-
-    -- Main section header
-    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_STAT_OPTIONS"), baseSpacing, yPos)
-    yPos = newY - 10
-
-    -- Initialize stat checkboxes storage
-    if not self.uiElements.statCheckboxes then
-        self.uiElements.statCheckboxes = {}
-    end
-
-    -- Function to create a show/hide checkbox for a stat
-    local function CreateStatCheckbox(statType, y, indent)
-        -- Initialize showStats table if it doesn't exist
-        if not Config.showStats then
-            Config.showStats = {}
-        end
-
-        local onClick = function(checked)
-            Config.showStats[statType] = checked
-            Config:Save()
-            if PDS.BarManager then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-
-        local checkbox, newY = Utils:CreateCheckbox(
-            content,
-            "PeaversStat" .. statType .. "Checkbox",
-            L("CONFIG_SHOW_STAT", PDS.Stats:GetName(statType)),
-            indent, y,                           -- Pass x and y positions explicitly
-            Config.showStats[statType] ~= false, -- Default to true
-            onClick
-        )
-        -- Store reference for refresh
-        self.uiElements.statCheckboxes[statType] = checkbox
-        return newY
-    end
-
-    -- PRIMARY STATS SECTION
-    local primaryStatsHeader, newY = Utils:CreateSectionHeader(content, L("CONFIG_PRIMARY_STATS"), baseSpacing + 10, yPos, 16)
-    yPos = newY - 5
-
-    -- Add explanation about primary stats
-    local primaryStatsExplanation = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    primaryStatsExplanation:SetPoint("TOPLEFT", baseSpacing + 15, yPos)
-    primaryStatsExplanation:SetWidth(400)
-    primaryStatsExplanation:SetJustifyH("LEFT")
-    primaryStatsExplanation:SetText(L("CONFIG_PRIMARY_STATS_DESC"))
-
-    -- Calculate the height of the explanation text
-    local explanationHeight = 40
-    yPos = yPos - explanationHeight - 10
-
-    -- Define primary stats according to WoW character screen
-    local primaryStats = { "STRENGTH", "AGILITY", "INTELLECT", "STAMINA" }
-
-    -- Create sections for primary stats
-    for i, statType in ipairs(primaryStats) do
-        -- Create subsection header with stat name
-        local statHeader, newY = Utils:CreateSectionHeader(content, PDS.Stats:GetName(statType), baseSpacing + 25, yPos,
-            14)
-        yPos = newY
-
-        -- Show/hide checkbox
-        local newY = CreateStatCheckbox(statType, yPos, baseSpacing + 40)
-        yPos = newY
-
-        -- Bar color picker
-        yPos = Utils:CreateStatColorPicker(content, statType, yPos, baseSpacing + 40)
-
-        -- Text color picker
-        yPos = Utils:CreateStatTextColorPicker(content, statType, yPos, baseSpacing + 40)
-
-        -- Add a thin separator between stats (except after the last one)
-        if i < #primaryStats then
-            local _, newY = UI:CreateSeparator(content, baseSpacing + 30, yPos, 380)
-            yPos = newY - 5
-        end
-    end
-
-    -- Add a separator between primary and secondary stats
-    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
-    yPos = newY - 15
-
-    -- SECONDARY STATS SECTION
-    local secondaryStatsHeader, newY = Utils:CreateSectionHeader(content, L("CONFIG_SECONDARY_STATS"), baseSpacing + 10, yPos, 16)
-    yPos = newY - 5
-
-    -- Add explanation about secondary stats
-    local secondaryStatsExplanation = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    secondaryStatsExplanation:SetPoint("TOPLEFT", baseSpacing + 15, yPos)
-    secondaryStatsExplanation:SetWidth(400)
-    secondaryStatsExplanation:SetJustifyH("LEFT")
-    secondaryStatsExplanation:SetText(L("CONFIG_SECONDARY_STATS_DESC"))
-
-    -- Calculate the height of the explanation text
-    local explanationHeight = 40
-    yPos = yPos - explanationHeight - 10
-
-    -- Define secondary stats in the order they appear on WoW character screen
-    local secondaryStats = {
-        "CRIT", "HASTE", "MASTERY", "VERSATILITY",
-        "VERSATILITY_DAMAGE_REDUCTION", -- Damage reduction % (useful for tanks, Disc Priests)
-        "DODGE", "PARRY",
-        "BLOCK", "LEECH", "AVOIDANCE", "SPEED"
-    }
-
-    -- Create sections for secondary stats
-    for i, statType in ipairs(secondaryStats) do
-        -- Create subsection header with stat name
-        local statHeader, newY = Utils:CreateSectionHeader(content, PDS.Stats:GetName(statType), baseSpacing + 25, yPos,
-            14)
-        yPos = newY
-
-        -- Show/hide checkbox
-        local newY = CreateStatCheckbox(statType, yPos, baseSpacing + 40)
-        yPos = newY
-
-        -- Bar color picker
-        yPos = Utils:CreateStatColorPicker(content, statType, yPos, baseSpacing + 40)
-
-        -- Text color picker
-        yPos = Utils:CreateStatTextColorPicker(content, statType, yPos, baseSpacing + 40)
-
-        -- Add a thin separator between stats (except after the last one)
-        if i < #secondaryStats then
-            local _, newY = UI:CreateSeparator(content, baseSpacing + 30, yPos, 380)
-            yPos = newY - 5
-        end
-    end
-
-    return yPos - 15 -- Extra spacing after all stat sections
-end
-
--- 3. BAR APPEARANCE - Everything related to the bars appearance and layout
-function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
-    local controlIndent = baseSpacing + 15
-    local subControlIndent = controlIndent + 15
-    local sliderWidth = 400
-
-    -- Bar Appearance section header
-    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_BAR_APPEARANCE"), baseSpacing, yPos)
-    yPos = newY - 10
-
-    -- Bar dimensions subsection
-    local dimensionsLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_BAR_DIMENSIONS"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Initialize values with defaults if they don't exist
-    if not Config.barHeight then Config.barHeight = 20 end
-    if not Config.barSpacing then Config.barSpacing = 2 end
-    if not Config.barAlpha then Config.barAlpha = 1 end
-    if not Config.barBgAlpha then Config.barBgAlpha = 0.2 end
-    if not Config.textAlpha then Config.textAlpha = 1 end
-
-    -- Bar height slider
-    local heightContainer, heightSlider = Utils:CreateSlider(
-        content, "PeaversHeightSlider",
-        L("CONFIG_BAR_HEIGHT"), 10, 40, 1,
-        Config.barHeight, sliderWidth,
-        function(value)
-            Config.barHeight = value
-            Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    heightContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.heightSlider = heightSlider
-    yPos = yPos - 55
-
-    -- Bar spacing slider
-    local spacingContainer, spacingSlider = Utils:CreateSlider(
-        content, "PeaversSpacingSlider",
-        L("CONFIG_BAR_SPACING"), -5, 10, 1,
-        Config.barSpacing, sliderWidth,
-        function(value)
-            Config.barSpacing = value
-            Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    spacingContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.spacingSlider = spacingSlider
-    yPos = yPos - 65
-
-    -- Bar background opacity slider
-    local bgOpacityContainer, bgOpacitySlider = Utils:CreateSlider(
-        content, "PeaversBarBgAlphaSlider",
-        L("CONFIG_BAR_BG_OPACITY"), 0, 1, 0.05,
-        Config.barBgAlpha, sliderWidth,
-        function(value)
-            Config.barBgAlpha = value
-            Config:Save()
-            if PDS.BarManager then
-                PDS.BarManager:ResizeBars()
-            end
-        end
-    )
-    bgOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.bgOpacitySlider = bgOpacitySlider
-    yPos = yPos - 65
-
-    -- Bar fill opacity slider (allows text-only mode when set to 0)
-    local barOpacityContainer, barOpacitySlider = Utils:CreateSlider(
-        content, "PeaversBarAlphaSlider",
-        L("CONFIG_BAR_OPACITY"), 0, 1, 0.05,
-        Config.barAlpha or 1.0, sliderWidth,
-        function(value)
-            Config.barAlpha = value
-            Config:Save()
-            -- Update all bar colors to apply the new opacity
-            if PDS.BarManager and PDS.BarManager.bars then
-                for _, bar in ipairs(PDS.BarManager.bars) do
-                    bar:UpdateColor()
-                end
-            end
-        end
-    )
-    barOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.barOpacitySlider = barOpacitySlider
-    yPos = yPos - 65
-
-    -- Text opacity slider (independent of bar fill; allows bars-only mode when set to 0)
-    local textOpacityContainer, textOpacitySlider = Utils:CreateSlider(
-        content, "PeaversTextAlphaSlider",
-        L("CONFIG_TEXT_OPACITY"), 0, 1, 0.05,
-        Config.textAlpha or 1.0, sliderWidth,
-        function(value)
+    local textAlphaSlider = W:CreateSlider(parentFrame, "Text Opacity", {
+        min = 0, max = 1, step = 0.05,
+        value = Config.textAlpha or 1.0,
+        width = width,
+        onChange = function(value)
             Config.textAlpha = value
             Config:Save()
             if PDS.BarManager and PDS.BarManager.bars then
@@ -768,553 +210,225 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
                     end
                 end
             end
-        end
-    )
-    textOpacityContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.textOpacitySlider = textOpacitySlider
-    yPos = yPos - 65
+        end,
+    })
+    textAlphaSlider:SetPoint("TOPLEFT", indent, y)
+    y = y - 52
 
-    -- Add a thin separator
-    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
-    yPos = newY - 15
-
-    -- Bar style subsection
-    local styleLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_BAR_STYLE"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Texture dropdown container
-    local textures = Config:GetBarTextures()
-    local currentTexture = textures[Config.barTexture] or "Default"
-
-    local textureContainer, textureDropdown = Utils:CreateDropdown(
-        content, "PeaversTextureDropdown",
-        L("CONFIG_BAR_TEXTURE"), textures,
-        currentTexture, sliderWidth,
-        function(value)
-            Config.barTexture = value
-            Config:Save()
-            if PDS.BarManager then
-                PDS.BarManager:ResizeBars()
-            end
-        end
-    )
-    textureContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.textureDropdown = textureDropdown
-    yPos = yPos - 65
-
-    -- Add a thin separator
-    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
-    yPos = newY - 15
-    
-    -- Additional Bar Options
-    local additionalLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_ADDITIONAL_BAR_OPTIONS"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Initialize values with defaults if they don't exist
-    if Config.showStatChanges == nil then Config.showStatChanges = true end
-    if Config.showRatings == nil then Config.showRatings = true end
-    if Config.showOverflowBars == nil then Config.showOverflowBars = true end
-
-    -- Show stat changes checkbox
-    local showStatChangesCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversShowStatChangesCheckbox",
-        L("CONFIG_SHOW_STAT_CHANGES"), controlIndent, yPos,
-        Config.showStatChanges,
-        function(checked)
-            Config.showStatChanges = checked
-            Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    self.uiElements.showStatChangesCheckbox = showStatChangesCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
-
-    -- Persist stat changes checkbox
-    local persistStatChangesCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversPersistStatChangesCheckbox",
-        L("CONFIG_PERSIST_STAT_CHANGES"), controlIndent, yPos,
-        Config.persistStatChanges,
-        function(checked)
-            Config.persistStatChanges = checked
-            Config:Save()
-        end
-    )
-    self.uiElements.persistStatChangesCheckbox = persistStatChangesCheckbox
-    yPos = newY - 8
-
-    -- Show ratings checkbox
-    local showRatingsCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversShowRatingsCheckbox",
-        L("CONFIG_SHOW_RATINGS"), controlIndent, yPos,
-        Config.showRatings,
-        function(checked)
-            Config.showRatings = checked
-            Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    self.uiElements.showRatingsCheckbox = showRatingsCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
-
-    -- Show overflow bars checkbox
-    local showOverflowBarsCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversShowOverflowBarsCheckbox",
-        L("CONFIG_SHOW_OVERFLOW_BARS"), controlIndent, yPos,
-        Config.showOverflowBars,
-        function(checked)
+    -- Show overflow bars
+    local overflowToggle = W:CreateToggle(parentFrame, "Show Overflow Bars (values over 100%)", {
+        checked = Config.showOverflowBars ~= false,
+        width = width,
+        onChange = function(checked)
             Config.showOverflowBars = checked
             Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    self.uiElements.showOverflowBarsCheckbox = showOverflowBarsCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
+            RefreshBars()
+        end,
+    })
+    overflowToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
 
-    -- Auto-hide zero-value stats checkbox
-    if Config.autoHideZeroStats == nil then Config.autoHideZeroStats = true end
-    local autoHideZeroStatsCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversAutoHideZeroStatsCheckbox",
-        L("CONFIG_AUTO_HIDE_ZERO_STATS"), controlIndent, yPos,
-        Config.autoHideZeroStats,
-        function(checked)
+    -- Show stat changes
+    local statChangesToggle = W:CreateToggle(parentFrame, "Show Stat Changes", {
+        checked = Config.showStatChanges ~= false,
+        width = width,
+        onChange = function(checked)
+            Config.showStatChanges = checked
+            Config:Save()
+            RefreshBars()
+        end,
+    })
+    statChangesToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
+
+    -- Persist stat changes
+    local persistToggle = W:CreateToggle(parentFrame, "Persist Stat Changes Between Sessions", {
+        checked = Config.persistStatChanges or false,
+        width = width,
+        onChange = function(checked)
+            Config.persistStatChanges = checked
+            Config:Save()
+        end,
+    })
+    persistToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
+
+    -- Show ratings
+    local ratingsToggle = W:CreateToggle(parentFrame, "Show Rating Values", {
+        checked = Config.showRatings ~= false,
+        width = width,
+        onChange = function(checked)
+            Config.showRatings = checked
+            Config:Save()
+            RefreshBars()
+        end,
+    })
+    ratingsToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
+
+    -- Auto-hide zero stats
+    local autoHideToggle = W:CreateToggle(parentFrame, "Auto-Hide Zero Value Stats", {
+        checked = Config.autoHideZeroStats ~= false,
+        width = width,
+        onChange = function(checked)
             Config.autoHideZeroStats = checked
             Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+            if PDS.BarManager then
                 if checked then
-                    -- Re-evaluate visibility immediately for current values
                     PDS.BarManager:UpdateAllBars()
                 else
-                    -- Show every previously-hidden bar
-                    PDS.BarManager:ShowAllZeroHiddenBars()
+                    if PDS.BarManager.ShowAllZeroHiddenBars then
+                        PDS.BarManager:ShowAllZeroHiddenBars()
+                    end
                 end
             end
-        end
-    )
-    self.uiElements.autoHideZeroStatsCheckbox = autoHideZeroStatsCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
+        end,
+    })
+    autoHideToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
 
-    -- Enable talent adjustments checkbox
-    local enableTalentAdjustmentsCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversEnableTalentAdjustmentsCheckbox",
-        L("CONFIG_ENABLE_TALENT_ADJUSTMENTS"), controlIndent, yPos,
-        Config.enableTalentAdjustments,
-        function(checked)
+    parentFrame:SetHeight(math.abs(y) + 30)
+end
+
+function ConfigUI:BuildTextPage(parentFrame)
+    local y = -10
+    local opts = GetPageOpts(parentFrame)
+
+    y = SettingsObjects.FontSettings(parentFrame, Config, y, opts)
+
+    parentFrame:SetHeight(math.abs(y) + 30)
+end
+
+function ConfigUI:BuildBehaviorPage(parentFrame)
+    local y = -10
+    local opts = GetPageOpts(parentFrame)
+    local indent = opts.indent
+    local width = opts.width
+
+    -- Talent adjustments
+    local _, newY = W:CreateSectionHeader(parentFrame, "Advanced", indent, y)
+    y = newY - 8
+
+    local talentToggle = W:CreateToggle(parentFrame, "Enable Talent Stat Adjustments", {
+        checked = Config.enableTalentAdjustments ~= false,
+        width = width,
+        onChange = function(checked)
             Config.enableTalentAdjustments = checked
             Config:Save()
             if PDS.BarManager then
                 PDS.BarManager:UpdateAllBars()
             end
-        end
-    )
-    self.uiElements.enableTalentAdjustmentsCheckbox = enableTalentAdjustmentsCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
+        end,
+    })
+    talentToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
 
-    return yPos
-end
+    y = SettingsObjects.UpdateInterval(parentFrame, Config, y, opts)
 
--- 4. TEMPLATE MANAGEMENT - Delegates to TemplateUI module
-function ConfigUI:CreateTemplateManagementSection(content, yPos, baseSpacing, sectionSpacing)
-    if PDS.TemplateUI and PDS.TemplateUI.CreateTemplateManagementUI then
-        return PDS.TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, sectionSpacing)
-    end
-    return yPos
-end
+    -- Troubleshooting
+    local _, newY = W:CreateSectionHeader(parentFrame, "Troubleshooting", indent, y)
+    y = newY - 8
 
--- 5. TEXT SETTINGS - Font and text appearance settings
-function ConfigUI:CreateTextOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
-    local controlIndent = baseSpacing + 15
-    local subControlIndent = controlIndent + 15
-    local sliderWidth = 400
+    local desc = parentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    desc:SetPoint("TOPLEFT", indent, y)
+    desc:SetWidth(width)
+    desc:SetJustifyH("LEFT")
+    desc:SetText("Reset the frame position to center of screen if it becomes lost or hidden.")
+    y = y - 30
 
-    -- Text Settings section header
-    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_TEXT_SETTINGS"), baseSpacing, yPos)
-    yPos = newY - 10
-
-    -- Font selection subsection
-    local fontSelectLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_FONT_SELECTION"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Initialize values with defaults if they don't exist
-    if not Config.fontFace then 
-        Config.fontFace = Config:GetDefaultFont()  -- Use locale-appropriate font
-    end
-    if not Config.fontSize then Config.fontSize = 11 end
-    if not Config.fontOutline then Config.fontOutline = "" end
-    if Config.fontShadow == nil then Config.fontShadow = false end
-
-    -- Font dropdown container
-    local fonts = Config:GetFonts()
-    local currentFont = fonts[Config.fontFace] or "Default"
-
-    local fontContainer, fontDropdown = Utils:CreateDropdown(
-        content, "PeaversFontDropdown",
-        L("CONFIG_FONT"), fonts,
-        currentFont, sliderWidth,
-        function(value)
-            Config.fontFace = value
+    local resetBtn = W:CreateButton(parentFrame, "Reset Position", {
+        width = 140,
+        onClick = function()
+            Config.framePoint = "CENTER"
+            Config.frameX = 0
+            Config.frameY = 0
+            Config.displayMode = "ALWAYS"
+            Config.hideOutOfCombat = false
             Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
+            if PDS.Core then
+                PDS.Core:ApplyFramePosition()
+                if PDS.Core.frame then PDS.Core.frame:Show() end
+                if PDS.Core.UpdateFrameVisibility then
+                    PDS.Core:UpdateFrameVisibility()
+                end
             end
-        end
-    )
-    fontContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.fontDropdown = fontDropdown
-    yPos = yPos - 65
+        end,
+    })
+    resetBtn:SetPoint("TOPLEFT", indent, y)
+    y = y - 40
 
-    -- Font size slider
-    local fontSizeContainer, fontSizeSlider = Utils:CreateSlider(
-        content, "PeaversFontSizeSlider",
-        L("CONFIG_FONT_SIZE"), 6, 18, 1,
-        Config.fontSize, sliderWidth,
-        function(value)
-            Config.fontSize = value
-            Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    fontSizeContainer:SetPoint("TOPLEFT", controlIndent, yPos)
-    self.uiElements.fontSizeSlider = fontSizeSlider
-    yPos = yPos - 55
-
-    -- Font style options
-    local fontStyleLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_FONT_STYLE"), controlIndent, yPos)
-    yPos = newY - 8
-
-    -- Font outline checkbox
-    local fontOutlineCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversFontOutlineCheckbox",
-        L("CONFIG_FONT_OUTLINE"), controlIndent, yPos,
-        Config.fontOutline == "OUTLINE",
-        function(checked)
-            Config.fontOutline = checked and "OUTLINE" or ""
-            Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    self.uiElements.fontOutlineCheckbox = fontOutlineCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
-
-    -- Font shadow checkbox
-    local fontShadowCheckbox, newY = Utils:CreateCheckbox(
-        content, "PeaversFontShadowCheckbox",
-        L("CONFIG_FONT_SHADOW"), controlIndent, yPos,
-        Config.fontShadow,
-        function(checked)
-            Config.fontShadow = checked
-            Config:Save()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
-                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
-                PDS.Core:AdjustFrameHeight()
-            end
-        end
-    )
-    self.uiElements.fontShadowCheckbox = fontShadowCheckbox
-    yPos = newY - 15 -- Update yPos for the next element
-
-    return yPos
+    parentFrame:SetHeight(math.abs(y) + 30)
 end
 
--- 6. TROUBLESHOOTING - Reset position and visibility for recovering lost frames
-function ConfigUI:CreateTroubleshootingOptions(content, yPos, baseSpacing, sectionSpacing)
-    baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
-    local controlIndent = baseSpacing + 15
+--------------------------------------------------------------------------------
+-- Public API
+--------------------------------------------------------------------------------
 
-    -- Troubleshooting section header
-    local header, newY = Utils:CreateSectionHeader(content, L("CONFIG_TROUBLESHOOTING"), baseSpacing, yPos)
-    yPos = newY - 10
-
-    -- Description text
-    local descText = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    descText:SetPoint("TOPLEFT", controlIndent, yPos)
-    descText:SetWidth(400)
-    descText:SetJustifyH("LEFT")
-    descText:SetText(L("CONFIG_RESET_POSITION_DESC"))
-    yPos = yPos - 50
-
-    -- Reset Position button
-    local resetPosButton = CreateFrame("Button", "PeaversResetPositionButton", content, "UIPanelButtonTemplate")
-    resetPosButton:SetSize(120, 22)
-    resetPosButton:SetText(L("CONFIG_RESET_POSITION"))
-    resetPosButton:SetPoint("TOPLEFT", controlIndent, yPos)
-    resetPosButton:SetScript("OnClick", function()
-        -- Reset position to center of screen
-        Config.framePoint = "CENTER"
-        Config.frameX = 0
-        Config.frameY = 0
-
-        -- Reset visibility settings to ensure frame is visible
-        Config.displayMode = "ALWAYS"
-        Config.hideOutOfCombat = false
-
-        Config:Save()
-
-        -- Apply the new position immediately
-        if PDS.Core then
-            PDS.Core:ApplyFramePosition()
-
-            -- Ensure frame is visible
-            if PDS.Core.frame then
-                PDS.Core.frame:Show()
-            end
-
-            -- Update visibility state
-            if PDS.Core.UpdateFrameVisibility then
-                PDS.Core:UpdateFrameVisibility()
-            end
-        end
-
-        -- Refresh UI elements to reflect the changes
-        if PDS.ConfigUI and PDS.ConfigUI.RefreshUI then
-            PDS.ConfigUI:RefreshUI()
-        end
-    end)
-    yPos = yPos - 35
-
-    return yPos
+function ConfigUI:GetPages()
+    return {
+        { key = "general", label = "General", builder = function(f) ConfigUI:BuildGeneralPage(f) end },
+        { key = "stats", label = "Stats", builder = function(f) ConfigUI:BuildStatsPage(f) end },
+        { key = "bars", label = "Bars", builder = function(f) ConfigUI:BuildBarsPage(f) end },
+        { key = "text", label = "Text", builder = function(f) ConfigUI:BuildTextPage(f) end },
+        { key = "behavior", label = "Behavior", builder = function(f) ConfigUI:BuildBehaviorPage(f) end },
+    }
 end
 
--- Refresh all UI elements to match current Config values
--- Call this after profile changes (e.g., spec switch) to update the UI
-function ConfigUI:RefreshUI()
-    if not self.uiElements then return end
-
-    self.isRefreshing = true
-    local Config = PDS.Config
-
-    -- Refresh sliders
-    if self.uiElements.widthSlider then
-        self.uiElements.widthSlider:SetValue(Config.frameWidth or 250)
-    end
-
-    if self.uiElements.opacitySlider then
-        self.uiElements.opacitySlider:SetValue(Config.bgAlpha or 0.5)
-    end
-
-    if self.uiElements.heightSlider then
-        self.uiElements.heightSlider:SetValue(Config.barHeight or 20)
-    end
-
-    if self.uiElements.spacingSlider then
-        self.uiElements.spacingSlider:SetValue(Config.barSpacing or 2)
-    end
-
-    if self.uiElements.bgOpacitySlider then
-        self.uiElements.bgOpacitySlider:SetValue(Config.barBgAlpha or 0.7)
-    end
-
-    if self.uiElements.barOpacitySlider then
-        self.uiElements.barOpacitySlider:SetValue(Config.barAlpha or 1.0)
-    end
-
-    if self.uiElements.textOpacitySlider then
-        self.uiElements.textOpacitySlider:SetValue(Config.textAlpha or 1.0)
-    end
-
-    if self.uiElements.fontSizeSlider then
-        self.uiElements.fontSizeSlider:SetValue(Config.fontSize or 11)
-    end
-
-    -- Refresh checkboxes
-    if self.uiElements.titleBarCheckbox then
-        self.uiElements.titleBarCheckbox:SetChecked(Config.showTitleBar)
-    end
-
-    if self.uiElements.lockPositionCheckbox then
-        self.uiElements.lockPositionCheckbox:SetChecked(Config.lockPosition)
-    end
-
-    if self.uiElements.hideOutOfCombatCheckbox then
-        self.uiElements.hideOutOfCombatCheckbox:SetChecked(Config.hideOutOfCombat)
-    end
-
-    if self.uiElements.showStatChangesCheckbox then
-        self.uiElements.showStatChangesCheckbox:SetChecked(Config.showStatChanges)
-    end
-
-    if self.uiElements.persistStatChangesCheckbox then
-        self.uiElements.persistStatChangesCheckbox:SetChecked(Config.persistStatChanges)
-    end
-
-    if self.uiElements.showRatingsCheckbox then
-        self.uiElements.showRatingsCheckbox:SetChecked(Config.showRatings)
-    end
-
-    if self.uiElements.showOverflowBarsCheckbox then
-        self.uiElements.showOverflowBarsCheckbox:SetChecked(Config.showOverflowBars)
-    end
-
-    if self.uiElements.autoHideZeroStatsCheckbox then
-        self.uiElements.autoHideZeroStatsCheckbox:SetChecked(Config.autoHideZeroStats ~= false)
-    end
-
-    if self.uiElements.enableTalentAdjustmentsCheckbox then
-        self.uiElements.enableTalentAdjustmentsCheckbox:SetChecked(Config.enableTalentAdjustments)
-    end
-
-    if self.uiElements.fontOutlineCheckbox then
-        self.uiElements.fontOutlineCheckbox:SetChecked(Config.fontOutline == "OUTLINE")
-    end
-
-    if self.uiElements.fontShadowCheckbox then
-        self.uiElements.fontShadowCheckbox:SetChecked(Config.fontShadow)
-    end
-
-    -- Refresh dropdowns
-    if self.uiElements.textureDropdown and Config.barTexture then
-        local textures = Config:GetBarTextures()
-        local currentTexture = textures[Config.barTexture] or "Default"
-        UIDropDownMenu_SetText(self.uiElements.textureDropdown, currentTexture)
-    end
-
-    if self.uiElements.fontDropdown and Config.fontFace then
-        local fonts = Config:GetFonts()
-        local currentFont = fonts[Config.fontFace] or "Default"
-        UIDropDownMenu_SetText(self.uiElements.fontDropdown, currentFont)
-    end
-
-    if self.uiElements.displayModeDropdown and Config.displayMode then
-        local displayModeTextMap = {
-            ["ALWAYS"] = L("CONFIG_DISPLAY_MODE_ALWAYS"),
-            ["PARTY_ONLY"] = L("CONFIG_DISPLAY_MODE_PARTY"),
-            ["RAID_ONLY"] = L("CONFIG_DISPLAY_MODE_RAID"),
-        }
-        local displayText = displayModeTextMap[Config.displayMode] or L("CONFIG_DISPLAY_MODE_ALWAYS")
-        UIDropDownMenu_SetText(self.uiElements.displayModeDropdown, displayText)
-    end
-
-    if self.uiElements.growthAnchorDropdown and Config.growthAnchor then
-        -- Map any bottom anchor to "grow up", all others to "grow down"
-        local isBottom = Config.growthAnchor == "BOTTOMLEFT" or
-                         Config.growthAnchor == "BOTTOM" or
-                         Config.growthAnchor == "BOTTOMRIGHT"
-        local displayText = isBottom and L("CONFIG_GROWTH_UP") or L("CONFIG_GROWTH_DOWN")
-        UIDropDownMenu_SetText(self.uiElements.growthAnchorDropdown, displayText)
-    end
-
-    -- Refresh stat checkboxes
-    if self.uiElements.statCheckboxes then
-        for statType, checkbox in pairs(self.uiElements.statCheckboxes) do
-            checkbox:SetChecked(Config.showStats[statType] ~= false)
-        end
-    end
-
-    -- Refresh template spec assignment label
-    if PDS.TemplateUI and PDS.TemplateUI.UpdateAssignmentLabel then
-        PDS.TemplateUI.UpdateAssignmentLabel()
-    end
-
-    self.isRefreshing = false
+function ConfigUI:BuildIntoFrame(parentFrame)
+    local y = -10
+    y = SettingsObjects.FrameSettings(parentFrame, Config, y, pageOpts)
+    y = SettingsObjects.BarAppearance(parentFrame, Config, y, pageOpts)
+    y = SettingsObjects.FontSettings(parentFrame, Config, y, pageOpts)
+    y = SettingsObjects.Visibility(parentFrame, Config, y, pageOpts)
+    parentFrame:SetHeight(math.abs(y) + 30)
+    return parentFrame
 end
 
--- Opens the configuration panel
+function ConfigUI:InitializeOptions()
+    local panel = ConfigUIUtils.CreateSettingsPanel(
+        "Settings",
+        "Configuration options for the stat display"
+    )
+    local content = panel.content
+    self:BuildIntoFrame(content)
+    panel:UpdateContentHeight(content:GetHeight())
+    return panel
+end
+
 function ConfigUI:OpenOptions()
-    -- Ensure settings are saved before opening
     PDS.Config:Save()
 
+    if _G.PeaversConfig and _G.PeaversConfig.MainFrame then
+        _G.PeaversConfig.MainFrame:Show()
+        _G.PeaversConfig.MainFrame:SelectAddon("PeaversDynamicStats")
+        return
+    end
+
     if Settings and Settings.OpenToCategory then
-        -- Try using the category ID stored by PeaversCommons.SettingsUI
-        -- Prefer opening to the settings subcategory if available
         if PDS.directSettingsCategoryID then
             local success = pcall(Settings.OpenToCategory, PDS.directSettingsCategoryID)
             if success then return end
         end
-
-        -- Fallback to main category ID
         if PDS.directCategoryID then
             local success = pcall(Settings.OpenToCategory, PDS.directCategoryID)
             if success then return end
         end
-
-        -- Try with category objects as fallback
-        if PDS.directSettingsCategory then
-            local success = pcall(Settings.OpenToCategory, PDS.directSettingsCategory)
-            if success then return end
-        end
-
-        if PDS.directCategory then
-            local success = pcall(Settings.OpenToCategory, PDS.directCategory)
-            if success then return end
-        end
     end
 
-    -- Fallback: just open the Settings panel
     if SettingsPanel then
         ShowUIPanel(SettingsPanel)
-        return
-    end
-
-    -- Legacy fallback for older clients
-    if InterfaceOptionsFrame_OpenToCategory then
-        InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
-        InterfaceOptionsFrame_OpenToCategory("PeaversDynamicStats")
     end
 end
 
--- Handler for the /pds config command
 PDS.Config.OpenOptionsCommand = function()
     ConfigUI:OpenOptions()
 end
 
--- Initialize the configuration UI when called
+function ConfigUI:RefreshUI()
+end
+
 function ConfigUI:Initialize()
     self.panel = self:InitializeOptions()
-    
-    -- Hook Settings panel to ensure settings are saved when opened and closed
-    if Settings then
-        if Settings.OpenToCategory then
-            hooksecurefunc(Settings, "OpenToCategory", function()
-                -- Save settings before opening to ensure we have the latest
-                PDS.Config:Save()
-            end)
-        end
-        
-        if Settings.CloseUI then
-            hooksecurefunc(Settings, "CloseUI", function()
-                -- Ensure settings are saved when closing the panel
-                PDS.Config:Save()
-                
-                -- Force a delayed save to ensure everything is written
-                C_Timer.After(0.5, function()
-                    PDS.Config:Save()
-                end)
-            end)
-        end
-    end
-    
-    -- For older clients using InterfaceOptionsFrame
-    if InterfaceOptionsFrame then
-        if not self.frameHooksRegistered then
-            InterfaceOptionsFrame:HookScript("OnHide", function()
-                PDS.Config:Save()
-                
-                -- Force a delayed save to ensure everything is written
-                C_Timer.After(0.5, function()
-                    PDS.Config:Save()
-                end)
-            end)
-            self.frameHooksRegistered = true
-        end
-    end
 end
 
 return ConfigUI
