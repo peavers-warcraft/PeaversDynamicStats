@@ -61,6 +61,8 @@ function BarManager:CreateBars(parent)
         end
     end
 
+    self:UpdateHighestRatingHighlight()
+
     return math.abs(yOffset)
 end
 
@@ -150,6 +152,8 @@ function BarManager:UpdateAllBars()
             PDS.Core:AdjustFrameHeight()
         end
     end
+
+    self:UpdateHighestRatingHighlight()
 end
 
 -- Clears all hiddenByZero flags and relays out (called when user disables autoHideZeroStats)
@@ -160,6 +164,48 @@ function BarManager:ShowAllZeroHiddenBars()
     self:RelayoutVisibleBars()
     if PDS.Core and PDS.Core.AdjustFrameHeight then
         PDS.Core:AdjustFrameHeight()
+    end
+end
+
+--------------------------------------------------------------------------------
+-- Highest Rating Highlight
+--------------------------------------------------------------------------------
+
+local HIGHLIGHT_STATS = {
+    [PDS.Stats.STAT_TYPES.CRIT] = true,
+    [PDS.Stats.STAT_TYPES.HASTE] = true,
+    [PDS.Stats.STAT_TYPES.MASTERY] = true,
+    [PDS.Stats.STAT_TYPES.VERSATILITY] = true,
+}
+
+function BarManager:UpdateHighestRatingHighlight()
+    if not PDS.Config.highlightHighestRating then
+        for _, bar in ipairs(self.bars) do
+            if bar.SetHighestRating then
+                bar:SetHighestRating(false)
+            end
+        end
+        return
+    end
+
+    local IsSecretValue = PDS.Stats.IsSecretValue
+    local highestRating = 0
+    local highestStatType = nil
+
+    for _, bar in ipairs(self.bars) do
+        if HIGHLIGHT_STATS[bar.statType] and not bar.hiddenByZero then
+            local rating = PDS.Stats:GetRating(bar.statType)
+            if not IsSecretValue(rating) and rating > highestRating then
+                highestRating = rating
+                highestStatType = bar.statType
+            end
+        end
+    end
+
+    for _, bar in ipairs(self.bars) do
+        if bar.SetHighestRating then
+            bar:SetHighestRating(bar.statType == highestStatType)
+        end
     end
 end
 

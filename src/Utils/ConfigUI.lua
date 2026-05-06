@@ -916,7 +916,105 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
         end
     )
     self.uiElements.enableTalentAdjustmentsCheckbox = enableTalentAdjustmentsCheckbox
-    yPos = newY - 8 -- Update yPos for the next element
+    yPos = newY - 18
+
+    -- Add a thin separator before highlight section
+    local _, newY = UI:CreateSeparator(content, baseSpacing + 15, yPos, 400)
+    yPos = newY - 15
+
+    -- Highest Rating Highlight subsection
+    local highlightLabel, newY = Utils:CreateSubsectionLabel(content, L("CONFIG_HIGHLIGHT_HIGHEST_RATING"), controlIndent, yPos)
+    yPos = newY - 5
+
+    -- Description text
+    local highlightDesc = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    highlightDesc:SetPoint("TOPLEFT", controlIndent, yPos)
+    highlightDesc:SetWidth(400)
+    highlightDesc:SetJustifyH("LEFT")
+    highlightDesc:SetText(L("CONFIG_HIGHLIGHT_HIGHEST_RATING_DESC"))
+    yPos = yPos - 45
+
+    -- Enable highlight checkbox
+    if Config.highlightHighestRating == nil then Config.highlightHighestRating = false end
+    local highlightCheckbox, newY = Utils:CreateCheckbox(
+        content, "PeaversHighlightHighestRatingCheckbox",
+        L("CONFIG_HIGHLIGHT_HIGHEST_RATING"), controlIndent, yPos,
+        Config.highlightHighestRating,
+        function(checked)
+            Config.highlightHighestRating = checked
+            Config:Save()
+            if PDS.BarManager then
+                PDS.BarManager:UpdateHighestRatingHighlight()
+            end
+        end
+    )
+    self.uiElements.highlightHighestRatingCheckbox = highlightCheckbox
+    yPos = newY - 12
+
+    -- Show icon checkbox
+    if Config.highlightShowIcon == nil then Config.highlightShowIcon = false end
+    local highlightIconCheckbox, newY = Utils:CreateCheckbox(
+        content, "PeaversHighlightShowIconCheckbox",
+        L("CONFIG_HIGHLIGHT_SHOW_ICON"), controlIndent, yPos,
+        Config.highlightShowIcon,
+        function(checked)
+            Config.highlightShowIcon = checked
+            Config:Save()
+            if PDS.BarManager then
+                PDS.BarManager:UpdateHighestRatingHighlight()
+            end
+        end
+    )
+    self.uiElements.highlightShowIconCheckbox = highlightIconCheckbox
+    yPos = newY - 12
+
+    -- Highlight style dropdown
+    local highlightStyleOptions = {
+        { key = "STATIC", text = L("CONFIG_HIGHLIGHT_STYLE_STATIC") },
+        { key = "SUBTLE", text = L("CONFIG_HIGHLIGHT_STYLE_SUBTLE") },
+        { key = "GLOW", text = L("CONFIG_HIGHLIGHT_STYLE_GLOW") },
+        { key = "BRIGHT", text = L("CONFIG_HIGHLIGHT_STYLE_BRIGHT") },
+    }
+
+    local function getHighlightStyleText(key)
+        for _, opt in ipairs(highlightStyleOptions) do
+            if opt.key == key then return opt.text end
+        end
+        return L("CONFIG_HIGHLIGHT_STYLE_SUBTLE")
+    end
+
+    local highlightStyleContainer = CreateFrame("Frame", nil, content)
+    highlightStyleContainer:SetSize(sliderWidth, 60)
+
+    local highlightStyleLabel = highlightStyleContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    highlightStyleLabel:SetPoint("TOPLEFT", 0, 0)
+    highlightStyleLabel:SetText(L("CONFIG_HIGHLIGHT_STYLE"))
+
+    local highlightStyleDropdown = CreateFrame("Frame", "PeaversHighlightStyleDropdown", highlightStyleContainer, "UIDropDownMenuTemplate")
+    highlightStyleDropdown:SetPoint("TOPLEFT", 0, -20)
+    UIDropDownMenu_SetWidth(highlightStyleDropdown, sliderWidth - 55)
+    UIDropDownMenu_SetText(highlightStyleDropdown, getHighlightStyleText(Config.highlightStyle))
+
+    UIDropDownMenu_Initialize(highlightStyleDropdown, function(self, level)
+        local info = UIDropDownMenu_CreateInfo()
+        for _, opt in ipairs(highlightStyleOptions) do
+            info.text = opt.text
+            info.checked = (Config.highlightStyle == opt.key)
+            info.func = function()
+                Config.highlightStyle = opt.key
+                UIDropDownMenu_SetText(highlightStyleDropdown, opt.text)
+                Config:Save()
+                if PDS.BarManager then
+                    PDS.BarManager:UpdateHighestRatingHighlight()
+                end
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+
+    highlightStyleContainer:SetPoint("TOPLEFT", subControlIndent, yPos)
+    self.uiElements.highlightStyleDropdown = highlightStyleDropdown
+    yPos = yPos - 65
 
     return yPos
 end
@@ -1171,6 +1269,14 @@ function ConfigUI:RefreshUI()
         self.uiElements.enableTalentAdjustmentsCheckbox:SetChecked(Config.enableTalentAdjustments)
     end
 
+    if self.uiElements.highlightHighestRatingCheckbox then
+        self.uiElements.highlightHighestRatingCheckbox:SetChecked(Config.highlightHighestRating)
+    end
+
+    if self.uiElements.highlightShowIconCheckbox then
+        self.uiElements.highlightShowIconCheckbox:SetChecked(Config.highlightShowIcon)
+    end
+
     if self.uiElements.fontOutlineCheckbox then
         self.uiElements.fontOutlineCheckbox:SetChecked(Config.fontOutline == "OUTLINE")
     end
@@ -1200,6 +1306,17 @@ function ConfigUI:RefreshUI()
         }
         local displayText = displayModeTextMap[Config.displayMode] or L("CONFIG_DISPLAY_MODE_ALWAYS")
         UIDropDownMenu_SetText(self.uiElements.displayModeDropdown, displayText)
+    end
+
+    if self.uiElements.highlightStyleDropdown and Config.highlightStyle then
+        local highlightStyleTextMap = {
+            ["STATIC"] = L("CONFIG_HIGHLIGHT_STYLE_STATIC"),
+            ["SUBTLE"] = L("CONFIG_HIGHLIGHT_STYLE_SUBTLE"),
+            ["GLOW"] = L("CONFIG_HIGHLIGHT_STYLE_GLOW"),
+            ["BRIGHT"] = L("CONFIG_HIGHLIGHT_STYLE_BRIGHT"),
+        }
+        local displayText = highlightStyleTextMap[Config.highlightStyle] or L("CONFIG_HIGHLIGHT_STYLE_SUBTLE")
+        UIDropDownMenu_SetText(self.uiElements.highlightStyleDropdown, displayText)
     end
 
     if self.uiElements.growthAnchorDropdown and Config.growthAnchor then

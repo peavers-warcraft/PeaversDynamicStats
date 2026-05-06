@@ -358,6 +358,137 @@ function StatBar:ShowTooltip()
 end
 
 --------------------------------------------------------------------------------
+-- Highest Rating Highlight
+--------------------------------------------------------------------------------
+
+-- dotSpacing = pixels between dot centers; lower = denser dashes
+local HIGHLIGHT_CONFIGS = {
+    STATIC = { dotSpacing = 0, dotSize = 0, speed = 0,  alpha = 0,   border = true },
+    SUBTLE = { dotSpacing = 8, dotSize = 2, speed = 25, alpha = 0.7, border = false },
+    GLOW   = { dotSpacing = 6, dotSize = 2, speed = 35, alpha = 0.9, border = false },
+    BRIGHT = { dotSpacing = 4, dotSize = 2, speed = 45, alpha = 1.0, border = true },
+}
+
+local function GetPerimeterPos(pos, w, h)
+    if pos < w then
+        return pos, 0
+    elseif pos < w + h then
+        return w, pos - w
+    elseif pos < w + h + w then
+        return w - (pos - w - h), h
+    else
+        return 0, h - (pos - w - w - h)
+    end
+end
+
+function StatBar:ClearHighlight()
+    if self.highlightFrame then
+        self.highlightFrame:SetScript("OnUpdate", nil)
+        self.highlightFrame:Hide()
+    end
+    if self.highlightBorder then
+        self.highlightBorder:Hide()
+    end
+    if self.highlightIcon then
+        self.highlightIcon:Hide()
+    end
+end
+
+function StatBar:ShowHighlightBorder()
+    local r, g, b = 1, 0.84, 0
+    if not self.highlightBorder then
+        self.highlightBorder = CreateFrame("Frame", nil, self.frame, "BackdropTemplate")
+        self.highlightBorder:SetAllPoints()
+        self.highlightBorder:SetFrameLevel(self.frame:GetFrameLevel() + 9)
+        self.highlightBorder:SetBackdrop({
+            edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+            edgeSize = 1,
+        })
+    end
+    self.highlightBorder:SetBackdropBorderColor(r, g, b, 0.8)
+    self.highlightBorder:Show()
+end
+
+function StatBar:ShowHighlightDots(cfg)
+    local r, g, b = 1, 0.84, 0
+
+    if not self.highlightFrame then
+        self.highlightFrame = CreateFrame("Frame", nil, self.frame)
+        self.highlightFrame:SetAllPoints()
+        self.highlightFrame:SetFrameLevel(self.frame:GetFrameLevel() + 10)
+        self.highlightFrame.dots = {}
+    end
+
+    local dots = self.highlightFrame.dots
+    local w = self.frame:GetWidth()
+    local h = self.frame:GetHeight()
+    local perimeter = 2 * (w + h)
+    local numDots = math.floor(perimeter / cfg.dotSpacing)
+
+    for i = 1, math.max(#dots, numDots) do
+        if i <= numDots then
+            if not dots[i] then
+                dots[i] = self.highlightFrame:CreateTexture(nil, "OVERLAY")
+            end
+            dots[i]:SetSize(cfg.dotSize, cfg.dotSize)
+            dots[i]:SetColorTexture(r, g, b, cfg.alpha)
+            dots[i]:Show()
+        elseif dots[i] then
+            dots[i]:Hide()
+        end
+    end
+
+    local elapsed = 0
+    self.highlightFrame:SetScript("OnUpdate", function(frame, dt)
+        elapsed = elapsed + dt
+        local fw = frame:GetWidth()
+        local fh = frame:GetHeight()
+        local perim = 2 * (fw + fh)
+        local spacing = perim / numDots
+        local shift = elapsed * cfg.speed
+
+        for i = 1, numDots do
+            local pos = ((i - 1) * spacing + shift) % perim
+            local x, y = GetPerimeterPos(pos, fw, fh)
+            dots[i]:ClearAllPoints()
+            dots[i]:SetPoint("CENTER", frame, "TOPLEFT", x, -y)
+        end
+    end)
+
+    self.highlightFrame:Show()
+end
+
+function StatBar:ShowHighlightIcon()
+    if not PDS.Config.highlightShowIcon then return end
+
+    if not self.highlightIcon then
+        self.highlightIcon = self.frame:CreateTexture(nil, "OVERLAY")
+        self.highlightIcon:SetSize(14, 14)
+        self.highlightIcon:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcon_1")
+        self.highlightIcon:SetPoint("RIGHT", self.frame, "LEFT", -2, 0)
+    end
+    self.highlightIcon:Show()
+end
+
+function StatBar:SetHighestRating(isHighest)
+    self:ClearHighlight()
+
+    if not isHighest then return end
+
+    local cfg = HIGHLIGHT_CONFIGS[PDS.Config.highlightStyle] or HIGHLIGHT_CONFIGS.SUBTLE
+
+    if cfg.border then
+        self:ShowHighlightBorder()
+    end
+
+    if cfg.dotSpacing > 0 then
+        self:ShowHighlightDots(cfg)
+    end
+
+    self:ShowHighlightIcon()
+end
+
+--------------------------------------------------------------------------------
 -- Appearance Updates (override to handle overflow bar)
 --------------------------------------------------------------------------------
 
@@ -378,6 +509,10 @@ end
 --------------------------------------------------------------------------------
 
 function StatBar:Destroy()
+    self:ClearHighlight()
+    self.highlightFrame = nil
+    self.highlightBorder = nil
+
     if self.overflowBar then
         self.overflowBar:Destroy()
     end
