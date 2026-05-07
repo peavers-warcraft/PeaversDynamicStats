@@ -62,6 +62,7 @@ Locales["enUS"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "Always Show",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "Show in Party Only",
     ["CONFIG_DISPLAY_MODE_RAID"] = "Show in Raid Only",
+    ["CONFIG_DISPLAY_MODE_PARTY_AND_RAID"] = "Show in Party and Raid",
 
     -- Growth Direction Options
     ["CONFIG_GROWTH_ANCHOR"] = "Bar Growth Direction:",
@@ -217,6 +218,7 @@ Locales["zhCN"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "始终显示",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "仅在小队中显示",
     ["CONFIG_DISPLAY_MODE_RAID"] = "仅在团队中显示",
+    ["CONFIG_DISPLAY_MODE_PARTY_AND_RAID"] = "在小队和团队中显示",
 
     -- Growth Direction Options
     ["CONFIG_GROWTH_ANCHOR"] = "进度条增长方向：",
@@ -355,6 +357,7 @@ Locales["zhTW"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "總是顯示",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "僅在隊伍中顯示",
     ["CONFIG_DISPLAY_MODE_RAID"] = "僅在團隊中顯示",
+    ["CONFIG_DISPLAY_MODE_PARTY_AND_RAID"] = "在隊伍和團隊中顯示",
 
     -- Growth Direction Options
     ["CONFIG_GROWTH_ANCHOR"] = "進度條增長方向：",
@@ -493,6 +496,7 @@ Locales["koKR"] = {
     ["CONFIG_DISPLAY_MODE_ALWAYS"] = "항상 표시",
     ["CONFIG_DISPLAY_MODE_PARTY"] = "파티에서만 표시",
     ["CONFIG_DISPLAY_MODE_RAID"] = "공격대에서만 표시",
+    ["CONFIG_DISPLAY_MODE_PARTY_AND_RAID"] = "파티 및 공격대에서 표시",
 
     -- Growth Direction Options
     ["CONFIG_GROWTH_ANCHOR"] = "바 성장 방향:",
