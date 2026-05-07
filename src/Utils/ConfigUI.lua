@@ -368,6 +368,7 @@ function ConfigUI:CreateDisplayOptions(content, yPos, baseSpacing, sectionSpacin
         { key = "ALWAYS", text = L("CONFIG_DISPLAY_MODE_ALWAYS") },
         { key = "PARTY_ONLY", text = L("CONFIG_DISPLAY_MODE_PARTY") },
         { key = "RAID_ONLY", text = L("CONFIG_DISPLAY_MODE_RAID") },
+        { key = "PARTY_AND_RAID", text = L("CONFIG_DISPLAY_MODE_PARTY_AND_RAID") },
     }
 
     local function getDisplayModeText(key)
@@ -1303,6 +1304,7 @@ function ConfigUI:RefreshUI()
             ["ALWAYS"] = L("CONFIG_DISPLAY_MODE_ALWAYS"),
             ["PARTY_ONLY"] = L("CONFIG_DISPLAY_MODE_PARTY"),
             ["RAID_ONLY"] = L("CONFIG_DISPLAY_MODE_RAID"),
+            ["PARTY_AND_RAID"] = L("CONFIG_DISPLAY_MODE_PARTY_AND_RAID"),
         }
         local displayText = displayModeTextMap[Config.displayMode] or L("CONFIG_DISPLAY_MODE_ALWAYS")
         UIDropDownMenu_SetText(self.uiElements.displayModeDropdown, displayText)
