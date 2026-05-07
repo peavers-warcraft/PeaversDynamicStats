@@ -185,21 +185,34 @@ function BarManager:UpdateHighestRatingHighlight()
                 bar:SetHighestRating(false)
             end
         end
+        self.cachedHighestStatType = nil
         return
     end
 
     local IsSecretValue = PDS.Stats.IsSecretValue
     local highestRating = 0
     local highestStatType = nil
+    local anySecret = false
 
     for _, bar in ipairs(self.bars) do
         if HIGHLIGHT_STATS[bar.statType] and not bar.hiddenByZero then
             local rating = PDS.Stats:GetRating(bar.statType)
-            if not IsSecretValue(rating) and rating > highestRating then
+            if IsSecretValue(rating) then
+                anySecret = true
+            elseif rating > highestRating then
                 highestRating = rating
                 highestStatType = bar.statType
             end
         end
+    end
+
+    -- 12.0.5+: in combat all ratings are secret and can't be compared, so the
+    -- loop above produces no winner. Reuse the last known winner so the
+    -- highlight (the whole point of this feature) persists through combat.
+    if anySecret and highestStatType == nil then
+        highestStatType = self.cachedHighestStatType
+    else
+        self.cachedHighestStatType = highestStatType
     end
 
     for _, bar in ipairs(self.bars) do
