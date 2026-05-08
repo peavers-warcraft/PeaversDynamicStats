@@ -92,6 +92,7 @@ Locales["enUS"] = {
     ["CONFIG_SHOW_STAT_CHANGES"] = "Show Stat Value Changes",
     ["CONFIG_PERSIST_STAT_CHANGES"] = "Keep Stat Changes Visible",
     ["CONFIG_SHOW_RATINGS"] = "Show Rating Values",
+    ["CONFIG_SHOW_RAW_VALUES"] = "Show Raw Values",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "Show Overflow Bars",
     ["CONFIG_AUTO_HIDE_ZERO_STATS"] = "Auto-hide stats with value 0",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "Enable Talent Adjustments (Rogue: Thief's Versatility)",
@@ -246,6 +247,7 @@ Locales["zhCN"] = {
     ["CONFIG_SHOW_STAT_CHANGES"] = "显示属性值变化",
     ["CONFIG_PERSIST_STAT_CHANGES"] = "保持属性变化可见",
     ["CONFIG_SHOW_RATINGS"] = "显示等级值",
+    ["CONFIG_SHOW_RAW_VALUES"] = "显示原始数值",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "显示溢出条",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "启用天赋调整（盗贼：盗贼的全能）",
 
@@ -385,6 +387,7 @@ Locales["zhTW"] = {
     ["CONFIG_SHOW_STAT_CHANGES"] = "顯示屬性值變化",
     ["CONFIG_PERSIST_STAT_CHANGES"] = "保持屬性變化可見",
     ["CONFIG_SHOW_RATINGS"] = "顯示等級值",
+    ["CONFIG_SHOW_RAW_VALUES"] = "顯示原始數值",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "顯示溢出條",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "啟用天賦調整（盜賊：盜賊的臨機應變）",
 
@@ -524,6 +527,7 @@ Locales["koKR"] = {
     ["CONFIG_SHOW_STAT_CHANGES"] = "능력치 변화 표시",
     ["CONFIG_PERSIST_STAT_CHANGES"] = "능력치 변화 유지",
     ["CONFIG_SHOW_RATINGS"] = "평점 값 표시",
+    ["CONFIG_SHOW_RAW_VALUES"] = "원시 값 표시",
     ["CONFIG_SHOW_OVERFLOW_BARS"] = "오버플로우 바 표시",
     ["CONFIG_ENABLE_TALENT_ADJUSTMENTS"] = "특성 조정 활성화 (도적: 도적의 유연성)",
 

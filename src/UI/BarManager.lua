@@ -39,6 +39,26 @@ function BarManager:CreateBars(parent)
     local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
     local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
 
+    -- Pre-compute maxRating before creating bars so raw-mode scaling is correct on first draw
+    if PDS.Config.showRawValues then
+        local IsSecretValue = PDS.Stats.IsSecretValue
+        local maxRating = 0
+        for _, st in ipairs(PDS.Stats.STAT_ORDER) do
+            if PDS.Config.showStats[st] and not PDS.Stats:IsPrimaryStat(st) then
+                local rating = PDS.Stats:GetRating(st)
+                if rating and not IsSecretValue(rating) and rating > maxRating then
+                    maxRating = rating
+                end
+            end
+        end
+        self.maxRating = math.max(maxRating, 100)
+        if self.maxRating > 100 then
+            self.cachedMaxRating = self.maxRating
+        end
+    else
+        self.maxRating = 0
+    end
+
     local yOffset = 0
     for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
         if PDS.Config.showStats[statType] then
@@ -104,18 +124,41 @@ end
 -- Bar Updates (PDS-specific with change tracking)
 --------------------------------------------------------------------------------
 
--- Updates all stat bars with latest values, only if they've changed
--- 12.0.5+: Secret values can't be compared or subtracted, so skip change tracking
+function BarManager:ComputeMaxRating()
+    local IsSecretValue = PDS.Stats.IsSecretValue
+    local maxRating = 0
+    for _, bar in ipairs(self.bars) do
+        if not PDS.Stats:IsPrimaryStat(bar.statType) and not bar.hiddenByZero then
+            local rating = PDS.Stats:GetRating(bar.statType)
+            if rating and not IsSecretValue(rating) and rating > maxRating then
+                maxRating = rating
+            end
+        end
+    end
+    self.maxRating = math.max(maxRating, 100)
+    if self.maxRating > 100 then
+        self.cachedMaxRating = self.maxRating
+    end
+end
+
+-- Updates all stat bars with latest values, only if they've changed.
+-- StatBar reads self.maxRating directly for raw-mode bar fill scaling.
 function BarManager:UpdateAllBars()
     local IsSecretValue = PDS.Stats.IsSecretValue
     local layoutDirty = false
+    local rawMode = PDS.Config.showRawValues
+
+    if rawMode then
+        self:ComputeMaxRating()
+    else
+        self.maxRating = 0
+    end
 
     for _, bar in ipairs(self.bars) do
         local value = PDS.Stats:GetValue(bar.statType)
         local statKey = bar.statType
 
         if IsSecretValue(value) then
-            -- Secret value: can't compare or do math, always update, no change tracking
             bar:Update(value)
             bar:UpdateColor()
         else
@@ -124,20 +167,15 @@ function BarManager:UpdateAllBars()
             end
 
             if value ~= self.previousValues[statKey] then
-                -- Calculate the change in value
                 local change = value - self.previousValues[statKey]
-
-                -- Update the bar with the new value and change
                 bar:Update(value, nil, change)
-
-                -- Ensure the color is properly applied when updating
                 bar:UpdateColor()
-
-                -- Store the new value for next comparison
                 self.previousValues[statKey] = value
+            elseif rawMode then
+                bar:Update(value)
+                bar:UpdateColor()
             end
 
-            -- Re-evaluate auto-hide visibility against the latest value
             local shouldHide = ShouldHideForZero(value)
             if shouldHide ~= (bar.hiddenByZero == true) then
                 bar.hiddenByZero = shouldHide

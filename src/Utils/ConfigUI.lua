@@ -863,6 +863,23 @@ function ConfigUI:CreateBarAppearanceOptions(content, yPos, baseSpacing, section
     self.uiElements.showRatingsCheckbox = showRatingsCheckbox
     yPos = newY - 8 -- Update yPos for the next element
 
+    -- Show raw values checkbox
+    local showRawValuesCheckbox, newY = Utils:CreateCheckbox(
+        content, "PeaversShowRawValuesCheckbox",
+        L("CONFIG_SHOW_RAW_VALUES"), controlIndent, yPos,
+        Config.showRawValues,
+        function(checked)
+            Config.showRawValues = checked
+            Config:Save()
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
+            end
+        end
+    )
+    self.uiElements.showRawValuesCheckbox = showRawValuesCheckbox
+    yPos = newY - 8 -- Update yPos for the next element
+
     -- Show overflow bars checkbox
     local showOverflowBarsCheckbox, newY = Utils:CreateCheckbox(
         content, "PeaversShowOverflowBarsCheckbox",

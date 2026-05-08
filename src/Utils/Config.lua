@@ -40,6 +40,7 @@ local PDS_DEFAULTS = {
     showStatChanges = true,
     persistStatChanges = false,
     showRatings = true,
+    showRawValues = false,
     showTooltips = true,
     hideOutOfCombat = false,
     displayMode = "ALWAYS",

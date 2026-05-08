@@ -182,56 +182,65 @@ end
 
 function StatBar:Update(value, maxValue, change, noAnimation)
     local IsSecretValue = PDS.Stats.IsSecretValue
+    local rawMode = PDS.Config.showRawValues and not PDS.Stats:IsPrimaryStat(self.statType)
 
     -- 12.0.5+: Secret values can't be compared, tested, or used in arithmetic.
-    -- Pass them directly to display APIs which natively accept secrets.
     if IsSecretValue(value) then
-        -- Don't retain the secret; next non-secret update must not compare against it.
         self.value = nil
-
-        -- Hide overflow (can't calculate overflow from secret values)
         self:HandleOverflow(0)
 
-        -- Pass secret value directly to StatusBar (SetValue accepts secrets)
-        self.statusBar:SetMinMaxValues(0, 100)
-        self.statusBar:SetValue(value, noAnimation)
-
-        -- Format text with string.format (works with secrets) and set on FontString
-        local displayValue = self:GetDisplayValue(value)
-        self.textManager:SetValue(displayValue)
+        if rawMode then
+            local rating = PDS.Stats:GetRating(self.statType) or 0
+            local maxRating = PDS.BarManager.cachedMaxRating or PDS.BarManager.maxRating
+            if not maxRating or maxRating < 1 then maxRating = 100 end
+            self.statusBar:SetMinMaxValues(0, maxRating)
+            self.statusBar:SetValue(rating, noAnimation)
+            self.textManager:SetValue(string.format("%.0f", rating))
+        else
+            self.statusBar:SetMinMaxValues(0, 100)
+            self.statusBar:SetValue(value, noAnimation)
+            self.textManager:SetValue(self:GetDisplayValue(value))
+        end
         return
     end
 
-    -- Normal (non-secret) path: full arithmetic and change tracking
-    if self.value == value then return end
+    -- Skip update when nothing changed (raw mode always re-evaluates since maxRating may shift)
+    if self.value == value and not rawMode then return end
 
     self.value = value or 0
 
-    -- Get bar values including overflow
-    local percentValue, overflowValue = self:CalculateBarValues(self.value, maxValue)
+    if rawMode then
+        local rating = PDS.Stats:GetRating(self.statType) or 0
+        local maxRating = PDS.BarManager.maxRating
+        if not maxRating or maxRating < 1 then maxRating = 100 end
+        self:HandleOverflow(0)
+        self.statusBar:SetMinMaxValues(0, maxRating)
+        if not IsSecretValue(rating) then
+            self.statusBar:SetValue(rating, noAnimation)
+            self.textManager:SetValue(tostring(math.floor(rating + 0.5)))
+        else
+            self.statusBar:SetValue(rating, noAnimation)
+            self.textManager:SetValue(string.format("%.0f", rating))
+        end
+    else
+        local percentValue, overflowValue = self:CalculateBarValues(self.value, maxValue)
 
-    -- Primary stats (Str/Agi/Int/Sta) are raw values, not percentages — overflow is meaningless
-    if PDS.Stats:IsPrimaryStat(self.statType) then
-        percentValue = 100
-        overflowValue = 0
+        if PDS.Stats:IsPrimaryStat(self.statType) then
+            percentValue = 100
+            overflowValue = 0
+        end
+
+        local visibilityChanged = self:HandleOverflow(overflowValue)
+        if visibilityChanged then
+            self.tooltipInitialized = false
+            self:InitTooltip()
+        end
+
+        self.statusBar:SetMinMaxValues(0, 100)
+        self.statusBar:SetValue(percentValue, noAnimation)
+        self.textManager:SetValue(self:GetDisplayValue(self.value))
     end
 
-    -- Handle overflow bar visibility
-    local visibilityChanged = self:HandleOverflow(overflowValue)
-    if visibilityChanged then
-        self.tooltipInitialized = false
-        self:InitTooltip()
-    end
-
-    -- Update main bar
-    self.statusBar:SetMinMaxValues(0, 100)
-    self.statusBar:SetValue(percentValue, noAnimation)
-
-    -- Update value text
-    local displayValue = self:GetDisplayValue(self.value)
-    self.textManager:SetValue(displayValue)
-
-    -- Show change indicator if enabled
     if PDS.Config.showStatChanges and change and change ~= 0 then
         self.textManager:ShowChange(change, function(c)
             return self:GetChangeDisplayValue(c)
