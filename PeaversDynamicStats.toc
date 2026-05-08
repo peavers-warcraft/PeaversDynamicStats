@@ -12,7 +12,7 @@
 ## X-Source-Code: https://github.com/peavers-warcraft/PeaversDynamicStats
 ## X-Curse-Project-ID: 1230220
 
-## Dependencies: PeaversCommons
+## Dependencies: PeaversCommons, PeaversConfig
 ## SavedVariables: PeaversDynamicStatsDB
 
 Changelog.lua
