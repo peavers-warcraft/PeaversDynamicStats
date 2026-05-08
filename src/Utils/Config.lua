@@ -40,11 +40,15 @@ local PDS_DEFAULTS = {
     showStatChanges = true,
     persistStatChanges = false,
     showRatings = true,
+    showRawValues = false,
     showTooltips = true,
     hideOutOfCombat = false,
     displayMode = "ALWAYS",
     enableTalentAdjustments = true,
     lastAppliedTemplate = nil,
+    highlightHighestRating = false,
+    highlightStyle = "SUBTLE",
+    highlightShowIcon = false,
 }
 
 -- Create the AceDB-backed config with spec-based profiles

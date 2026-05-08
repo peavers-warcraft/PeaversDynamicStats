@@ -172,7 +172,7 @@ function Core:ApplyFramePosition()
 end
 
 -- Updates frame visibility based on display mode setting
--- Display modes: ALWAYS, PARTY_ONLY, RAID_ONLY
+-- Display modes: ALWAYS, PARTY_ONLY, RAID_ONLY, PARTY_AND_RAID
 function Core:UpdateFrameVisibility()
 	local PeaversCommons = _G.PeaversCommons
 	PeaversCommons.VisibilityManager:UpdateVisibility(self.frame, PDS.Config, self.inCombat)
