@@ -341,28 +341,21 @@ PeaversCommons.Events:Init(addonName, function()
     
     -- Removed redundant ADDON_LOADED handler as it's now handled by SaveGuard
 
-    -- Use the centralized SettingsUI system from PeaversCommons
     C_Timer.After(0.5, function()
-        local mainPanel, settingsPanel = PeaversCommons.SettingsUI:CreateSettingsPages(
-            PDS,                      -- Addon reference
-            "PeaversDynamicStats",    -- Addon name
-            "Peavers Dynamic Stats",  -- Display title
-            "Tracks and displays character stats in real-time.", -- Description
-            {   -- Slash commands
-                "/pds - Toggle display",
-                "/pds config - Open settings"
-            }
-        )
-
-        -- Hook OnShow to refresh UI when settings panel is displayed
-        if settingsPanel then
-            settingsPanel:HookScript("OnShow", function()
-                if PDS.ConfigUI and PDS.ConfigUI.RefreshUI then
-                    PDS.ConfigUI:RefreshUI()
-                end
-            end)
-        end
+        PeaversCommons.SettingsUI:CreateRedirectPage(PDS, "PeaversDynamicStats", "Peavers Dynamic Stats")
     end)
+    -- Register with PeaversConfig registry
+    if PeaversCommons.ConfigRegistry then
+        PeaversCommons.ConfigRegistry:Register({
+            name = "PeaversDynamicStats",
+            displayName = "Dynamic Stats",
+            description = "Real-time character stat tracking and display",
+            addonRef = PDS,
+            config = PDS.Config,
+            pages = PDS.ConfigUI:GetPages(),
+            order = 2,
+        })
+    end
 end, {
 	suppressAnnouncement = true
 })
