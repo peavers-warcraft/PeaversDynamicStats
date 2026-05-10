@@ -391,7 +391,7 @@ function Stats:GetValue(statType)
     local value = 0
 
     -- Helper: get primary stat total via fallback chain, secret-safe
-    -- C_Attributes/C_Stats return a single total; UnitStat returns components
+    -- C_Attributes/C_Stats return a single total; UnitStat's 2nd return is effectiveStat
     local function GetPrimaryStat(attrName, statIndex)
         local val = nil
         -- Try C_Attributes (returns total as single value)
@@ -404,14 +404,13 @@ function Stats:GetValue(statType)
                 val = SafeGetValue(C_Stats.GetStatByID, statIndex)
             end
         end
-        -- If still unavailable, try UnitStat
+        -- If still unavailable, try UnitStat. Use the 2nd return (effectiveStat) —
+        -- it's the value shown on the character pane. Do NOT add posBuff/negBuff:
+        -- in modern WoW the 1st return already equals effectiveStat, so summing
+        -- double-counts gear/buff bonuses.
         if not IsSecretValue(val) and val == nil then
-            local base, stat, posBuff, negBuff = StatAPI.GetUnitStat(statIndex)
-            if IsSecretValue(base) then
-                val = stat  -- stat (2nd return) is total effective value
-            else
-                val = base + posBuff + negBuff
-            end
+            local _, effective = StatAPI.GetUnitStat(statIndex)
+            val = effective
         end
         if IsSecretValue(val) then return val end
         return val or 0
@@ -500,12 +499,8 @@ function Stats:GetRating(statType)
             val = SafeGetValue(C_Stats.GetStatByID, statIndex)
         end
         if not IsSecretValue(val) and val == nil then
-            local base, stat, posBuff, negBuff = StatAPI.GetUnitStat(statIndex)
-            if IsSecretValue(base) then
-                val = stat
-            else
-                val = base + posBuff + negBuff
-            end
+            local _, effective = StatAPI.GetUnitStat(statIndex)
+            val = effective
         end
         if IsSecretValue(val) then return val end
         return val or 0
