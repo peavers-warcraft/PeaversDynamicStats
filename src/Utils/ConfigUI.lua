@@ -96,7 +96,7 @@ function ConfigUI:BuildStatsPage(parentFrame)
     y = newY - 8
 
     local statGroups = {
-        { label = "Primary Stats", stats = { "STRENGTH", "AGILITY", "INTELLECT", "STAMINA" } },
+        { label = "Primary Stats", stats = { "PRIMARY_STAT", "STRENGTH", "AGILITY", "INTELLECT", "STAMINA" } },
         { label = "Secondary Stats", stats = { "CRIT", "HASTE", "MASTERY", "VERSATILITY", "VERSATILITY_DAMAGE_REDUCTION" } },
         { label = "Tertiary Stats", stats = { "DODGE", "PARRY", "BLOCK", "LEECH", "AVOIDANCE", "SPEED" } },
     }
@@ -286,6 +286,45 @@ function ConfigUI:BuildBarsPage(parentFrame)
     })
     autoHideToggle:SetPoint("TOPLEFT", indent, y)
     y = y - 30
+
+    -- Highest stat highlight
+    local _, hlY = W:CreateSectionHeader(parentFrame, "Highest Stat Highlight", indent, y)
+    y = hlY - 8
+
+    local L = PDS.L or {}
+    local highlightToggle = W:CreateToggle(parentFrame, "Highlight Highest Secondary Stat", {
+        checked = Config.highlightHighestRating == true,
+        width = width,
+        onChange = function(checked)
+            Config.highlightHighestRating = checked
+            Config:Save()
+            if PDS.BarManager and PDS.BarManager.UpdateHighestRatingHighlight then
+                PDS.BarManager:UpdateHighestRatingHighlight()
+            end
+        end,
+    })
+    highlightToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
+
+    local styleDropdown = W:CreateDropdown(parentFrame, L["CONFIG_HIGHLIGHT_STYLE"] or "Highlight Style", {
+        options = {
+            { value = "STATIC", label = L["CONFIG_HIGHLIGHT_STYLE_STATIC"] or "Static Border" },
+            { value = "SUBTLE", label = L["CONFIG_HIGHLIGHT_STYLE_SUBTLE"] or "Marching Dots (Subtle)" },
+            { value = "GLOW",   label = L["CONFIG_HIGHLIGHT_STYLE_GLOW"]   or "Marching Dots (Glow)" },
+            { value = "BRIGHT", label = L["CONFIG_HIGHLIGHT_STYLE_BRIGHT"] or "Marching Dots (Bright)" },
+        },
+        selected = Config.highlightStyle or "SUBTLE",
+        width = width,
+        onChange = function(value)
+            Config.highlightStyle = value
+            Config:Save()
+            if PDS.BarManager and PDS.BarManager.UpdateHighestRatingHighlight then
+                PDS.BarManager:UpdateHighestRatingHighlight()
+            end
+        end,
+    })
+    styleDropdown:SetPoint("TOPLEFT", indent, y)
+    y = y - 58
 
     parentFrame:SetHeight(math.abs(y) + 30)
 end

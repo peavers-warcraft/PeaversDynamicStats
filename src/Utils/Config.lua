@@ -147,6 +147,7 @@ function Config:InitializeStatSettings()
     -- Stats that should default to hidden (opt-in rather than opt-out)
     local defaultHiddenStats = {
         ["VERSATILITY_DAMAGE_REDUCTION"] = true,
+        ["PRIMARY_STAT"] = true,
     }
 
     -- Get stat order from Stats module if available
