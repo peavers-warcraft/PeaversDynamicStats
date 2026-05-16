@@ -337,8 +337,24 @@ PeaversCommons.Events:Init(addonName, function()
         end
     end)
 
-    -- Removed redundant PLAYER_ENTERING_WORLD handler as it's now handled by SaveGuard
-    
+    -- Bars are created during ADDON_LOADED, before the spec API is ready.
+    -- Recreate them once we've entered the world so PRIMARY_STAT (which
+    -- depends on the active spec) resolves to the correct color/value.
+    local primaryStatRefreshed = false
+    PeaversCommons.Events:RegisterEvent("PLAYER_ENTERING_WORLD", function()
+        if primaryStatRefreshed then return end
+        primaryStatRefreshed = true
+        C_Timer.After(0.1, function()
+            if PDS.Config and PDS.Config.UpdateCurrentIdentifiers then
+                PDS.Config:UpdateCurrentIdentifiers()
+            end
+            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+                PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.Core:AdjustFrameHeight()
+            end
+        end)
+    end)
+
     -- Removed redundant ADDON_LOADED handler as it's now handled by SaveGuard
 
     C_Timer.After(0.5, function()

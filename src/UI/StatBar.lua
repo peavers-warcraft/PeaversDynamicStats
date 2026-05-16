@@ -103,9 +103,10 @@ function StatBar:GetColorForStat(statType)
         end
     end
 
-    -- Fall back to default colors from STAT_COLORS
-    if PDS.Stats and PDS.Stats.STAT_COLORS and PDS.Stats.STAT_COLORS[statType] then
-        return unpack(PDS.Stats.STAT_COLORS[statType])
+    -- Use Stats:GetColor so virtual types like PRIMARY_STAT resolve to the
+    -- active spec's primary stat color instead of the static fallback.
+    if PDS.Stats and PDS.Stats.GetColor then
+        return PDS.Stats:GetColor(statType)
     end
 
     return 0.8, 0.8, 0.8

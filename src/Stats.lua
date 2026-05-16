@@ -215,6 +215,9 @@ Stats.STAT_TYPES = {
     AGILITY = "AGILITY",
     INTELLECT = "INTELLECT",
     STAMINA = "STAMINA",
+    -- Virtual primary stat that auto-resolves to the active spec's primary
+    -- (Strength/Agility/Intellect). Lets one config profile work on every alt.
+    PRIMARY_STAT = "PRIMARY_STAT",
 
     -- Secondary stats
     HASTE = "HASTE",
@@ -241,10 +244,87 @@ Stats.PRIMARY_STATS = {
     [Stats.STAT_TYPES.AGILITY] = true,
     [Stats.STAT_TYPES.INTELLECT] = true,
     [Stats.STAT_TYPES.STAMINA] = true,
+    [Stats.STAT_TYPES.PRIMARY_STAT] = true,
 }
 
 function Stats:IsPrimaryStat(statType)
     return Stats.PRIMARY_STATS[statType] == true
+end
+
+-- Spec ID → primary stat lookup. GetSpecializationInfo's first return (the
+-- spec ID) is stable across WoW versions; the 6th return (primaryStat) is
+-- not reliable in 12.0, so we map directly from the well-known spec IDs.
+local SPEC_PRIMARY_STAT = {
+    -- Death Knight
+    [250] = "STRENGTH",  [251] = "STRENGTH",  [252] = "STRENGTH",
+    -- Demon Hunter
+    [577] = "AGILITY",   [581] = "AGILITY",
+    -- Druid (Balance/Resto INT, Feral/Guardian AGI)
+    [102] = "INTELLECT", [103] = "AGILITY",   [104] = "AGILITY",   [105] = "INTELLECT",
+    -- Evoker
+    [1467] = "INTELLECT", [1468] = "INTELLECT", [1473] = "INTELLECT",
+    -- Hunter
+    [253] = "AGILITY",   [254] = "AGILITY",   [255] = "AGILITY",
+    -- Mage
+    [62]  = "INTELLECT", [63]  = "INTELLECT", [64]  = "INTELLECT",
+    -- Monk (Brewmaster/Windwalker AGI, Mistweaver INT)
+    [268] = "AGILITY",   [269] = "AGILITY",   [270] = "INTELLECT",
+    -- Paladin (Holy INT, Prot/Ret STR)
+    [65]  = "INTELLECT", [66]  = "STRENGTH",  [70]  = "STRENGTH",
+    -- Priest
+    [256] = "INTELLECT", [257] = "INTELLECT", [258] = "INTELLECT",
+    -- Rogue
+    [259] = "AGILITY",   [260] = "AGILITY",   [261] = "AGILITY",
+    -- Shaman (Ele/Resto INT, Enhance AGI)
+    [262] = "INTELLECT", [263] = "AGILITY",   [264] = "INTELLECT",
+    -- Warlock
+    [265] = "INTELLECT", [266] = "INTELLECT", [267] = "INTELLECT",
+    -- Warrior
+    [71]  = "STRENGTH",  [72]  = "STRENGTH",  [73]  = "STRENGTH",
+}
+
+-- Class-based fallback when no specialization is active (low-level characters
+-- or hybrid classes before spec selection).
+local CLASS_FALLBACK_PRIMARY = {
+    WARRIOR = "STRENGTH", PALADIN = "STRENGTH", DEATHKNIGHT = "STRENGTH",
+    HUNTER = "AGILITY", ROGUE = "AGILITY", MONK = "AGILITY",
+    DEMONHUNTER = "AGILITY", DRUID = "AGILITY", SHAMAN = "AGILITY",
+    MAGE = "INTELLECT", WARLOCK = "INTELLECT", PRIEST = "INTELLECT",
+    EVOKER = "INTELLECT",
+}
+
+-- Resolves PRIMARY_STAT to the active spec's actual primary stat type.
+-- Treats specID of 0 or nil as "spec API not ready" (happens during
+-- ADDON_LOADED before PLAYER_ENTERING_WORLD); the PEW handler in Main.lua
+-- recreates bars once the spec is known, so the class fallback is only a
+-- safety net.
+function Stats:ResolvePrimaryStatType()
+    local function isValid(id) return id and id ~= 0 end
+    local specID
+    if PDS.Config and PDS.Config.GetSpecialization then
+        local id = PDS.Config:GetSpecialization()
+        if isValid(id) then
+            specID = id
+        elseif isValid(PDS.Config.currentSpec) then
+            specID = PDS.Config.currentSpec
+        end
+    end
+    if not specID then
+        local specIndex = GetSpecialization and GetSpecialization()
+        if specIndex and specIndex ~= 0 then
+            local id = GetSpecializationInfo(specIndex)
+            if isValid(id) then specID = id end
+        end
+    end
+    if specID then
+        local statName = SPEC_PRIMARY_STAT[specID]
+        if statName then
+            return Stats.STAT_TYPES[statName]
+        end
+    end
+    local _, classToken = UnitClass("player")
+    local fallback = CLASS_FALLBACK_PRIMARY[classToken or ""]
+    return Stats.STAT_TYPES[fallback or "STRENGTH"] or Stats.STAT_TYPES.STRENGTH
 end
 
 -- Stat display names (will be populated from localization)
@@ -257,6 +337,9 @@ Stats.STAT_COLORS = {
     [Stats.STAT_TYPES.AGILITY] = { 0.56, 0.66, 0.46 },
     [Stats.STAT_TYPES.INTELLECT] = { 0.52, 0.62, 0.74 },
     [Stats.STAT_TYPES.STAMINA] = { 0.87, 0.57, 0.34 },
+    -- Fallback for PRIMARY_STAT; Stats:GetColor delegates to the resolved
+    -- primary stat at runtime, so this is only used if resolution fails.
+    [Stats.STAT_TYPES.PRIMARY_STAT] = { 0.77, 0.31, 0.23 },
 
     -- Secondary stats
     [Stats.STAT_TYPES.HASTE] = { 0.42, 0.59, 0.59 },
@@ -287,6 +370,7 @@ Stats.BASE_VALUES = {
 
 -- Default stat order
 Stats.STAT_ORDER = {
+    Stats.STAT_TYPES.PRIMARY_STAT,
     Stats.STAT_TYPES.STRENGTH,
     Stats.STAT_TYPES.AGILITY,
     Stats.STAT_TYPES.INTELLECT,
@@ -337,6 +421,10 @@ end
 function Stats:GetBuffValue(statType)
     local buffValue = 0
 
+    if statType == Stats.STAT_TYPES.PRIMARY_STAT then
+        return self:GetBuffValue(self:ResolvePrimaryStatType())
+    end
+
     -- Use StatAPI wrappers for 12.0 compatibility
     if statType == Stats.STAT_TYPES.STRENGTH then
         local _, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
@@ -358,6 +446,10 @@ end
 -- Returns the buff percentage for the specified stat
 function Stats:GetBuffPercentage(statType)
     local buffPercentage = 0
+
+    if statType == Stats.STAT_TYPES.PRIMARY_STAT then
+        return self:GetBuffPercentage(self:ResolvePrimaryStatType())
+    end
 
     -- Use StatAPI wrappers for 12.0 compatibility
     if statType == Stats.STAT_TYPES.STRENGTH then
@@ -389,6 +481,10 @@ end
 -- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetValue(statType)
     local value = 0
+
+    if statType == Stats.STAT_TYPES.PRIMARY_STAT then
+        return self:GetValue(self:ResolvePrimaryStatType())
+    end
 
     -- Helper: get primary stat total via fallback chain, secret-safe
     -- C_Attributes/C_Stats return a single total; UnitStat's 2nd return is effectiveStat
@@ -490,6 +586,10 @@ end
 -- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetRating(statType)
     local rating = 0
+
+    if statType == Stats.STAT_TYPES.PRIMARY_STAT then
+        return self:GetRating(self:ResolvePrimaryStatType())
+    end
 
     -- Primary stats - return the total stat value (reuses GetPrimaryStat pattern)
     -- Helper: get primary stat for rating display, secret-safe
@@ -836,6 +936,9 @@ end
 
 -- Returns the color for a specific stat type
 function Stats:GetColor(statType)
+    if statType == Stats.STAT_TYPES.PRIMARY_STAT then
+        return self:GetColor(self:ResolvePrimaryStatType())
+    end
     if Stats.STAT_COLORS[statType] then
         return unpack(Stats.STAT_COLORS[statType])
     else
@@ -853,6 +956,7 @@ function Stats:InitializeStatNames()
         [Stats.STAT_TYPES.AGILITY] = PDS.L["STAT_AGILITY"],
         [Stats.STAT_TYPES.INTELLECT] = PDS.L["STAT_INTELLECT"],
         [Stats.STAT_TYPES.STAMINA] = PDS.L["STAT_STAMINA"],
+        [Stats.STAT_TYPES.PRIMARY_STAT] = PDS.L["STAT_PRIMARY_STAT"],
 
         -- Secondary stats
         [Stats.STAT_TYPES.HASTE] = PDS.L["STAT_HASTE"],
