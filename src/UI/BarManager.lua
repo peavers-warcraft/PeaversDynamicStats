@@ -34,6 +34,7 @@ end
 function BarManager:CreateBars(parent)
     -- Clear existing bars using base method
     self:Clear()
+    self.lastAppliedSortOrder = nil
 
     -- Get growth direction from config
     local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
@@ -41,26 +42,38 @@ function BarManager:CreateBars(parent)
 
     -- Pre-compute maxRating before creating bars so raw-mode scaling is correct on first draw
     if PDS.Config.showRawValues then
-        local IsSecretValue = PDS.Stats.IsSecretValue
-        local maxRating = 0
-        for _, st in ipairs(PDS.Stats.STAT_ORDER) do
-            if PDS.Config.showStats[st] and not PDS.Stats:IsPrimaryStat(st) then
-                local rating = PDS.Stats:GetRating(st)
-                if rating and not IsSecretValue(rating) and rating > maxRating then
-                    maxRating = rating
+        local fixedMax = PDS.Config.rawValueMax
+        if fixedMax and fixedMax > 0 then
+            self.maxRating = fixedMax
+            self.cachedMaxRating = fixedMax
+        else
+            local IsSecretValue = PDS.Stats.IsSecretValue
+            local maxRating = 0
+            for _, st in ipairs(PDS.Stats.STAT_ORDER) do
+                if PDS.Config.showStats[st] and not PDS.Stats:IsPrimaryStat(st) then
+                    local rating = PDS.Stats:GetRating(st)
+                    if rating and not IsSecretValue(rating) and rating > maxRating then
+                        maxRating = rating
+                    end
                 end
             end
-        end
-        self.maxRating = math.max(maxRating, 100)
-        if self.maxRating > 100 then
-            self.cachedMaxRating = self.maxRating
+            self.maxRating = math.max(maxRating, 100)
+            if self.maxRating > 100 then
+                self.cachedMaxRating = self.maxRating
+            end
         end
     else
         self.maxRating = 0
     end
 
+    local barOrder = PDS.Stats.STAT_ORDER
+    if PDS.Config.sortBarsByRating then
+        barOrder = self:ComputeSortOrder()
+        self.lastAppliedSortOrder = barOrder
+    end
+
     local yOffset = 0
-    for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+    for _, statType in ipairs(barOrder) do
         if PDS.Config.showStats[statType] then
             local statName = PDS.Stats:GetName(statType)
             local bar = PDS.StatBar:New(parent, statName, statType)
@@ -125,6 +138,13 @@ end
 --------------------------------------------------------------------------------
 
 function BarManager:ComputeMaxRating()
+    local fixedMax = PDS.Config.rawValueMax
+    if fixedMax and fixedMax > 0 then
+        self.maxRating = fixedMax
+        self.cachedMaxRating = fixedMax
+        return
+    end
+
     local IsSecretValue = PDS.Stats.IsSecretValue
     local maxRating = 0
     for _, bar in ipairs(self.bars) do
@@ -141,6 +161,97 @@ function BarManager:ComputeMaxRating()
     end
 end
 
+-- Returns the list of stat types ordered by current rating (highest first),
+-- with primary/non-rated stats appended at the end in their STAT_ORDER positions.
+-- In combat all ratings become secret; if so, reuses the last computed order.
+function BarManager:ComputeSortOrder()
+    local IsSecretValue = PDS.Stats.IsSecretValue
+    local rated = {}
+    local nonRated = {}
+    local anySecret = false
+    local allSecret = true
+
+    for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+        if PDS.Config.showStats[statType] then
+            if PDS.Stats:IsPrimaryStat(statType) then
+                table.insert(nonRated, statType)
+            else
+                local rating = PDS.Stats:GetRating(statType)
+                if IsSecretValue(rating) then
+                    anySecret = true
+                else
+                    allSecret = false
+                    table.insert(rated, { statType = statType, rating = rating or 0 })
+                end
+            end
+        end
+    end
+
+    if anySecret and allSecret and self.cachedSortOrder then
+        return self.cachedSortOrder
+    end
+
+    table.sort(rated, function(a, b) return a.rating > b.rating end)
+
+    local order = {}
+    for _, entry in ipairs(rated) do
+        table.insert(order, entry.statType)
+    end
+    for _, statType in ipairs(nonRated) do
+        table.insert(order, statType)
+    end
+
+    -- Append any stat types that were secret so they keep a stable slot at the end
+    if anySecret then
+        for _, statType in ipairs(PDS.Stats.STAT_ORDER) do
+            if PDS.Config.showStats[statType] and not PDS.Stats:IsPrimaryStat(statType) then
+                local rating = PDS.Stats:GetRating(statType)
+                if IsSecretValue(rating) then
+                    table.insert(order, statType)
+                end
+            end
+        end
+    end
+
+    self.cachedSortOrder = order
+    return order
+end
+
+-- Returns true if the two lists describe the same order
+local function SortOrderEquals(a, b)
+    if not a or not b then return false end
+    if #a ~= #b then return false end
+    for i = 1, #a do
+        if a[i] ~= b[i] then return false end
+    end
+    return true
+end
+
+-- Reorders self.bars to match the given stat-type sequence. Bars not in the
+-- sequence (e.g., stats that just got toggled off) keep their relative trailing order.
+function BarManager:ApplySortOrder(order)
+    local byStat = {}
+    for _, bar in ipairs(self.bars) do
+        byStat[bar.statType] = bar
+    end
+
+    local newBars = {}
+    local placed = {}
+    for _, statType in ipairs(order) do
+        local bar = byStat[statType]
+        if bar and not placed[statType] then
+            table.insert(newBars, bar)
+            placed[statType] = true
+        end
+    end
+    for _, bar in ipairs(self.bars) do
+        if not placed[bar.statType] then
+            table.insert(newBars, bar)
+        end
+    end
+    self.bars = newBars
+end
+
 -- Updates all stat bars with latest values, only if they've changed.
 -- StatBar reads self.maxRating directly for raw-mode bar fill scaling.
 function BarManager:UpdateAllBars()
@@ -152,6 +263,16 @@ function BarManager:UpdateAllBars()
         self:ComputeMaxRating()
     else
         self.maxRating = 0
+    end
+
+    if PDS.Config.sortBarsByRating then
+        local previousOrder = self.lastAppliedSortOrder
+        local newOrder = self:ComputeSortOrder()
+        if not SortOrderEquals(previousOrder, newOrder) then
+            self:ApplySortOrder(newOrder)
+            self.lastAppliedSortOrder = newOrder
+            layoutDirty = true
+        end
     end
 
     for _, bar in ipairs(self.bars) do
