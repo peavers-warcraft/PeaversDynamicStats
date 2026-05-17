@@ -329,6 +329,98 @@ function ConfigUI:BuildBarsPage(parentFrame)
     parentFrame:SetHeight(math.abs(y) + 30)
 end
 
+function ConfigUI:BuildDisplayPage(parentFrame)
+    local y = -10
+    local opts = GetPageOpts(parentFrame)
+    local indent = opts.indent
+    local width = opts.width
+
+    local _, newY = W:CreateSectionHeader(parentFrame, "Bar Fill Mode", indent, y)
+    y = newY - 8
+
+    local desc = parentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    desc:SetPoint("TOPLEFT", indent, y)
+    desc:SetWidth(width)
+    desc:SetJustifyH("LEFT")
+    desc:SetText("Fill bars based on raw rating points instead of percentages, useful for comparing stat magnitudes at a glance.")
+    y = y - 32
+
+    local rawToggle = W:CreateToggle(parentFrame, "Fill Bars by Raw Stat Value", {
+        checked = Config.showRawValues == true,
+        width = width,
+        onChange = function(checked)
+            Config.showRawValues = checked
+            Config:Save()
+            RefreshBars()
+        end,
+    })
+    rawToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
+
+    local maxSlider = W:CreateSlider(parentFrame, "Max Rating (0 = auto: highest bar = 100%)", {
+        min = 0, max = 10000, step = 100,
+        value = Config.rawValueMax or 0,
+        width = width,
+        format = function(v)
+            v = math.floor(v + 0.5)
+            if v == 0 then return "Auto" end
+            return tostring(v)
+        end,
+        onChange = function(value)
+            Config.rawValueMax = math.floor(value + 0.5)
+            Config:Save()
+            RefreshBars()
+        end,
+    })
+    maxSlider:SetPoint("TOPLEFT", indent, y)
+    y = y - 52
+
+    local _, sortY = W:CreateSectionHeader(parentFrame, "Bar Ordering", indent, y)
+    y = sortY - 8
+
+    local sortDesc = parentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    sortDesc:SetPoint("TOPLEFT", indent, y)
+    sortDesc:SetWidth(width)
+    sortDesc:SetJustifyH("LEFT")
+    sortDesc:SetText("Reorder bars live so the highest-rated stat is always on top. Order freezes during combat (ratings are protected by the game).")
+    y = y - 38
+
+    local sortToggle = W:CreateToggle(parentFrame, "Sort Bars by Current Rating", {
+        checked = Config.sortBarsByRating == true,
+        width = width,
+        onChange = function(checked)
+            Config.sortBarsByRating = checked
+            Config:Save()
+            RefreshBars()
+        end,
+    })
+    sortToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
+
+    local _, textY = W:CreateSectionHeader(parentFrame, "Text Visibility", indent, y)
+    y = textY - 8
+
+    local namesToggle = W:CreateToggle(parentFrame, "Show Stat Names", {
+        checked = Config.showStatNames ~= false,
+        width = width,
+        onChange = function(checked)
+            Config.showStatNames = checked
+            Config:Save()
+            if PDS.BarManager and PDS.BarManager.bars then
+                for _, bar in ipairs(PDS.BarManager.bars) do
+                    if bar.textManager and bar.textManager.SetNameShown then
+                        bar.textManager:SetNameShown(checked)
+                    end
+                end
+            end
+        end,
+    })
+    namesToggle:SetPoint("TOPLEFT", indent, y)
+    y = y - 30
+
+    parentFrame:SetHeight(math.abs(y) + 30)
+end
+
 function ConfigUI:BuildTextPage(parentFrame)
     local y = -10
     local opts = GetPageOpts(parentFrame)
@@ -407,6 +499,7 @@ function ConfigUI:GetPages()
     return {
         { key = "general", label = "General", builder = function(f) ConfigUI:BuildGeneralPage(f) end },
         { key = "stats", label = "Stats", builder = function(f) ConfigUI:BuildStatsPage(f) end },
+        { key = "display", label = "Display", builder = function(f) ConfigUI:BuildDisplayPage(f) end },
         { key = "bars", label = "Bars", builder = function(f) ConfigUI:BuildBarsPage(f) end },
         { key = "text", label = "Text", builder = function(f) ConfigUI:BuildTextPage(f) end },
         { key = "behavior", label = "Behavior", builder = function(f) ConfigUI:BuildBehaviorPage(f) end },

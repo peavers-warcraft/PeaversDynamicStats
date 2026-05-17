@@ -32,6 +32,10 @@ function StatBar:New(parent, name, statType)
     -- Initialize PDS-specific tooltip
     obj:InitTooltip()
 
+    if obj.textManager and PDS.Config.showStatNames == false then
+        obj.textManager:SetNameShown(false)
+    end
+
     return obj
 end
 
