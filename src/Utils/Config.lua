@@ -62,9 +62,22 @@ PDS.Config = ConfigManager:NewWithAceDB(
         savedVariablesName = "PeaversDynamicStatsDB",
         profileType = "spec",
         onProfileChanged = function()
-            if PDS.BarManager and PDS.Core and PDS.Core.contentFrame then
+            if not PDS.Core or not PDS.Core.frame then return end
+
+            PDS.Core.frame:SetWidth(PDS.Config.frameWidth)
+            PDS.Core:ApplyFramePosition()
+
+            if PDS.BarManager and PDS.Core.contentFrame then
                 PDS.BarManager:CreateBars(PDS.Core.contentFrame)
+                PDS.BarManager:ResizeBars()
                 PDS.Core:AdjustFrameHeight()
+            end
+
+            PDS.Core:UpdateTitleBarVisibility()
+            PDS.Core:UpdateFrameLock()
+
+            if PDS.Core.UpdateFrameVisibility then
+                PDS.Core:UpdateFrameVisibility()
             end
         end,
     }
