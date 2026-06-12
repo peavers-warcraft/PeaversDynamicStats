@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: PeaversDynamicStats
+  description: "A World of Warcraft addon that visualizes your primary and secondary stats with dynamic bars that update in real-time during combat."
+  annotations:
+    github.com/project-slug: peavers-warcraft/PeaversDynamicStats
+spec:
+  type: library
+  lifecycle: production
+  owner: peavers-warcraft
