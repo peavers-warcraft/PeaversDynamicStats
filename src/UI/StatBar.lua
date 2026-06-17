@@ -267,7 +267,7 @@ function StatBar:InitTooltip()
 
     -- Create a new tooltip
     local tooltipName = "PDS_StatTooltip_" .. self.statType .. "_" .. tostring(self):gsub("table:", "")
-    self.tooltip = CreateFrame("GameTooltip", tooltipName, UIParent, "GameTooltipTemplate")
+    self.tooltip = CreateFrame("GameTooltip", tooltipName, UIParent, "GameTooltipTemplate") --[[@as GameTooltip]]
 
     -- Set up mouse event handlers for main frame
     self.frame:SetScript("OnEnter", function()

@@ -37,7 +37,7 @@ function Core:Initialize()
 	settingsFrame:RegisterEvent("VARIABLES_LOADED")
 	settingsFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 	settingsFrame:RegisterEvent("ADDON_LOADED")
-	settingsFrame:SetScript("OnEvent", function(self, event, ...)
+	settingsFrame:SetScript("OnEvent", function(_, event, ...)
 		if event == "ADDON_LOADED" and ... == addonName then
 			QueueSettingsSave()
 		elseif event == "VARIABLES_LOADED" or event == "PLAYER_ENTERING_WORLD" then

@@ -12,7 +12,6 @@ end
 
 local SettingsObjects = PeaversCommons.SettingsObjects
 local W = PeaversCommons.Widgets
-local C = W.Colors
 local ConfigUIUtils = PeaversCommons.ConfigUIUtils
 
 local function RefreshBars()
@@ -457,7 +456,7 @@ function ConfigUI:BuildBehaviorPage(parentFrame)
     y = SettingsObjects.UpdateInterval(parentFrame, Config, y, opts)
 
     -- Troubleshooting
-    local _, newY = W:CreateSectionHeader(parentFrame, "Troubleshooting", indent, y)
+    _, newY = W:CreateSectionHeader(parentFrame, "Troubleshooting", indent, y)
     y = newY - 8
 
     local desc = parentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")

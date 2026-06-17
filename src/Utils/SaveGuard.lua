@@ -59,7 +59,7 @@ function SaveGuard:Initialize()
     frame:RegisterEvent("VARIABLES_LOADED")
     
     -- Set up event handler
-    frame:SetScript("OnEvent", function(self, event, arg1)
+    frame:SetScript("OnEvent", function(_, event, arg1)
         if event == "PLAYER_LOGOUT" then
             -- Always force save on logout
             SaveGuard:ForceSave()

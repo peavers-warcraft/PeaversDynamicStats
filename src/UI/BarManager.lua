@@ -37,7 +37,7 @@ function BarManager:CreateBars(parent)
     self.lastAppliedSortOrder = nil
 
     -- Get growth direction from config
-    local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
+    local yMult, _, anchorPoint = PDS.Config:GetGrowthDirection()
     local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
 
     -- Pre-compute maxRating before creating bars so raw-mode scaling is correct on first draw
@@ -102,7 +102,7 @@ end
 -- Re-positions visible bars to remove gaps left by hidden ones.
 -- Call after toggling bar.hiddenByZero on any bar.
 function BarManager:RelayoutVisibleBars()
-    local yMult, xMult, anchorPoint = PDS.Config:GetGrowthDirection()
+    local yMult, _, anchorPoint = PDS.Config:GetGrowthDirection()
     local barStep = PDS.Config.barHeight + PDS.Config.barSpacing
 
     local yOffset = 0

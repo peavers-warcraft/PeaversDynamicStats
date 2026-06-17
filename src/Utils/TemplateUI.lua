@@ -6,7 +6,6 @@ local TemplateUI = PDS.TemplateUI
 
 -- Access PeaversCommons utilities
 local PeaversCommons = _G.PeaversCommons
-local ConfigUIUtils = PeaversCommons and PeaversCommons.ConfigUIUtils
 
 -- Localization helper - uses PDS.L:Get() from Localization.lua
 -- This is the official API for accessing localized strings
@@ -253,7 +252,6 @@ end
 -- Create the template management UI section
 function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, sectionSpacing)
     baseSpacing = baseSpacing or 25
-    sectionSpacing = sectionSpacing or 40
     local controlIndent = baseSpacing + 15
     local dropdownWidth = 250
 
@@ -373,11 +371,11 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
         end
 
         -- Initialize the dropdown
-        UIDropDownMenu_Initialize(dropdownFrame, function(self, level)
-            local templates = TemplateUI:GetTemplateNames()
+        UIDropDownMenu_Initialize(dropdownFrame, function(_, level)
+            local templateNames = TemplateUI:GetTemplateNames()
             local activeTemplate = PDS.Config.lastAppliedTemplate
 
-            for _, name in ipairs(templates) do
+            for _, name in ipairs(templateNames) do
                 local info = UIDropDownMenu_CreateInfo()
                 -- Show active template with visual indicator
                 if name == activeTemplate then
@@ -386,10 +384,10 @@ function TemplateUI:CreateTemplateManagementUI(content, yPos, baseSpacing, secti
                     info.text = name
                 end
                 info.value = name
-                info.func = function(self)
-                    selectedTemplate = self.value
-                    UIDropDownMenu_SetSelectedValue(dropdownFrame, self.value)
-                    UIDropDownMenu_SetText(dropdownFrame, self.value)
+                info.func = function(btn)
+                    selectedTemplate = btn.value
+                    UIDropDownMenu_SetSelectedValue(dropdownFrame, btn.value)
+                    UIDropDownMenu_SetText(dropdownFrame, btn.value)
                     applyBtn:Enable()
                     deleteBtn:Enable()
                 end

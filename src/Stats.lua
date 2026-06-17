@@ -78,6 +78,8 @@ end
 local StatAPI = {}
 
 -- Primary stat wrappers (using UnitStat)
+-- Returns are `any`: stat APIs may hand back opaque "secret values" (12.0.5+), not numbers.
+---@return any, any, any, any
 function StatAPI.GetUnitStat(statIndex)
     local base, stat, posBuff, negBuff = SafeGetMultiValue(UnitStat, "player", statIndex)
     -- 12.0.5+: If values are secret, return them as-is (can't do arithmetic)
@@ -95,6 +97,7 @@ function StatAPI.GetHaste()
     return DefaultIfNil(SafeGetValue(GetHaste), 0)
 end
 
+---@return any
 function StatAPI.GetCritChance()
     -- Try spell crit first (most accurate for casters), then generic crit
     local val = SafeGetValue(GetSpellCritChance, 2)
@@ -102,6 +105,7 @@ function StatAPI.GetCritChance()
     return DefaultIfNil(SafeGetValue(GetCritChance), 0)
 end
 
+---@return any
 function StatAPI.GetMastery()
     local val = SafeGetValue(GetMasteryEffect)
     if IsSecretValue(val) or val ~= nil then return val end
@@ -361,6 +365,7 @@ Stats.STAT_COLORS = {
 }
 
 -- Store base values for primary stats
+---@type table<string, number>
 Stats.BASE_VALUES = {
     [Stats.STAT_TYPES.STRENGTH] = 0,
     [Stats.STAT_TYPES.AGILITY] = 0,
@@ -480,7 +485,7 @@ end
 -- Returns the current value of the specified stat using the latest APIs
 -- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetValue(statType)
-    local value = 0
+    local value = 0 ---@type number
 
     if statType == Stats.STAT_TYPES.PRIMARY_STAT then
         return self:GetValue(self:ResolvePrimaryStatType())
@@ -488,6 +493,7 @@ function Stats:GetValue(statType)
 
     -- Helper: get primary stat total via fallback chain, secret-safe
     -- C_Attributes/C_Stats return a single total; UnitStat's 2nd return is effectiveStat
+    ---@return any
     local function GetPrimaryStat(attrName, statIndex)
         local val = nil
         -- Try C_Attributes (returns total as single value)
@@ -585,7 +591,7 @@ end
 -- Gets the raw rating value for the specified stat type
 -- Updated for WoW 12.0 compatibility with StatAPI wrappers
 function Stats:GetRating(statType)
-    local rating = 0
+    local rating = 0 ---@type number
 
     if statType == Stats.STAT_TYPES.PRIMARY_STAT then
         return self:GetRating(self:ResolvePrimaryStatType())
@@ -593,6 +599,7 @@ function Stats:GetRating(statType)
 
     -- Primary stats - return the total stat value (reuses GetPrimaryStat pattern)
     -- Helper: get primary stat for rating display, secret-safe
+    ---@return any
     local function GetPrimaryStatRating(statIndex)
         local val = nil
         if C_Stats then
@@ -833,7 +840,7 @@ function Stats:CheckForThiefsVersatilityLegacy()
 
             -- Try GetTalentInfo method 1
             pcall(function()
-                local talentID, talentName, texture, isSelected = GetTalentInfo(tier, column, 1)
+                local _, talentName, _, isSelected = GetTalentInfo(tier, column, 1)
                 name = talentName
                 selected = isSelected
             end)
@@ -841,7 +848,7 @@ function Stats:CheckForThiefsVersatilityLegacy()
             -- Try GetTalentInfo method 2 (different parameter order)
             if not name then
                 pcall(function()
-                    local talentID, talentName, texture, isSelected = GetTalentInfo(1, tier, column)
+                    local _, talentName, _, isSelected = GetTalentInfo(1, tier, column)
                     name = talentName
                     selected = isSelected
                 end)
@@ -921,7 +928,7 @@ function Stats:CheckForThiefsVersatilityLegacy()
     local pvpTalents = C_SpecializationInfo and C_SpecializationInfo.GetAllSelectedPvpTalentIDs()
     if pvpTalents then
         for _, talentID in ipairs(pvpTalents) do
-            local talentInfo = C_PvP and C_PvP.GetPvpTalentInfoByID(talentID)
+            local talentInfo = GetPvpTalentInfoByID and GetPvpTalentInfoByID(talentID)
             if talentInfo and talentInfo.name and string.find(talentInfo.name:lower(), "versatility") then
                 if PDS.Config.DEBUG_ENABLED then
                     PDS.Utils.Debug("Found Thief's Versatility in PvP talents")
