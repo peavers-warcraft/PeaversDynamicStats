@@ -247,7 +247,19 @@ PeaversCommons.Events:Init(addonName, function()
         end
     end)
 
-    PeaversCommons.Events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED", function()
+    -- PLAYER_SPECIALIZATION_CHANGED also fires on every level-up and for other
+    -- units, without the player's spec actually changing. Track the last seen
+    -- specID so the profile reload below only runs on a real spec change,
+    -- otherwise leveling up resets bars/position to the stored profile state (#44).
+    local lastSpecID
+    PeaversCommons.Events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED", function(_, unit)
+        if unit and unit ~= "player" then return end
+
+        local specIndex = GetSpecialization()
+        local specID = specIndex and GetSpecializationInfo(specIndex)
+        if not specID or specID == lastSpecID then return end
+        lastSpecID = specID
+
         -- Save current settings for the previous spec
         PDS.Config:Save()
 
@@ -345,6 +357,12 @@ PeaversCommons.Events:Init(addonName, function()
         if primaryStatRefreshed then return end
         primaryStatRefreshed = true
         C_Timer.After(0.1, function()
+            -- Baseline the current spec so the PLAYER_SPECIALIZATION_CHANGED
+            -- handler above can tell real spec changes from level-up noise
+            local specIndex = GetSpecialization()
+            if specIndex then
+                lastSpecID = GetSpecializationInfo(specIndex) or lastSpecID
+            end
             if PDS.Config and PDS.Config.UpdateCurrentIdentifiers then
                 PDS.Config:UpdateCurrentIdentifiers()
             end
