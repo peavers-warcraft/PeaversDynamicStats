@@ -34,6 +34,7 @@ Access settings through `/pds config` to customize:
 - Combat-only visibility
 <!-- /peavers:configuration -->
 
+
 ## Installation
 
 ### Recommended: PeaversUpdater
