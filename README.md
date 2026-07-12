@@ -1,6 +1,6 @@
 # PeaversDynamicStats
 
-[![AddonSentry](https://api.addonsentry.io/api/public/repos/peavers-warcraft/PeaversDynamicStats/badge.svg)](https://addonsentry.io/dashboard/peavers-warcraft/PeaversDynamicStats)
+[![AddonSentry](https://addonsentry.io/api/public/repos/peavers-warcraft/PeaversDynamicStats/badge.svg)](https://addonsentry.io/dashboard/peavers-warcraft/PeaversDynamicStats)
 
 A World of Warcraft addon that visualizes your primary and secondary stats with dynamic bars that update in real-time during combat.
 
