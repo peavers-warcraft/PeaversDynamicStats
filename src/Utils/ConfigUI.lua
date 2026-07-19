@@ -494,8 +494,29 @@ end
 -- Public API
 --------------------------------------------------------------------------------
 
+function ConfigUI:BuildInfoPage(parentFrame)
+    PeaversCommons.ConfigUIUtils.BuildInfoPage(parentFrame, "Dynamic Stats", {
+        "Shows your primary and secondary stats as live bars that update in " ..
+            "real time - watch haste procs, trinkets, and buffs move your " ..
+            "stats as they happen.",
+        { command = "/pds", desc = "toggle the stats display" },
+        { command = "/pds config", desc = "open the configuration panel" },
+
+        { header = "Reading the bars" },
+        "Each bar shows a stat's current rating or percentage; hover over one " ..
+            "for details, including its recent history. During combat the " ..
+            "display updates more frequently, so short procs are visible.",
+
+        { header = "Keeping it out of the way" },
+        "The frame can be dragged anywhere and locked in place, and a " ..
+            "combat-only mode hides it entirely while you are out of combat. " ..
+            "Both live in the General and Behavior tabs.",
+    })
+end
+
 function ConfigUI:GetPages()
     return {
+        { key = "info", label = "Information", builder = function(f) ConfigUI:BuildInfoPage(f) end },
         { key = "general", label = "General", builder = function(f) ConfigUI:BuildGeneralPage(f) end },
         { key = "stats", label = "Stats", builder = function(f) ConfigUI:BuildStatsPage(f) end },
         { key = "display", label = "Display", builder = function(f) ConfigUI:BuildDisplayPage(f) end },
