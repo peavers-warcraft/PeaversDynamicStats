@@ -112,7 +112,7 @@ function ConfigUI:BuildStatsPage(parentFrame)
 
         for _, statType in ipairs(group.stats) do
             local statName = (PDS.Stats and PDS.Stats.GetName) and PDS.Stats:GetName(statType) or statType
-            local toggle = W:CreateToggle(parentFrame, statName, {
+            local toggle = W:CreateCheckbox(parentFrame, statName, {
                 checked = Config.showStats[statType] ~= false,
                 width = width,
                 onChange = function(checked)
@@ -215,7 +215,7 @@ function ConfigUI:BuildBarsPage(parentFrame)
     y = y - 52
 
     -- Show overflow bars
-    local overflowToggle = W:CreateToggle(parentFrame, "Show Overflow Bars (values over 100%)", {
+    local overflowToggle = W:CreateCheckbox(parentFrame, "Show Overflow Bars (values over 100%)", {
         checked = Config.showOverflowBars ~= false,
         width = width,
         onChange = function(checked)
@@ -228,7 +228,7 @@ function ConfigUI:BuildBarsPage(parentFrame)
     y = y - 30
 
     -- Show stat changes
-    local statChangesToggle = W:CreateToggle(parentFrame, "Show Stat Changes", {
+    local statChangesToggle = W:CreateCheckbox(parentFrame, "Show Stat Changes", {
         checked = Config.showStatChanges ~= false,
         width = width,
         onChange = function(checked)
@@ -241,7 +241,7 @@ function ConfigUI:BuildBarsPage(parentFrame)
     y = y - 30
 
     -- Persist stat changes
-    local persistToggle = W:CreateToggle(parentFrame, "Persist Stat Changes Between Sessions", {
+    local persistToggle = W:CreateCheckbox(parentFrame, "Persist Stat Changes Between Sessions", {
         checked = Config.persistStatChanges or false,
         width = width,
         onChange = function(checked)
@@ -253,7 +253,7 @@ function ConfigUI:BuildBarsPage(parentFrame)
     y = y - 30
 
     -- Show ratings
-    local ratingsToggle = W:CreateToggle(parentFrame, "Show Rating Values", {
+    local ratingsToggle = W:CreateCheckbox(parentFrame, "Show Rating Values", {
         checked = Config.showRatings ~= false,
         width = width,
         onChange = function(checked)
@@ -266,7 +266,7 @@ function ConfigUI:BuildBarsPage(parentFrame)
     y = y - 30
 
     -- Auto-hide zero stats
-    local autoHideToggle = W:CreateToggle(parentFrame, "Auto-Hide Zero Value Stats", {
+    local autoHideToggle = W:CreateCheckbox(parentFrame, "Auto-Hide Zero Value Stats", {
         checked = Config.autoHideZeroStats ~= false,
         width = width,
         onChange = function(checked)
@@ -291,7 +291,7 @@ function ConfigUI:BuildBarsPage(parentFrame)
     y = hlY - 8
 
     local L = PDS.L or {}
-    local highlightToggle = W:CreateToggle(parentFrame, "Highlight Highest Secondary Stat", {
+    local highlightToggle = W:CreateCheckbox(parentFrame, "Highlight Highest Secondary Stat", {
         checked = Config.highlightHighestRating == true,
         width = width,
         onChange = function(checked)
@@ -344,7 +344,7 @@ function ConfigUI:BuildDisplayPage(parentFrame)
     desc:SetText("Fill bars based on raw rating points instead of percentages, useful for comparing stat magnitudes at a glance.")
     y = y - 32
 
-    local rawToggle = W:CreateToggle(parentFrame, "Fill Bars by Raw Stat Value", {
+    local rawToggle = W:CreateCheckbox(parentFrame, "Fill Bars by Raw Stat Value", {
         checked = Config.showRawValues == true,
         width = width,
         onChange = function(checked)
@@ -384,7 +384,7 @@ function ConfigUI:BuildDisplayPage(parentFrame)
     sortDesc:SetText("Reorder bars live so the highest-rated stat is always on top. Order freezes during combat (ratings are protected by the game).")
     y = y - 38
 
-    local sortToggle = W:CreateToggle(parentFrame, "Sort Bars by Current Rating", {
+    local sortToggle = W:CreateCheckbox(parentFrame, "Sort Bars by Current Rating", {
         checked = Config.sortBarsByRating == true,
         width = width,
         onChange = function(checked)
@@ -399,7 +399,7 @@ function ConfigUI:BuildDisplayPage(parentFrame)
     local _, textY = W:CreateSectionHeader(parentFrame, "Text Visibility", indent, y)
     y = textY - 8
 
-    local namesToggle = W:CreateToggle(parentFrame, "Show Stat Names", {
+    local namesToggle = W:CreateCheckbox(parentFrame, "Show Stat Names", {
         checked = Config.showStatNames ~= false,
         width = width,
         onChange = function(checked)
@@ -439,7 +439,7 @@ function ConfigUI:BuildBehaviorPage(parentFrame)
     local _, newY = W:CreateSectionHeader(parentFrame, "Advanced", indent, y)
     y = newY - 8
 
-    local talentToggle = W:CreateToggle(parentFrame, "Enable Talent Stat Adjustments", {
+    local talentToggle = W:CreateCheckbox(parentFrame, "Enable Talent Stat Adjustments", {
         checked = Config.enableTalentAdjustments ~= false,
         width = width,
         onChange = function(checked)
