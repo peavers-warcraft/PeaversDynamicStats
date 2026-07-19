@@ -1,4 +1,10 @@
 {
-  "_comment": "PDS_ is the established short alias for this addon.",
-  "framePrefixes": ["PDS_"]
+  "framePrefixes": [
+    "PDS_"
+  ],
+  "_comment": "Frames whose global name is required. Everything else should be anonymous: naming a templated frame also creates a global per named child the template defines.",
+  "namedFrames": {
+    "PDS_TemplateDropdown": "UIDropDownMenuTemplate addresses its button/text children by global name",
+    "PDS_TemplateNameInput": "InputBoxTemplate addresses its $parentLeft/Middle/Right regions by global name"
+  }
 }

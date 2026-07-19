@@ -45,7 +45,7 @@ function Core:Initialize()
 		end
 	end)
 	
-	self.frame = CreateFrame("Frame", "PeaversDynamicStatsFrame", UIParent, "BackdropTemplate")
+	self.frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
 	self.frame:SetSize(PDS.Config.frameWidth, PDS.Config.frameHeight)
 	self.frame:SetBackdrop({
 		bgFile = "Interface\\BUTTONS\\WHITE8X8",
