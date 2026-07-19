@@ -82,7 +82,7 @@ end
 PDS.LogAPIAvailability = LogAPIAvailability
 
 -- Function to toggle the stats display
-function ToggleStatsDisplay()
+local function ToggleStatsDisplay()
     if PDS.Core.frame:IsShown() then
         PDS.Core.frame:Hide()
     else
@@ -90,8 +90,10 @@ function ToggleStatsDisplay()
     end
 end
 
--- Make the function globally accessible
-_G.ToggleStatsDisplay = ToggleStatsDisplay
+-- Reachable as PeaversDynamicStats.ToggleDisplay() (see the namespace export below).
+-- Deliberately NOT a bare _G.ToggleStatsDisplay: that name is generic enough to collide
+-- with any other stats addon, and /pds is the supported way to toggle.
+PDS.ToggleDisplay = ToggleStatsDisplay
 
 -- Expose addon namespace globally for PeaversUISetup integration
 _G.PeaversDynamicStats = PDS
