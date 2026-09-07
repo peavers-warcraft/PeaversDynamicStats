@@ -1,5 +1,4 @@
 local _, PDS = ...
-local Config = PDS.Config
 
 local ConfigUI = {}
 PDS.ConfigUI = ConfigUI
