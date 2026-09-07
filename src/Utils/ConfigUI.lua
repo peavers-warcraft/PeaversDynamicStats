@@ -20,7 +20,7 @@ local ConfigUIUtils = PeaversCommons.ConfigUIUtils
 -- should do.
 
 function ConfigUI:BuildInfoPage(parentFrame)
-    PeaversCommons.ConfigUIUtils.BuildInfoPage(parentFrame, "Dynamic Stats", {
+    ConfigUIUtils.BuildInfoPageWithEditMode(parentFrame, "Dynamic Stats", {
         "Shows your primary and secondary stats as live bars that update in " ..
             "real time - watch haste procs, trinkets, and buffs move your " ..
             "stats as they happen.",
@@ -31,12 +31,16 @@ function ConfigUI:BuildInfoPage(parentFrame)
         "Each bar shows a stat's current rating or percentage; hover over one " ..
             "for details, including its recent history. During combat the " ..
             "display updates more frequently, so short procs are visible.",
-
-        { header = "Settings are in Edit Mode" },
-        "Open Edit Mode from the game menu and select the bars. Everything is " ..
-            "there: size and position, the bars and their text, which stats to " ..
-            "show and what colour each one is, and when the frame should hide " ..
-            "itself.",
+    }, {
+        title = "the stat bars",
+        select = "the stat bars",
+        reset = function()
+            PDS.Config:Reset()
+            if PDS.ApplySetting then PDS.ApplySetting() end
+            if PeaversCommons.EditModePanel then
+                PeaversCommons.EditModePanel:Refresh()
+            end
+        end,
     })
 end
 
