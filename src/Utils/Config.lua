@@ -44,7 +44,6 @@ local PDS_DEFAULTS = {
     rawValueMax = 0,
     sortBarsByRating = false,
     showStatNames = true,
-    showTooltips = true,
     hideOutOfCombat = false,
     displayMode = "ALWAYS",
     enableTalentAdjustments = true,

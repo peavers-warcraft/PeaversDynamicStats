@@ -5,7 +5,7 @@ local Core = PDS.Core
 function Core:CreateBars()
 	-- Clean up existing bars
 	for _, bar in ipairs(self.bars) do
-		-- Call destroy method to properly clean up tooltips
+		-- Call destroy method to properly release frames
 		if bar.Destroy then
 			bar:Destroy()
 		else
