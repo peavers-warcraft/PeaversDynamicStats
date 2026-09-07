@@ -227,6 +227,11 @@ PeaversCommons.Events:Init(addonName, function()
     -- Initialize core components
     PDS.Core:Initialize()
 
+    -- After Core, because it registers the frame Core builds.
+    if PDS.EditMode then
+        PDS.EditMode:Register()
+    end
+
     -- Log API availability for 12.0 compatibility debugging
     LogAPIAvailability()
 
