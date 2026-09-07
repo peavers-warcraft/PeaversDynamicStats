@@ -253,10 +253,6 @@ EditMode.ENTRIES = {
         section = "behaviour", default = false,
     },
     {
-        key = "showTooltips", label = "Show Tooltips", kind = "checkbox",
-        section = "behaviour", default = true,
-    },
-    {
         key = "enableTalentAdjustments", label = "Adjust For Talents", kind = "checkbox",
         section = "behaviour", default = true,
     },
