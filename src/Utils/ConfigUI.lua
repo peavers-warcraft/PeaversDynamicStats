@@ -10,6 +10,11 @@ if not PeaversCommons then
     return
 end
 
+-- Used by InitializeOptions below. The settings pages that went took the rest of
+-- this file's locals with them, and this one nearly followed - which made
+-- ConfigUI:Initialize throw, and took the whole addon's startup with it.
+local ConfigUIUtils = PeaversCommons.ConfigUIUtils
+
 -- Applying a setting lives with the addon's schema now, in EditMode.lua, so the
 -- settings page and the Edit Mode panel cannot disagree about what a change
 -- should do.
