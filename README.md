@@ -9,7 +9,6 @@ A World of Warcraft addon that visualizes your primary and secondary stats with 
 <!-- peavers:features -->
 - Real-time tracking of primary stats (strength, agility, intellect, stamina)
 - Real-time tracking of secondary stats (haste, crit, mastery, versatility)
-- Stat history tracking with historical data in tooltips
 - Combat-aware updates with increased frequency during combat
 - Customizable bar colors, textures, spacing, and dimensions
 - Movable and lockable frame positioning
@@ -22,7 +21,6 @@ A World of Warcraft addon that visualizes your primary and secondary stats with 
 - `/pds` - Toggle the stats display
 - `/pds config` - Open the configuration panel
 - Left-click and drag the frame to reposition
-- Hover over bars for detailed stat information
 <!-- /peavers:usage -->
 
 ## Configuration

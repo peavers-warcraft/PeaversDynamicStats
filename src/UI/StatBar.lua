@@ -1,7 +1,7 @@
 local addonName, PDS = ...
 
 --------------------------------------------------------------------------------
--- PDS StatBar - Extends PeaversCommons.StatBar with overflow bars and tooltips
+-- PDS StatBar - Extends PeaversCommons.StatBar with overflow bars
 --------------------------------------------------------------------------------
 
 local PeaversCommons = _G.PeaversCommons
@@ -29,8 +29,8 @@ function StatBar:New(parent, name, statType)
     -- Create overflow bar for values > 100%
     obj:CreateOverflowBar()
 
-    -- Initialize PDS-specific tooltip
-    obj:InitTooltip()
+    -- Wire up drag handling on the bar frames
+    obj:InitMouseHandlers()
 
     if obj.textManager and PDS.Config.showStatNames == false then
         obj.textManager:SetNameShown(false)
@@ -90,7 +90,7 @@ function StatBar:HandleOverflow(overflowValue)
         self.overflowBar:SetValue(0, true)
     end
 
-    -- Return true if visibility changed (for tooltip reinit)
+    -- Return true if visibility changed (handlers must be re-attached)
     return wasVisible ~= shouldShow
 end
 
@@ -237,8 +237,7 @@ function StatBar:Update(value, maxValue, change, noAnimation)
 
         local visibilityChanged = self:HandleOverflow(overflowValue)
         if visibilityChanged then
-            self.tooltipInitialized = false
-            self:InitTooltip()
+            self:InitMouseHandlers()
         end
 
         self.statusBar:SetMinMaxValues(0, 100)
@@ -254,32 +253,11 @@ function StatBar:Update(value, maxValue, change, noAnimation)
 end
 
 --------------------------------------------------------------------------------
--- Tooltip System (PDS-specific)
+-- Mouse Handlers (drag the parent frame by any bar)
 --------------------------------------------------------------------------------
 
-function StatBar:InitTooltip()
-    -- Always destroy existing tooltip to prevent memory leaks
-    if self.tooltip then
-        self.tooltip:Hide()
-        self.tooltip:ClearLines()
-        self.tooltip = nil
-    end
-
-    -- Create a new tooltip
-    local tooltipName = "PDS_StatTooltip_" .. self.statType .. "_" .. tostring(self):gsub("table:", "")
-    self.tooltip = CreateFrame("GameTooltip", tooltipName, UIParent, "GameTooltipTemplate") --[[@as GameTooltip]]
-
-    -- Set up mouse event handlers for main frame
-    self.frame:SetScript("OnEnter", function()
-        self:ShowTooltip()
-    end)
-
-    self.frame:SetScript("OnLeave", function()
-        self:HideTooltip()
-    end)
-
-    -- Drag support through bar
-    self.frame:SetScript("OnMouseDown", function(frame, button)
+local function AttachDragHandlers(frame)
+    frame:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" and not PDS.Config.lockPosition then
             local parentFrame = PDS.Core.frame
             if parentFrame then
@@ -288,7 +266,7 @@ function StatBar:InitTooltip()
         end
     end)
 
-    self.frame:SetScript("OnMouseUp", function(frame, button)
+    frame:SetScript("OnMouseUp", function(_, button)
         if button == "LeftButton" and not PDS.Config.lockPosition then
             local parentFrame = PDS.Core.frame
             if parentFrame then
@@ -301,73 +279,14 @@ function StatBar:InitTooltip()
             end
         end
     end)
-
-    -- Set up handlers for overflow bar too
-    if self.overflowBar then
-        local overflowFrame = self.overflowBar:GetFrame()
-        overflowFrame:SetScript("OnEnter", function()
-            self:ShowTooltip()
-        end)
-        overflowFrame:SetScript("OnLeave", function()
-            self:HideTooltip()
-        end)
-        overflowFrame:SetScript("OnMouseDown", function(frame, button)
-            if button == "LeftButton" and not PDS.Config.lockPosition then
-                local parentFrame = PDS.Core.frame
-                if parentFrame then
-                    parentFrame:StartMoving()
-                end
-            end
-        end)
-        overflowFrame:SetScript("OnMouseUp", function(frame, button)
-            if button == "LeftButton" and not PDS.Config.lockPosition then
-                local parentFrame = PDS.Core.frame
-                if parentFrame then
-                    parentFrame:StopMovingOrSizing()
-                    local point, _, _, x, y = parentFrame:GetPoint()
-                    PDS.Config.framePoint = point
-                    PDS.Config.frameX = x
-                    PDS.Config.frameY = y
-                    PDS.Config:Save()
-                end
-            end
-        end)
-    end
-
-    self.tooltipInitialized = true
 end
 
-function StatBar:ShowTooltip()
-    if not PDS.Config.showTooltips then return end
+function StatBar:InitMouseHandlers()
+    AttachDragHandlers(self.frame)
 
-    if not self.tooltipInitialized or not self.tooltip then
-        self:InitTooltip()
-    end
-
-    self.tooltip:ClearLines()
-    self.tooltip:SetOwner(self.frame, "ANCHOR_RIGHT")
-
-    local value = PDS.Stats:GetValue(self.statType)
-    local rating = PDS.Stats:GetRating(self.statType)
-
-    if PDS.StatTooltips then
-        PDS.StatTooltips:ShowTooltip(self.tooltip, self.statType, value, rating)
-    elseif PDS.Stats:IsPrimaryStat(self.statType) then
-        self.tooltip:SetText(PDS.Stats:GetName(self.statType))
-        if not PDS.Stats.IsSecretValue(value) then
-            self.tooltip:AddLine(tostring(math.floor(value + 0.5)), 1, 1, 1)
-            local buffValue = PDS.Stats:GetBuffValue(self.statType)
-            if buffValue ~= 0 then
-                local color = buffValue > 0 and {0, 1, 0} or {1, 0, 0}
-                local prefix = buffValue > 0 and "+" or ""
-                self.tooltip:AddLine(prefix .. math.floor(buffValue + 0.5) .. " from buffs", color[1], color[2], color[3])
-            end
-        end
-        self.tooltip:Show()
-    else
-        self.tooltip:SetText(PDS.Stats:GetName(self.statType))
-        self.tooltip:AddLine(PDS.Utils.FormatPercent(value), 1, 1, 1)
-        self.tooltip:Show()
+    -- The overflow bar sits above the main bar and swallows its mouse events
+    if self.overflowBar then
+        AttachDragHandlers(self.overflowBar:GetFrame())
     end
 end
 
@@ -513,9 +432,6 @@ function StatBar:UpdateTexture()
         self.overflowBar:SetTexture(PDS.Config.barTexture)
         self:UpdateColor()
     end
-
-    self.tooltipInitialized = false
-    self:InitTooltip()
 end
 
 --------------------------------------------------------------------------------

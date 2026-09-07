@@ -422,32 +422,6 @@ function Stats:InitializeBaseValues()
     Stats.BASE_VALUES[Stats.STAT_TYPES.STAMINA] = baseSta
 end
 
--- Returns the buff value (positive and negative combined) for the specified stat
-function Stats:GetBuffValue(statType)
-    local buffValue = 0
-
-    if statType == Stats.STAT_TYPES.PRIMARY_STAT then
-        return self:GetBuffValue(self:ResolvePrimaryStatType())
-    end
-
-    -- Use StatAPI wrappers for 12.0 compatibility
-    if statType == Stats.STAT_TYPES.STRENGTH then
-        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(1)
-        buffValue = posBuff + negBuff
-    elseif statType == Stats.STAT_TYPES.AGILITY then
-        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(2)
-        buffValue = posBuff + negBuff
-    elseif statType == Stats.STAT_TYPES.STAMINA then
-        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(3)
-        buffValue = posBuff + negBuff
-    elseif statType == Stats.STAT_TYPES.INTELLECT then
-        local _, _, posBuff, negBuff = StatAPI.GetUnitStat(4)
-        buffValue = posBuff + negBuff
-    end
-
-    return buffValue
-end
-
 -- Returns the buff percentage for the specified stat
 function Stats:GetBuffPercentage(statType)
     local buffPercentage = 0
