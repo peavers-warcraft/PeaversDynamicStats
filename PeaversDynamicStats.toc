@@ -29,6 +29,7 @@ src\Utils\Utils.lua
 src\Utils\Config.lua
 src\Utils\TemplateUI.lua
 src\Utils\ConfigUI.lua
+src\Utils\EditMode.lua
 
 src\UI\StatBar.lua
 src\UI\TitleBar.lua
