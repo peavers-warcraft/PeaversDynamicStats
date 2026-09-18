@@ -264,7 +264,24 @@ PeaversCommons.Events:Init(addonName, function()
 
         local specIndex = GetSpecialization()
         local specID = specIndex and GetSpecializationInfo(specIndex)
-        if not specID or specID == lastSpecID then return end
+        if not specID then return end
+
+        -- The first time the spec can be read at all is not a change, so record
+        -- it and do nothing. This is what #45 was: the login baseline below can
+        -- fail to seed - GetSpecialization is nil before level 10, and
+        -- GetSpecializationInfo can still be nil 100ms into login, which is all
+        -- the time it is given - and it only gets one attempt per session. With
+        -- lastSpecID left nil, the session's first PLAYER_SPECIALIZATION_CHANGED
+        -- passed the guard and reloaded the profile, putting bars and position
+        -- back to their stored state on the next level-up. Treating the first
+        -- reading as a baseline makes a missed seed harmless rather than
+        -- load-bearing.
+        if lastSpecID == nil then
+            lastSpecID = specID
+            return
+        end
+
+        if specID == lastSpecID then return end
         lastSpecID = specID
 
         -- Save current settings for the previous spec
