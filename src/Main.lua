@@ -219,11 +219,6 @@ PeaversCommons.Events:Init(addonName, function()
         PDS.Patrons:Initialize()
     end
     
-    -- Initialize the SaveGuard system for robust settings persistence
-    if PDS.SaveGuard and PDS.SaveGuard.Initialize then
-        PDS.SaveGuard:Initialize()
-    end
-
     -- Initialize core components
     PDS.Core:Initialize()
 
@@ -396,8 +391,6 @@ PeaversCommons.Events:Init(addonName, function()
             end
         end)
     end)
-
-    -- Removed redundant ADDON_LOADED handler as it's now handled by SaveGuard
 
     C_Timer.After(0.5, function()
         PeaversCommons.SettingsUI:CreateRedirectPage(PDS, "PeaversDynamicStats", "Peavers Dynamic Stats")
