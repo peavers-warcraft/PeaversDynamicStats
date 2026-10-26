@@ -230,18 +230,24 @@ PeaversCommons.Events:Init(addonName, function()
     -- Log API availability for 12.0 compatibility debugging
     LogAPIAvailability()
 
-    -- Register event handlers
-    PeaversCommons.Events:RegisterEvent("UNIT_STATS", function()
+    -- Register event handlers. The unit events fire for everyone in the group,
+    -- so they are filtered to the player by the client: in combat the UNIT_AURA
+    -- payload can be secret, and comparing its unit token in Lua would error.
+    local function RefreshBars()
         if PDS.BarManager and PDS.BarManager.UpdateAllBars then
             PDS.BarManager:UpdateAllBars()
         end
-    end)
+    end
 
-    PeaversCommons.Events:RegisterEvent("UNIT_AURA", function()
-        if PDS.BarManager and PDS.BarManager.UpdateAllBars then
-            PDS.BarManager:UpdateAllBars()
-        end
-    end)
+    local playerEvents = CreateFrame("Frame")
+    playerEvents:RegisterUnitEvent("UNIT_STATS", "player")
+    playerEvents:RegisterUnitEvent("UNIT_AURA", "player")
+    playerEvents:RegisterUnitEvent("UNIT_SPELL_HASTE", "player")
+    playerEvents:SetScript("OnEvent", RefreshBars)
+
+    -- Rating changes that arrive without an aura on the player
+    PeaversCommons.Events:RegisterEvent("COMBAT_RATING_UPDATE", RefreshBars)
+    PeaversCommons.Events:RegisterEvent("MASTERY_UPDATE", RefreshBars)
 
     PeaversCommons.Events:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", function()
         if PDS.BarManager and PDS.BarManager.UpdateAllBars then
