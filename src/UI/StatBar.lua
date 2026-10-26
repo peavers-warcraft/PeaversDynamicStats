@@ -82,6 +82,11 @@ function StatBar:HandleOverflow(overflowValue)
     local shouldShow = overflowValue and overflowValue > 0 and showOverflow
     local wasVisible = self.overflowBar:IsShown()
 
+    if self.overflowFromSecret then
+        self.overflowFromSecret = nil
+        self.overflowBar:SetMinMaxValues(0, 100)
+    end
+
     if shouldShow then
         self.overflowBar:Show()
         self.overflowBar:SetValue(overflowValue)
@@ -91,6 +96,27 @@ function StatBar:HandleOverflow(overflowValue)
     end
 
     -- Return true if visibility changed (handlers must be re-attached)
+    return wasVisible ~= shouldShow
+end
+
+-- In combat the value is secret and can't be compared against 100. Instead the
+-- overflow bar is given the range 100-200 and the raw value: the widget clamps
+-- it, so below 100% the bar draws nothing and above it fills by the excess.
+function StatBar:HandleSecretOverflow(value, noAnimation)
+    if not self.overflowBar then return false end
+
+    local shouldShow = PDS.Config.showOverflowBars and true or false
+    local wasVisible = self.overflowBar:IsShown()
+
+    if shouldShow then
+        self.overflowFromSecret = true
+        self.overflowBar:SetMinMaxValues(100, 200)
+        self.overflowBar:Show()
+        self.overflowBar:SetValue(value, noAnimation)
+    else
+        self.overflowBar:Hide()
+    end
+
     return wasVisible ~= shouldShow
 end
 
@@ -192,7 +218,12 @@ function StatBar:Update(value, maxValue, change, noAnimation)
     -- 12.0.5+: Secret values can't be compared, tested, or used in arithmetic.
     if IsSecretValue(value) then
         self.value = nil
-        self:HandleOverflow(0)
+
+        if rawMode or PDS.Stats:IsPrimaryStat(self.statType) then
+            self:HandleOverflow(0)
+        elseif self:HandleSecretOverflow(value, noAnimation) then
+            self:InitMouseHandlers()
+        end
 
         if rawMode then
             local rating = PDS.Stats:GetRating(self.statType) or 0
