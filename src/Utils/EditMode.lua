@@ -218,10 +218,6 @@ EditMode.ENTRIES = {
     { key = "hideOutOfCombat", section = "behaviour" },
     { key = "displayMode", section = "behaviour" },
     {
-        key = "combatUpdateInterval", label = "Combat Update Interval", kind = "slider",
-        section = "behaviour", min = 0.1, max = 1.0, step = 0.05, default = 0.2,
-    },
-    {
         key = "autoHideZeroStats", label = "Hide Stats At Zero", kind = "checkbox",
         section = "behaviour", default = true,
     },

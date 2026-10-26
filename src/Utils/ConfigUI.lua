@@ -27,9 +27,14 @@ function ConfigUI:BuildInfoPage(parentFrame)
         { command = "/pds config", desc = "open the configuration panel" },
 
         { header = "Reading the bars" },
-        "Each bar shows a stat's current rating or percentage; hover over one " ..
-            "for details, including its recent history. During combat the " ..
-            "display updates more frequently, so short procs are visible.",
+        "Each bar shows a stat's current rating or percentage and moves the " ..
+            "moment a proc, trinket or buff changes it.",
+
+        { header = "In combat" },
+        "Blizzard hides exact stat numbers from addons during combat. The " ..
+            "bars and values keep moving, but the change indicators, sorting and " ..
+            "the highest-stat highlight hold where they were at the pull and " ..
+            "catch up when combat ends.",
     }, {
         title = "the stat bars",
         select = "the stat bars",

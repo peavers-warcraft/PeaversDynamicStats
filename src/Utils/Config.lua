@@ -32,7 +32,6 @@ local PDS_DEFAULTS = {
 
     -- PDS-specific features
     growthAnchor = "TOPLEFT",
-    combatUpdateInterval = 0.2,
     showStats = {},
     customTextColors = {},
     autoHideZeroStats = true,
