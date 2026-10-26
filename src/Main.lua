@@ -249,6 +249,16 @@ PeaversCommons.Events:Init(addonName, function()
     PeaversCommons.Events:RegisterEvent("COMBAT_RATING_UPDATE", RefreshBars)
     PeaversCommons.Events:RegisterEvent("MASTERY_UPDATE", RefreshBars)
 
+    -- Stats are still readable while a restriction is activating; once it is
+    -- active they turn secret. Taking one last reading here means the sort
+    -- order, highest-stat highlight and change baseline that hold through
+    -- combat match the pull, not whenever a stat last happened to change.
+    PeaversCommons.Events:RegisterEvent("ADDON_RESTRICTION_STATE_CHANGED", function(_, _, state)
+        if state == Enum.AddOnRestrictionState.Activating then
+            RefreshBars()
+        end
+    end)
+
     PeaversCommons.Events:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", function()
         if PDS.BarManager and PDS.BarManager.UpdateAllBars then
             PDS.BarManager:UpdateAllBars()
