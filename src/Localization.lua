@@ -36,6 +36,9 @@ Locales["enUS"] = {
     ["STAT_PARRY"] = "Parry",
     ["STAT_BLOCK"] = "Block",
     ["STAT_ARMOR_PENETRATION"] = "Armor Penetration",
+    ["STAT_HIT"] = "Hit",
+    ["STAT_EXPERTISE"] = "Expertise",
+    ["STAT_SPIRIT"] = "Spirit",
     
     -- Commands
     ["CMD_TOGGLE"] = "Toggle stats display",
@@ -194,6 +197,9 @@ Locales["zhCN"] = {
     ["STAT_PARRY"] = "招架",
     ["STAT_BLOCK"] = "格挡",
     ["STAT_ARMOR_PENETRATION"] = "护甲穿透",
+    ["STAT_HIT"] = "命中",
+    ["STAT_EXPERTISE"] = "精准",
+    ["STAT_SPIRIT"] = "精神",
     
     -- Commands
     ["CMD_TOGGLE"] = "切换属性显示",
@@ -335,6 +341,9 @@ Locales["zhTW"] = {
     ["STAT_PARRY"] = "招架",
     ["STAT_BLOCK"] = "格擋",
     ["STAT_ARMOR_PENETRATION"] = "護甲穿透",
+    ["STAT_HIT"] = "命中",
+    ["STAT_EXPERTISE"] = "熟練",
+    ["STAT_SPIRIT"] = "精神",
     
     -- Commands
     ["CMD_TOGGLE"] = "切換屬性顯示",
@@ -476,6 +485,9 @@ Locales["koKR"] = {
     ["STAT_PARRY"] = "무기 막기",
     ["STAT_BLOCK"] = "방패 막기",
     ["STAT_ARMOR_PENETRATION"] = "방어구 관통력",
+    ["STAT_HIT"] = "적중",
+    ["STAT_EXPERTISE"] = "숙련",
+    ["STAT_SPIRIT"] = "정신",
     
     -- Commands
     ["CMD_TOGGLE"] = "능력치 표시 전환",

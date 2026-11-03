@@ -4,6 +4,13 @@ local _, PDS = ...
 PDS.Stats = PDS.Stats or {}
 local Stats = PDS.Stats
 
+-- Which game this is comes from PeaversCommons.Client and nowhere else (Commons
+-- revision 4). An older Commons gets one line in chat from Require and this
+-- addon keeps its retail stat set, which is what it did before Forever existed.
+local Commons = _G.PeaversCommons
+local Client = Commons and Commons.Require and Commons:Require(4, "PeaversDynamicStats") and Commons.Client
+Stats.isForever = (Client and Client.isForever) == true
+
 --------------------------------------------------------------------------------
 -- 12.0 API Compatibility Layer
 -- WoW 12.0 (Midnight) introduces "Secret Values" that restrict certain combat
@@ -212,6 +219,122 @@ Stats.COMBAT_RATINGS = {
     -- CR_LIFESTEAL is now 17 instead of 32
 }
 
+--------------------------------------------------------------------------------
+-- WoW Forever: Hit, Crit, Haste and Expertise
+--
+-- Forever's character sheet shows each of these as the best of several figures
+-- - melee, ranged and spell crit are separate numbers there, as in vanilla - so
+-- a warrior sees melee crit and a mage spell crit. These are read the same way
+-- (Camelot/PaperDollFrameStats.lua), so the bar agrees with the sheet.
+--
+-- In combat the stat APIs return secret values, which cannot be compared or
+-- added. So the best figure is chosen out of combat and, once values turn
+-- secret, the bar keeps reading that same figure live. A figure that is a sum
+-- (hit is rating plus talents; ranged haste is base plus quiver) cannot be
+-- added in combat; unless the added part was 0 at the pull, the bar holds the
+-- total it had at the pull instead. Hit and quiver haste do not move in combat.
+--------------------------------------------------------------------------------
+
+local CR = Stats.COMBAT_RATINGS
+
+local function RatingBonus(index)
+    return function() return GetCombatRatingBonus(index) end
+end
+
+-- kind: which attack the figure belongs to, for picking one before any value
+-- has been read plainly. rating: the combat rating behind it, for the rating
+-- display. extra: the part added on top, when the figure is a sum.
+local FOREVER_FIGURES = {
+    HIT = {
+        { kind = "melee",   rating = CR.CR_HIT_MELEE,  read = RatingBonus(CR.CR_HIT_MELEE),  extra = function() return GetHitModifier() end },
+        { kind = "offhand", rating = CR.CR_HIT_MELEE,  read = RatingBonus(CR.CR_HIT_MELEE),  extra = function() return GetOffhandHitModifier() end },
+        { kind = "ranged",  rating = CR.CR_HIT_RANGED, read = RatingBonus(CR.CR_HIT_RANGED), extra = function() return GetRangedHitModifier() end },
+        { kind = "spell",   rating = CR.CR_HIT_SPELL,  read = RatingBonus(CR.CR_HIT_SPELL),  extra = function() return GetSpellHitModifier() end },
+    },
+    CRIT = {
+        { kind = "melee",  rating = CR.CR_CRIT_MELEE,  read = function() return GetCritChance() end },
+        { kind = "ranged", rating = CR.CR_CRIT_RANGED, read = function() return GetRangedCritChance() end },
+        { kind = "spell",  rating = CR.CR_CRIT_SPELL,  read = function() return GetSpellCritChance() end },
+    },
+    HASTE = {
+        { kind = "melee",  rating = CR.CR_HASTE_MELEE,  read = function() return GetMeleeHaste() end },
+        { kind = "ranged", rating = CR.CR_HASTE_RANGED, read = function() return (GetRangedHaste()) end,
+          extra = function() return select(2, GetRangedHaste()) end },
+        { kind = "spell",  rating = CR.CR_HASTE_SPELL,  read = function() return UnitSpellHaste("player") end },
+    },
+    EXPERTISE = {
+        { kind = "melee",   rating = CR.CR_EXPERTISE, read = function() return (GetExpertise()) end },
+        { kind = "offhand", rating = CR.CR_EXPERTISE, read = function() return select(2, GetExpertise()) end },
+        { kind = "ranged",  rating = CR.CR_EXPERTISE, read = function() return select(3, GetExpertise()) end },
+    },
+}
+Stats.FOREVER_FIGURES = FOREVER_FIGURES
+
+-- Before anything has been read plainly (a reload mid-fight), go by class.
+local CLASS_ATTACK = {
+    HUNTER = "ranged",
+    MAGE = "spell", PRIEST = "spell", WARLOCK = "spell",
+}
+
+-- Per stat: the figure chosen at the last plain read, whether it can be read
+-- live while values are secret, and the total it had.
+local foreverPick = {}
+
+local function DefaultFigure(figures)
+    local _, classToken = UnitClass("player")
+    local kind = CLASS_ATTACK[classToken or ""] or "melee"
+    for index, figure in ipairs(figures) do
+        if figure.kind == kind then return index end
+    end
+    return 1
+end
+
+-- Returns the stat as Forever's character sheet shows it (possibly a secret
+-- value), and the figure it came from.
+function StatAPI.GetForeverStat(statType)
+    local figures = FOREVER_FIGURES[statType]
+    if not figures then return 0, nil end
+
+    local bestTotal, bestIndex, bestExtra
+    local plain = true
+    for index, figure in ipairs(figures) do
+        local value = SafeGetValue(figure.read)
+        local extra = figure.extra and SafeGetValue(figure.extra)
+        if IsSecretValue(value) or IsSecretValue(extra) then
+            plain = false
+            break
+        end
+        local total = (value or 0) + (extra or 0)
+        if not bestTotal or total > bestTotal then
+            bestTotal, bestIndex, bestExtra = total, index, extra
+        end
+    end
+
+    if plain then
+        foreverPick[statType] = {
+            index = bestIndex,
+            live = (bestExtra or 0) == 0,
+            total = bestTotal,
+        }
+        return bestTotal, bestIndex
+    end
+
+    local pick = foreverPick[statType]
+    if pick and not pick.live then
+        return pick.total, pick.index
+    end
+    local index = pick and pick.index or DefaultFigure(figures)
+    return DefaultIfNil(SafeGetValue(figures[index].read), 0), index
+end
+
+-- The combat rating behind the figure the bar is showing.
+function StatAPI.GetForeverRatingIndex(statType)
+    local figures = FOREVER_FIGURES[statType]
+    if not figures then return nil end
+    local pick = foreverPick[statType]
+    return figures[pick and pick.index or DefaultFigure(figures)].rating
+end
+
 -- Stat types - updated for 11.0.0+
 Stats.STAT_TYPES = {
     -- Primary stats
@@ -239,7 +362,12 @@ Stats.STAT_TYPES = {
     DODGE = "DODGE",
     PARRY = "PARRY",
     BLOCK = "BLOCK",
-    ARMOR_PENETRATION = "ARMOR_PENETRATION"
+    ARMOR_PENETRATION = "ARMOR_PENETRATION",
+
+    -- WoW Forever only: vanilla's stats, which retail no longer has
+    HIT = "HIT",
+    EXPERTISE = "EXPERTISE",
+    SPIRIT = "SPIRIT",
 }
 
 -- Primary stat lookup for display/bar logic
@@ -249,6 +377,8 @@ Stats.PRIMARY_STATS = {
     [Stats.STAT_TYPES.INTELLECT] = true,
     [Stats.STAT_TYPES.STAMINA] = true,
     [Stats.STAT_TYPES.PRIMARY_STAT] = true,
+    -- A flat attribute like the four above, shown as a number rather than a percent
+    [Stats.STAT_TYPES.SPIRIT] = true,
 }
 
 function Stats:IsPrimaryStat(statType)
@@ -361,7 +491,12 @@ Stats.STAT_COLORS = {
     [Stats.STAT_TYPES.DODGE] = { 0.40, 0.70, 0.40 },
     [Stats.STAT_TYPES.PARRY] = { 0.70, 0.40, 0.40 },
     [Stats.STAT_TYPES.BLOCK] = { 0.60, 0.60, 0.30 },
-    [Stats.STAT_TYPES.ARMOR_PENETRATION] = { 0.75, 0.60, 0.30 }
+    [Stats.STAT_TYPES.ARMOR_PENETRATION] = { 0.75, 0.60, 0.30 },
+
+    -- WoW Forever
+    [Stats.STAT_TYPES.HIT] = { 0.80, 0.45, 0.30 },
+    [Stats.STAT_TYPES.EXPERTISE] = { 0.55, 0.50, 0.75 },
+    [Stats.STAT_TYPES.SPIRIT] = { 0.70, 0.80, 0.90 },
 }
 
 -- Store base values for primary stats
@@ -373,7 +508,8 @@ Stats.BASE_VALUES = {
     [Stats.STAT_TYPES.STAMINA] = 0
 }
 
--- Default stat order
+-- Default stat order. This is also the list of stats the addon offers at all:
+-- the bars, the settings and Edit Mode all walk it.
 Stats.STAT_ORDER = {
     Stats.STAT_TYPES.PRIMARY_STAT,
     Stats.STAT_TYPES.STRENGTH,
@@ -392,6 +528,29 @@ Stats.STAT_ORDER = {
     Stats.STAT_TYPES.PARRY,
     Stats.STAT_TYPES.BLOCK
 }
+
+-- WoW Forever runs retail's client with vanilla's stats. Its character sheet
+-- (Blizzard_UIPanels_Game/Camelot/PaperDollFrameConstants.lua) has Spirit, Hit
+-- and Expertise, and no Mastery, Versatility, Leech, Avoidance or Speed - the
+-- APIs for those still exist there and answer 0, so offering them would only
+-- give every Forever player five empty bars.
+if Stats.isForever then
+    Stats.STAT_ORDER = {
+        Stats.STAT_TYPES.PRIMARY_STAT,
+        Stats.STAT_TYPES.STRENGTH,
+        Stats.STAT_TYPES.AGILITY,
+        Stats.STAT_TYPES.INTELLECT,
+        Stats.STAT_TYPES.STAMINA,
+        Stats.STAT_TYPES.SPIRIT,
+        Stats.STAT_TYPES.HIT,
+        Stats.STAT_TYPES.CRIT,
+        Stats.STAT_TYPES.HASTE,
+        Stats.STAT_TYPES.EXPERTISE,
+        Stats.STAT_TYPES.DODGE,
+        Stats.STAT_TYPES.PARRY,
+        Stats.STAT_TYPES.BLOCK
+    }
+end
 
 -- Combat Rating to Stat Type mapping for easier lookups
 Stats.RATING_MAP = {
@@ -451,6 +610,11 @@ function Stats:GetBuffPercentage(statType)
         if base > 0 then
             buffPercentage = ((posBuff + negBuff) / base) * 100
         end
+    elseif statType == Stats.STAT_TYPES.SPIRIT then
+        local base, _, posBuff, negBuff = StatAPI.GetUnitStat(5)
+        if base > 0 then
+            buffPercentage = ((posBuff + negBuff) / base) * 100
+        end
     end
 
     return buffPercentage
@@ -501,6 +665,12 @@ function Stats:GetValue(statType)
         value = GetPrimaryStat("Intellect", 4)
     elseif statType == Stats.STAT_TYPES.STAMINA then
         value = GetPrimaryStat("Stamina", 3)
+    elseif statType == Stats.STAT_TYPES.SPIRIT then
+        value = GetPrimaryStat("Spirit", 5)
+
+    -- WoW Forever reads these as its character sheet does (see FOREVER_FIGURES)
+    elseif Stats.isForever and FOREVER_FIGURES[statType] then
+        value = StatAPI.GetForeverStat(statType)
 
     -- Secondary stats - Using StatAPI wrappers for 12.0 compatibility
     elseif statType == Stats.STAT_TYPES.HASTE then
@@ -595,6 +765,12 @@ function Stats:GetRating(statType)
         rating = GetPrimaryStatRating(4)
     elseif statType == Stats.STAT_TYPES.STAMINA then
         rating = GetPrimaryStatRating(3)
+    elseif statType == Stats.STAT_TYPES.SPIRIT then
+        rating = GetPrimaryStatRating(5)
+
+    -- WoW Forever: the rating behind the figure the bar shows
+    elseif Stats.isForever and FOREVER_FIGURES[statType] then
+        rating = StatAPI.GetCombatRating(StatAPI.GetForeverRatingIndex(statType))
 
     -- Secondary stats - return the combat rating using StatAPI wrappers
     elseif statType == Stats.STAT_TYPES.HASTE then
@@ -955,7 +1131,12 @@ function Stats:InitializeStatNames()
         [Stats.STAT_TYPES.DODGE] = PDS.L["STAT_DODGE"],
         [Stats.STAT_TYPES.PARRY] = PDS.L["STAT_PARRY"],
         [Stats.STAT_TYPES.BLOCK] = PDS.L["STAT_BLOCK"],
-        [Stats.STAT_TYPES.ARMOR_PENETRATION] = PDS.L["STAT_ARMOR_PENETRATION"]
+        [Stats.STAT_TYPES.ARMOR_PENETRATION] = PDS.L["STAT_ARMOR_PENETRATION"],
+
+        -- WoW Forever
+        [Stats.STAT_TYPES.HIT] = PDS.L["STAT_HIT"],
+        [Stats.STAT_TYPES.EXPERTISE] = PDS.L["STAT_EXPERTISE"],
+        [Stats.STAT_TYPES.SPIRIT] = PDS.L["STAT_SPIRIT"],
     }
 end
 
@@ -979,7 +1160,9 @@ function Stats:GetRatingPer1Percent(statType)
         return 0
     end
 
-    if statType == Stats.STAT_TYPES.HASTE then
+    if Stats.isForever and FOREVER_FIGURES[statType] then
+        ratingPer1Percent = CalcRatingPer1Pct(StatAPI.GetForeverRatingIndex(statType))
+    elseif statType == Stats.STAT_TYPES.HASTE then
         ratingPer1Percent = CalcRatingPer1Pct(Stats.COMBAT_RATINGS.CR_HASTE_MELEE)
     elseif statType == Stats.STAT_TYPES.CRIT then
         ratingPer1Percent = CalcRatingPer1Pct(Stats.COMBAT_RATINGS.CR_CRIT_MELEE)
