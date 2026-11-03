@@ -18,3 +18,7 @@ stds.wow        = base.wow
 -- base.globals (PeaversChangelogs, SlashCmdList) + this addon's SavedVariables.
 globals = base.globals
 for _, g in ipairs({"PeaversDynamicStatsDB"}) do globals[#globals + 1] = g end
+
+-- WoW Forever's own stat APIs (its PlayerScriptDocumentation; read only when the
+-- client is Forever). wow-api has no Forever build to declare them yet.
+read_globals = { "GetOffhandHitModifier", "GetRangedHitModifier" }
