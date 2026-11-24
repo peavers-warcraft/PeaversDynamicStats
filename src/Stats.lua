@@ -842,7 +842,7 @@ function Stats:GetTalentAdjustment(statType)
                 end
             else
                 -- Fallback to older API
-                local specID = GetSpecialization()
+                local specID = GetSpecialization and GetSpecialization()
                 if specID then
                     local specInfo = GetSpecializationInfo(specID)
                     -- Outlaw spec ID is 260

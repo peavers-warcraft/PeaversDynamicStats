@@ -86,7 +86,7 @@ local function install(forever)
                   Config = {}, Utils = { FormatPercent = function(v) return ("%.2f%%"):format(v) end } }
     assert(loadfile("src/Stats.lua"))("PeaversDynamicStats", PDS)
     PDS.Stats:InitializeStatNames()
-    return PDS.Stats
+    return PDS.Stats, PDS
 end
 
 local function fresh(class)
@@ -242,6 +242,27 @@ check("spirit", (read(Stats, "SPIRIT")), 212)
 inCombat = true
 _, _, text = read(Stats, "SPIRIT")
 check("spirit in combat does not error", type(text), "string")
+
+-- 4. No specs on Forever ---------------------------------------------------------
+
+-- GetSpecialization does not exist there. A retail profile imported with the
+-- Primary Stat bar on built that bar through Config:GetSpecialization, which
+-- called the missing global. It now falls back to the class's main stat.
+fresh("PALADIN")
+local PDS
+Stats, PDS = install(true)
+_G.GetSpecialization, _G.GetSpecializationInfo = nil, nil
+_G.PeaversCommons.ConfigManager = { NewWithAceDB = function() return {} end }
+assert(loadfile("src/Utils/Config.lua"))("PeaversDynamicStats", PDS)
+PDS.Config.db = { char = { specTemplates = { ["65"] = "Holy" } } }
+local ok, spec = pcall(PDS.Config.GetSpecialization, PDS.Config)
+check("no spec on Forever does not error", ok, true)
+check("no spec on Forever reads nil", spec, nil)
+ok, value = pcall(Stats.ResolvePrimaryStatType, Stats)
+check("primary stat on Forever does not error", ok, true)
+check("paladin primary stat on Forever is strength", value, Stats.STAT_TYPES.STRENGTH)
+check("spec template on Forever reads nil", select(2, pcall(PDS.Config.GetSpecTemplate, PDS.Config)), nil)
+check("spec template on Forever is not set", select(2, pcall(PDS.Config.SetSpecTemplate, PDS.Config, "Holy")), false)
 
 if failures == 0 then
     print("all Forever stat checks passed")
