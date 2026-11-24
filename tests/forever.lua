@@ -79,6 +79,10 @@ local function install(forever)
         local v = sheet.attr[i] or 0
         return v, v, 0, 0
     end)
+    _G.UnitAttackPower = stat("UnitAttackPower", function() return unpack(sheet.ap) end)
+    _G.UnitRangedAttackPower = stat("UnitRangedAttackPower", function() return unpack(sheet.rap) end)
+    _G.GetSpellBonusDamage = stat("GetSpellBonusDamage", function(school) return sheet.spellDamage[school] or 0 end)
+    _G.GetSpellBonusHealing = stat("GetSpellBonusHealing", function() return sheet.healing end)
     _G.C_Attributes, _G.C_Stats = nil, nil
     _G.GetHaste = function() error("retail's GetHaste is not how Forever reads haste") end
 
@@ -98,6 +102,7 @@ local function fresh(class)
         meleeCrit = 0, rangedCrit = 0, spellCrit = 0,
         meleeHaste = 0, rangedHaste = 0, quiverHaste = 0, spellHaste = 0,
         mhExp = 0, ohExp = 0, rangedExp = 0,
+        ap = { 0, 0, 0 }, rap = { 0, 0, 0 }, spellDamage = {}, healing = 0,
     }
 end
 
@@ -124,7 +129,8 @@ end
 fresh("WARRIOR")
 local Stats = install(true)
 local set = offers(Stats)
-for _, s in ipairs({ "HIT", "CRIT", "HASTE", "EXPERTISE", "SPIRIT", "DODGE", "PARRY", "BLOCK", "STRENGTH" }) do
+for _, s in ipairs({ "HIT", "CRIT", "HASTE", "EXPERTISE", "SPIRIT", "DODGE", "PARRY", "BLOCK", "STRENGTH",
+                     "ATTACK_POWER", "RANGED_ATTACK_POWER", "SPELL_POWER", "BONUS_HEALING", "SPELL_CRIT" }) do
     check("forever offers " .. s, set[s], true)
 end
 for _, s in ipairs({ "MASTERY", "VERSATILITY", "VERSATILITY_DAMAGE_REDUCTION", "LEECH", "AVOIDANCE", "SPEED" }) do
@@ -138,6 +144,8 @@ set = offers(install(false))
 check("retail still offers MASTERY", set.MASTERY, true)
 check("retail does not offer HIT", set.HIT, nil)
 check("retail does not offer SPIRIT", set.SPIRIT, nil)
+check("retail does not offer ATTACK_POWER", set.ATTACK_POWER, nil)
+check("retail does not offer SPELL_CRIT", set.SPELL_CRIT, nil)
 
 -- An older Commons (no revision 4): keep the retail set rather than guess.
 fresh("WARRIOR")
@@ -263,6 +271,79 @@ check("primary stat on Forever does not error", ok, true)
 check("paladin primary stat on Forever is strength", value, Stats.STAT_TYPES.STRENGTH)
 check("spec template on Forever reads nil", select(2, pcall(PDS.Config.GetSpecTemplate, PDS.Config)), nil)
 check("spec template on Forever is not set", select(2, pcall(PDS.Config.SetSpecTemplate, PDS.Config, "Holy")), false)
+
+-- The new bars are opt-in, so updating the addon adds none.
+PDS.Config.showStats = { HIT = true }
+PDS.Config:InitializeStatSettings()
+for _, s in ipairs({ "ATTACK_POWER", "RANGED_ATTACK_POWER", "SPELL_POWER", "BONUS_HEALING", "SPELL_CRIT" }) do
+    check(s .. " starts hidden", PDS.Config.showStats[s], false)
+end
+check("existing choices are kept", PDS.Config.showStats.HIT, true)
+check("unset older stats still start shown", PDS.Config.showStats.EXPERTISE, true)
+
+-- 5. Attack power, spell power, bonus healing, spell crit ------------------------
+
+-- Attack power is base + buffs, as the sheet shows it, and never below 0.
+fresh("WARRIOR")
+Stats = install(true)
+sheet.ap, sheet.rap = { 400, 120, -20 }, { 90, 0, 0 }
+check("attack power is base + buffs", (read(Stats, "ATTACK_POWER")), 500)
+check("ranged attack power", (read(Stats, "RANGED_ATTACK_POWER")), 90)
+sheet.ap = { 10, 0, -50 }
+check("attack power is never negative", (read(Stats, "ATTACK_POWER")), 0)
+_, _, text = read(Stats, "ATTACK_POWER")
+check("attack power shows as a number", text, "0")
+
+-- In combat the sum cannot be taken: hold the pull's total.
+sheet.ap = { 400, 120, -20 }
+read(Stats, "ATTACK_POWER")
+inCombat = true
+value, _, text = read(Stats, "ATTACK_POWER")
+check("attack power in combat does not error", type(text), "string")
+check("attack power in combat holds the pull's total", value, 500)
+
+-- Reloaded mid-fight: nothing to hold, so base is shown, live.
+fresh("WARRIOR")
+Stats = install(true)
+inCombat = true
+value, _, text = read(Stats, "ATTACK_POWER")
+check("attack power after a combat reload does not error", type(text), "string")
+check("attack power after a combat reload is live", isSecret(value) and value.source, "UnitAttackPower")
+
+-- Spell power is the lowest of the six magic schools, as on the sheet.
+fresh("MAGE")
+Stats = install(true)
+sheet.spellDamage = { [1] = 0, [2] = 120, [3] = 150, [4] = 135, [5] = 120, [6] = 160, [7] = 120 }
+check("spell power is the lowest magic school", (read(Stats, "SPELL_POWER")), 120)
+sheet.spellDamage[4] = 95
+check("spell power follows the lowest school", (read(Stats, "SPELL_POWER")), 95)
+inCombat = true
+value, _, text = read(Stats, "SPELL_POWER")
+check("spell power in combat does not error", type(text), "string")
+check("spell power in combat reads live", isSecret(value) and value.source, "GetSpellBonusDamage")
+
+-- Bonus healing is one call: live in and out of combat.
+fresh("PRIEST")
+Stats = install(true)
+sheet.healing = 310
+check("bonus healing", (read(Stats, "BONUS_HEALING")), 310)
+inCombat = true
+value = read(Stats, "BONUS_HEALING")
+check("bonus healing in combat is live", isSecret(value) and value.source, "GetSpellBonusHealing")
+
+-- Spell crit stands apart from the Crit bar, which shows a paladin's melee crit.
+fresh("PALADIN")
+Stats = install(true)
+sheet.meleeCrit, sheet.spellCrit = 11, 6.5
+sheet.rating[11] = 28
+check("paladin crit is melee crit", (read(Stats, "CRIT")), 11)
+value, rating, text = read(Stats, "SPELL_CRIT")
+check("spell crit is spell crit", value, 6.5)
+check("spell crit rating is spell", rating, 28)
+check("spell crit shows as a percent", text:find("%%") ~= nil, true)
+inCombat = true
+value = read(Stats, "SPELL_CRIT")
+check("spell crit in combat is live", isSecret(value) and value.source, "GetSpellCritChance")
 
 if failures == 0 then
     print("all Forever stat checks passed")
