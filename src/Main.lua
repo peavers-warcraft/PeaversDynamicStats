@@ -243,6 +243,13 @@ PeaversCommons.Events:Init(addonName, function()
     playerEvents:RegisterUnitEvent("UNIT_STATS", "player")
     playerEvents:RegisterUnitEvent("UNIT_AURA", "player")
     playerEvents:RegisterUnitEvent("UNIT_SPELL_HASTE", "player")
+    -- WoW Forever's attack and spell power bars. Retail offers neither, so it
+    -- skips the extra refreshes.
+    if PDS.Stats and PDS.Stats.isForever then
+        playerEvents:RegisterUnitEvent("UNIT_ATTACK_POWER", "player")
+        playerEvents:RegisterUnitEvent("UNIT_RANGED_ATTACK_POWER", "player")
+        playerEvents:RegisterEvent("SPELL_POWER_CHANGED")
+    end
     playerEvents:SetScript("OnEvent", RefreshBars)
 
     -- Rating changes that arrive without an aura on the player

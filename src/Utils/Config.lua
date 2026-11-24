@@ -165,6 +165,12 @@ function Config:InitializeStatSettings()
     local defaultHiddenStats = {
         ["VERSATILITY_DAMAGE_REDUCTION"] = true,
         ["PRIMARY_STAT"] = true,
+        -- WoW Forever extras: off until chosen, so an update adds no bars
+        ["ATTACK_POWER"] = true,
+        ["RANGED_ATTACK_POWER"] = true,
+        ["SPELL_POWER"] = true,
+        ["BONUS_HEALING"] = true,
+        ["SPELL_CRIT"] = true,
     }
 
     -- Get stat order from Stats module if available

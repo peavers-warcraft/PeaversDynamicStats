@@ -267,6 +267,10 @@ local FOREVER_FIGURES = {
         { kind = "offhand", rating = CR.CR_EXPERTISE, read = function() return select(2, GetExpertise()) end },
         { kind = "ranged",  rating = CR.CR_EXPERTISE, read = function() return select(3, GetExpertise()) end },
     },
+    -- Spell crit on its own, for hybrids whose Crit bar shows melee crit
+    SPELL_CRIT = {
+        { kind = "spell", rating = CR.CR_CRIT_SPELL, read = function() return GetSpellCritChance() end },
+    },
 }
 Stats.FOREVER_FIGURES = FOREVER_FIGURES
 
@@ -335,6 +339,82 @@ function StatAPI.GetForeverRatingIndex(statType)
     return figures[pick and pick.index or DefaultFigure(figures)].rating
 end
 
+--------------------------------------------------------------------------------
+-- WoW Forever: Attack Power, Ranged Attack Power, Spell Power, Bonus Healing
+--
+-- Flat numbers, read as the character sheet reads them
+-- (Camelot/PaperDollFrameStats.lua and PaperDollFrame.lua):
+--   attack power is base + positive + negative buffs, never below 0;
+--   spell power is the lowest bonus damage of the six magic schools.
+-- Both need arithmetic or comparison, which secret values refuse in combat.
+-- So attack power holds the total it had at the pull, and spell power keeps
+-- reading, live, the school that was lowest at the pull. Bonus healing is one
+-- call and always reads live.
+--------------------------------------------------------------------------------
+
+local FIRST_MAGIC_SCHOOL, LAST_MAGIC_SCHOOL = 2, 7 -- holy to arcane; 1 is physical
+
+local FOREVER_POWER = {
+    ATTACK_POWER = "attack",
+    RANGED_ATTACK_POWER = "attack",
+    SPELL_POWER = "spell",
+    BONUS_HEALING = "healing",
+}
+Stats.FOREVER_POWER = FOREVER_POWER
+
+local ATTACK_POWER_API = {
+    ATTACK_POWER = function() return UnitAttackPower("player") end,
+    RANGED_ATTACK_POWER = function() return UnitRangedAttackPower("player") end,
+}
+
+-- Per stat: the attack power total at the last plain read, and the school
+-- spell power was read from.
+local foreverPowerHeld = {}
+
+local function ReadAttackPower(statType)
+    local base, posBuff, negBuff = SafeGetMultiValue(ATTACK_POWER_API[statType])
+    if IsSecretValue(base) or IsSecretValue(posBuff) or IsSecretValue(negBuff) then
+        local held = foreverPowerHeld[statType]
+        -- A reload mid-fight has no total to hold; base is the nearest figure
+        if held == nil then return DefaultIfNil(base, 0) end
+        return held
+    end
+    local total = math.max((base or 0) + (posBuff or 0) + (negBuff or 0), 0)
+    foreverPowerHeld[statType] = total
+    return total
+end
+
+local function ReadSpellPower()
+    local lowest, lowestSchool
+    for school = FIRST_MAGIC_SCHOOL, LAST_MAGIC_SCHOOL do
+        local bonus = SafeGetValue(GetSpellBonusDamage, school)
+        if IsSecretValue(bonus) then
+            local held = foreverPowerHeld.SPELL_POWER or FIRST_MAGIC_SCHOOL
+            return DefaultIfNil(SafeGetValue(GetSpellBonusDamage, held), 0)
+        end
+        bonus = bonus or 0
+        if not lowest or bonus < lowest then
+            lowest, lowestSchool = bonus, school
+        end
+    end
+    foreverPowerHeld.SPELL_POWER = lowestSchool
+    return lowest or 0
+end
+
+-- Returns the figure as Forever's character sheet shows it (possibly a secret
+-- value while in combat).
+function StatAPI.GetForeverPower(statType)
+    local kind = FOREVER_POWER[statType]
+    if kind == "attack" then
+        return ReadAttackPower(statType)
+    elseif kind == "spell" then
+        return ReadSpellPower()
+    elseif kind == "healing" then
+        return DefaultIfNil(SafeGetValue(GetSpellBonusHealing), 0)
+    end
+    return 0
+end
+
 -- Stat types - updated for 11.0.0+
 Stats.STAT_TYPES = {
     -- Primary stats
@@ -368,6 +448,11 @@ Stats.STAT_TYPES = {
     HIT = "HIT",
     EXPERTISE = "EXPERTISE",
     SPIRIT = "SPIRIT",
+    ATTACK_POWER = "ATTACK_POWER",
+    RANGED_ATTACK_POWER = "RANGED_ATTACK_POWER",
+    SPELL_POWER = "SPELL_POWER",
+    BONUS_HEALING = "BONUS_HEALING",
+    SPELL_CRIT = "SPELL_CRIT",
 }
 
 -- Primary stat lookup for display/bar logic
@@ -379,6 +464,10 @@ Stats.PRIMARY_STATS = {
     [Stats.STAT_TYPES.PRIMARY_STAT] = true,
     -- A flat attribute like the four above, shown as a number rather than a percent
     [Stats.STAT_TYPES.SPIRIT] = true,
+    [Stats.STAT_TYPES.ATTACK_POWER] = true,
+    [Stats.STAT_TYPES.RANGED_ATTACK_POWER] = true,
+    [Stats.STAT_TYPES.SPELL_POWER] = true,
+    [Stats.STAT_TYPES.BONUS_HEALING] = true,
 }
 
 function Stats:IsPrimaryStat(statType)
@@ -497,6 +586,11 @@ Stats.STAT_COLORS = {
     [Stats.STAT_TYPES.HIT] = { 0.80, 0.45, 0.30 },
     [Stats.STAT_TYPES.EXPERTISE] = { 0.55, 0.50, 0.75 },
     [Stats.STAT_TYPES.SPIRIT] = { 0.70, 0.80, 0.90 },
+    [Stats.STAT_TYPES.ATTACK_POWER] = { 0.78, 0.36, 0.36 },
+    [Stats.STAT_TYPES.RANGED_ATTACK_POWER] = { 0.62, 0.72, 0.38 },
+    [Stats.STAT_TYPES.SPELL_POWER] = { 0.62, 0.48, 0.82 },
+    [Stats.STAT_TYPES.BONUS_HEALING] = { 0.42, 0.78, 0.52 },
+    [Stats.STAT_TYPES.SPELL_CRIT] = { 0.90, 0.62, 0.40 },
 }
 
 -- Store base values for primary stats
@@ -533,7 +627,8 @@ Stats.STAT_ORDER = {
 -- (Blizzard_UIPanels_Game/Camelot/PaperDollFrameConstants.lua) has Spirit, Hit
 -- and Expertise, and no Mastery, Versatility, Leech, Avoidance or Speed - the
 -- APIs for those still exist there and answer 0, so offering them would only
--- give every Forever player five empty bars.
+-- give every Forever player five empty bars. The sheet's Attack Power, Ranged
+-- Attack Power, Spell Power and Bonus Healing are offered too, plus Spell Crit.
 if Stats.isForever then
     Stats.STAT_ORDER = {
         Stats.STAT_TYPES.PRIMARY_STAT,
@@ -542,8 +637,13 @@ if Stats.isForever then
         Stats.STAT_TYPES.INTELLECT,
         Stats.STAT_TYPES.STAMINA,
         Stats.STAT_TYPES.SPIRIT,
+        Stats.STAT_TYPES.ATTACK_POWER,
+        Stats.STAT_TYPES.RANGED_ATTACK_POWER,
+        Stats.STAT_TYPES.SPELL_POWER,
+        Stats.STAT_TYPES.BONUS_HEALING,
         Stats.STAT_TYPES.HIT,
         Stats.STAT_TYPES.CRIT,
+        Stats.STAT_TYPES.SPELL_CRIT,
         Stats.STAT_TYPES.HASTE,
         Stats.STAT_TYPES.EXPERTISE,
         Stats.STAT_TYPES.DODGE,
@@ -671,6 +771,8 @@ function Stats:GetValue(statType)
     -- WoW Forever reads these as its character sheet does (see FOREVER_FIGURES)
     elseif Stats.isForever and FOREVER_FIGURES[statType] then
         value = StatAPI.GetForeverStat(statType)
+    elseif Stats.isForever and FOREVER_POWER[statType] then
+        value = StatAPI.GetForeverPower(statType)
 
     -- Secondary stats - Using StatAPI wrappers for 12.0 compatibility
     elseif statType == Stats.STAT_TYPES.HASTE then
@@ -1137,6 +1239,11 @@ function Stats:InitializeStatNames()
         [Stats.STAT_TYPES.HIT] = PDS.L["STAT_HIT"],
         [Stats.STAT_TYPES.EXPERTISE] = PDS.L["STAT_EXPERTISE"],
         [Stats.STAT_TYPES.SPIRIT] = PDS.L["STAT_SPIRIT"],
+        [Stats.STAT_TYPES.ATTACK_POWER] = PDS.L["STAT_ATTACK_POWER"],
+        [Stats.STAT_TYPES.RANGED_ATTACK_POWER] = PDS.L["STAT_RANGED_ATTACK_POWER"],
+        [Stats.STAT_TYPES.SPELL_POWER] = PDS.L["STAT_SPELL_POWER"],
+        [Stats.STAT_TYPES.BONUS_HEALING] = PDS.L["STAT_BONUS_HEALING"],
+        [Stats.STAT_TYPES.SPELL_CRIT] = PDS.L["STAT_SPELL_CRIT"],
     }
 end
 

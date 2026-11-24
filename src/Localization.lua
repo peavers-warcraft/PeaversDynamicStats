@@ -39,6 +39,11 @@ Locales["enUS"] = {
     ["STAT_HIT"] = "Hit",
     ["STAT_EXPERTISE"] = "Expertise",
     ["STAT_SPIRIT"] = "Spirit",
+    ["STAT_ATTACK_POWER"] = "Attack Power",
+    ["STAT_RANGED_ATTACK_POWER"] = "Ranged Attack Power",
+    ["STAT_SPELL_POWER"] = "Spell Power",
+    ["STAT_BONUS_HEALING"] = "Bonus Healing",
+    ["STAT_SPELL_CRIT"] = "Spell Crit",
     
     -- Commands
     ["CMD_TOGGLE"] = "Toggle stats display",
@@ -200,6 +205,11 @@ Locales["zhCN"] = {
     ["STAT_HIT"] = "命中",
     ["STAT_EXPERTISE"] = "精准",
     ["STAT_SPIRIT"] = "精神",
+    ["STAT_ATTACK_POWER"] = "攻击强度",
+    ["STAT_RANGED_ATTACK_POWER"] = "远程攻击强度",
+    ["STAT_SPELL_POWER"] = "法术强度",
+    ["STAT_BONUS_HEALING"] = "治疗加成",
+    ["STAT_SPELL_CRIT"] = "法术爆击",
     
     -- Commands
     ["CMD_TOGGLE"] = "切换属性显示",
@@ -344,6 +354,11 @@ Locales["zhTW"] = {
     ["STAT_HIT"] = "命中",
     ["STAT_EXPERTISE"] = "熟練",
     ["STAT_SPIRIT"] = "精神",
+    ["STAT_ATTACK_POWER"] = "攻擊強度",
+    ["STAT_RANGED_ATTACK_POWER"] = "遠程攻擊強度",
+    ["STAT_SPELL_POWER"] = "法術能量",
+    ["STAT_BONUS_HEALING"] = "治療加成",
+    ["STAT_SPELL_CRIT"] = "法術致命一擊",
     
     -- Commands
     ["CMD_TOGGLE"] = "切換屬性顯示",
@@ -488,6 +503,11 @@ Locales["koKR"] = {
     ["STAT_HIT"] = "적중",
     ["STAT_EXPERTISE"] = "숙련",
     ["STAT_SPIRIT"] = "정신",
+    ["STAT_ATTACK_POWER"] = "전투력",
+    ["STAT_RANGED_ATTACK_POWER"] = "원거리 전투력",
+    ["STAT_SPELL_POWER"] = "주문력",
+    ["STAT_BONUS_HEALING"] = "치유량",
+    ["STAT_SPELL_CRIT"] = "주문 치명타",
     
     -- Commands
     ["CMD_TOGGLE"] = "능력치 표시 전환",
