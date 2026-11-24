@@ -340,7 +340,7 @@ check("paladin crit is melee crit", (read(Stats, "CRIT")), 11)
 value, rating, text = read(Stats, "SPELL_CRIT")
 check("spell crit is spell crit", value, 6.5)
 check("spell crit rating is spell", rating, 28)
-check("spell crit shows as a percent", text:find("%%") ~= nil, true)
+check("spell crit shows as a percent", text ~= nil and text:find("%%") ~= nil, true)
 inCombat = true
 value = read(Stats, "SPELL_CRIT")
 check("spell crit in combat is live", isSecret(value) and value.source, "GetSpellCritChance")
