@@ -110,7 +110,7 @@ end
 
 function Config:GetSpecTemplate()
     if not self.db or not self.db.char then return nil end
-    local specID = GetSpecialization() and GetSpecializationInfo(GetSpecialization())
+    local specID = self:GetSpecialization()
     if not specID then return nil end
     local specTemplates = self.db.char.specTemplates
     if not specTemplates then return nil end
@@ -119,7 +119,7 @@ end
 
 function Config:SetSpecTemplate(templateName)
     if not self.db then return false end
-    local specID = GetSpecialization() and GetSpecializationInfo(GetSpecialization())
+    local specID = self:GetSpecialization()
     if not specID then return false end
 
     if not self.db.char.specTemplates then
@@ -135,7 +135,10 @@ function Config:SetSpecTemplate(templateName)
     return true
 end
 
+-- The active spec's ID, or nil. GetSpecialization does not exist on clients
+-- without specs (WoW Forever), so every spec read goes through here.
 function Config:GetSpecialization()
+    if not GetSpecialization then return nil end
     local specIndex = GetSpecialization()
     if not specIndex then return nil end
     return GetSpecializationInfo(specIndex)

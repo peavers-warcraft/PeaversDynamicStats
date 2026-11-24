@@ -273,8 +273,7 @@ PeaversCommons.Events:Init(addonName, function()
     PeaversCommons.Events:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED", function(_, unit)
         if unit and unit ~= "player" then return end
 
-        local specIndex = GetSpecialization()
-        local specID = specIndex and GetSpecializationInfo(specIndex)
+        local specID = PDS.Config:GetSpecialization()
         if not specID then return end
 
         -- The first time the spec can be read at all is not a change, so record
@@ -394,10 +393,7 @@ PeaversCommons.Events:Init(addonName, function()
         C_Timer.After(0.1, function()
             -- Baseline the current spec so the PLAYER_SPECIALIZATION_CHANGED
             -- handler above can tell real spec changes from level-up noise
-            local specIndex = GetSpecialization()
-            if specIndex then
-                lastSpecID = GetSpecializationInfo(specIndex) or lastSpecID
-            end
+            lastSpecID = PDS.Config:GetSpecialization() or lastSpecID
             if PDS.Config and PDS.Config.UpdateCurrentIdentifiers then
                 PDS.Config:UpdateCurrentIdentifiers()
             end
